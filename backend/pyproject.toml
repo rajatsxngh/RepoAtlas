@@ -1,0 +1,103 @@
+[project]
+name = "repoatlas"
+version = "0.1.0"
+description = "Interactive code maps with cited answers, validated impact analysis, and published accuracy."
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "rajatsinghh", email = "rajatsinghh@icloud.com" }
+]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "alembic>=1.13",
+    "psycopg[binary]>=3.2",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+    "sqlalchemy>=2.0.30",
+    "structlog>=24.1",
+    "typer>=0.12",
+]
+
+[project.scripts]
+repoatlas = "repoatlas.cli:app"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.11",
+    "poethepoet>=0.27",
+    "pre-commit>=3.8",
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"
+
+# ---------------------------------------------------------------------------
+# Lint and format
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["repoatlas"]
+
+# ---------------------------------------------------------------------------
+# Type checking
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+mypy_path = "src"
+files = ["src", "tests"]
+exclude = ['^src/repoatlas/db/migrations/versions/']
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config", "-m", "not live"]
+markers = [
+    "unit: fast tests with no external services (applied automatically under tests/unit)",
+    "integration: tests that need Postgres (applied automatically under tests/integration)",
+    "live: tests that call paid external APIs; opt in with -m live; never run in CI",
+]
+
+[tool.coverage.run]
+source = ["repoatlas"]
+branch = true
+
+# ---------------------------------------------------------------------------
+# Tasks: run with `uv run poe <task>`
+# ---------------------------------------------------------------------------
+[tool.poe.tasks]
+lint-check = { cmd = "ruff check .", help = "Lint with ruff" }
+format-check = { cmd = "ruff format --check .", help = "Check formatting with ruff" }
+lint = { sequence = ["lint-check", "format-check"], help = "Lint and check formatting" }
+fmt = { sequence = [{ cmd = "ruff format ." }, { cmd = "ruff check --fix ." }], help = "Format and apply safe lint fixes" }
+typecheck = { cmd = "mypy", help = "Type-check src and tests with mypy" }
+test = { cmd = "pytest", help = "Run unit and integration tests (integration needs Postgres)" }
+test-unit = { cmd = "pytest -m unit", help = "Run unit tests only (no services needed)" }
+docs-lint = { cmd = "python ../scripts/check_milestones.py", help = "Check the milestone docs" }
+check = { sequence = ["lint", "typecheck", "test", "docs-lint"], help = "Everything CI runs on Linux" }
