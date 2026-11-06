@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node / web app
+node_modules/
+.next/
+out/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local data and scratch output
+.repoatlas/
+.tmp/
+
+# Large evaluation artifacts (small manifests stay in git)
+eval/artifacts/**/*.scip
+eval/artifacts/**/*.tar
+eval/artifacts/**/*.tar.gz
+
+# Editors and OS files
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local Claude Code settings
+.claude/settings.local.json
