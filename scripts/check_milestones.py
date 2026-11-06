@@ -27,20 +27,45 @@ PRD_PATH = ROOT / "docs" / "PRD.md"
 README_PATH = MILESTONE_DIR / "README.md"
 
 PREFIX_OWNER = {
-    "FND": 0, "ING": 1, "GRA": 2, "STO": 3, "API": 4, "MAP": 5,
-    "RET": 6, "ANS": 7, "SBX": 8, "BEN": 9, "EVL": 10, "IMP": 11,
-    "DEP": 12, "GRD": 13, "AGT": 14, "MAS": 15, "PRF": 16, "LCH": 17,
+    "FND": 0,
+    "ING": 1,
+    "GRA": 2,
+    "STO": 3,
+    "API": 4,
+    "MAP": 5,
+    "RET": 6,
+    "ANS": 7,
+    "SBX": 8,
+    "BEN": 9,
+    "EVL": 10,
+    "IMP": 11,
+    "DEP": 12,
+    "GRD": 13,
+    "AGT": 14,
+    "MAS": 15,
+    "PRF": 16,
+    "LCH": 17,
 }
 REQUIRED_SECTIONS = [
-    "Goal", "Depends on", "Provides", "Requirements", "Scope", "Design notes",
-    "Tasks", "Exit criteria", "Verification", "Risks and open questions", "Results",
+    "Goal",
+    "Depends on",
+    "Provides",
+    "Requirements",
+    "Scope",
+    "Design notes",
+    "Tasks",
+    "Exit criteria",
+    "Verification",
+    "Risks and open questions",
+    "Results",
 ]
 SIZE_BOUNDS = {"S": (1, 5), "M": (6, 8), "L": (9, 12)}
 
 REQ_RE = re.compile(r"\b(" + "|".join(PREFIX_OWNER) + r")-(\d+)\b")
 REQ_DEF_RE = re.compile(r"^\|\s*((?:" + "|".join(PREFIX_OWNER) + r")-\d+)\s*\|", re.MULTILINE)
 MS_RE = re.compile(r"\bM(\d{1,2})\b")
-RANGE_RE = re.compile(r"\bM(\d{1,2})\s*[–—-]\s*M(\d{1,2})\b")
+DASHES = "-" + chr(0x2013) + chr(0x2014)  # hyphen, en dash, em dash
+RANGE_RE = re.compile(r"\bM(\d{1,2})\s*[" + DASHES + r"]\s*M(\d{1,2})\b")
 TASK_RE = re.compile(r"^- \[[ xX]\] \*\*T\d+", re.MULTILINE)
 SIZE_RE = re.compile(r"\*\*Size:\*\*\s*([SML])\b")
 FILE_RE = re.compile(r"^M(\d{2})-[a-z0-9-]+\.md$")
@@ -108,7 +133,10 @@ def main() -> int:
         return 1
     expected = set(range(max(files) + 1))
     if set(files) != expected:
-        err("docs/milestones", f"milestone numbers must be contiguous; missing {fmt(expected - set(files))}")
+        err(
+            "docs/milestones",
+            f"milestone numbers must be contiguous; missing {fmt(expected - set(files))}",
+        )
 
     # PRD requirement definitions ------------------------------------------------------
     prd_ids: dict[str, int] = {}
@@ -147,8 +175,9 @@ def main() -> int:
         dep_refs = milestone_refs(dep_text)
         if not dep_refs and "none" not in dep_text.lower():
             err(where, "Depends on must list milestones or say None")
-        if any(ref >= number for ref in dep_refs):
-            err(where, f"Depends on may only name lower-numbered milestones; found {fmt({r for r in dep_refs if r >= number})}")
+        too_high = {ref for ref in dep_refs if ref >= number}
+        if too_high:
+            err(where, f"Depends on may only name lower-numbered milestones; found {fmt(too_high)}")
         depends[number] = dep_refs
 
         # 4. No forward mentions anywhere in the file
@@ -166,11 +195,12 @@ def main() -> int:
         # 5. Requirements section lists exactly the owned IDs
         listed = {f"{p}-{d}" for p, d in REQ_RE.findall(secs.get("Requirements", ""))}
         owned = {req_id for req_id, owner in prd_ids.items() if owner == number}
-        if listed != owned:
-            if owned - listed:
-                err(where, f"Requirements section is missing {', '.join(sorted(owned - listed, key=_req_sort))}")
-            if listed - owned:
-                err(where, f"Requirements section lists IDs it doesn't own: {', '.join(sorted(listed - owned, key=_req_sort))}")
+        missing_ids = ", ".join(sorted(owned - listed, key=_req_sort))
+        extra_ids = ", ".join(sorted(listed - owned, key=_req_sort))
+        if missing_ids:
+            err(where, f"Requirements section is missing {missing_ids}")
+        if extra_ids:
+            err(where, f"Requirements section lists IDs it doesn't own: {extra_ids}")
         if not owned:
             err(where, "owns no PRD requirements")
 
@@ -189,11 +219,15 @@ def main() -> int:
             err(where, "missing from the status table")
             continue
         if len(cells) < 6:
-            err(where, "expected columns: Milestone | Name | Type | Size | Depends on | Status")
+            err(
+                where,
+                "expected columns: Milestone | Name | Type | Size | Depends on | Status",
+            )
             continue
-        table_deps = set() if cells[4] in {"—", "-", ""} else milestone_refs(cells[4])
-        if table_deps != depends.get(number, set()):
-            err(where, f"Depends on {fmt(table_deps)} but the milestone file says {fmt(depends.get(number, set()))}")
+        table_deps = set() if cells[4] in {"", *DASHES} else milestone_refs(cells[4])
+        file_deps = depends.get(number, set())
+        if table_deps != file_deps:
+            err(where, f"Depends on {fmt(table_deps)} but the milestone file says {fmt(file_deps)}")
         if number in sizes and cells[3] != sizes[number]:
             err(where, f"size {cells[3]} but the milestone file says {sizes[number]}")
         if files[number].name not in cells[1]:
@@ -208,7 +242,10 @@ def main() -> int:
             if int(n) not in order:
                 order.append(int(n))
         if order != sorted(files):
-            err("docs/milestones/README.md", "mermaid chain must list every milestone once, in order")
+            err(
+                "docs/milestones/README.md",
+                "mermaid chain must list every milestone once, in order",
+            )
 
     # Report ---------------------------------------------------------------------------------
     if errors:
@@ -216,7 +253,8 @@ def main() -> int:
         for line in errors:
             print(f"  - {line}")
         return 1
-    print(f"OK: {len(files)} milestones, {len(prd_ids)} requirements, dependencies point backward only.")
+    summary = f"{len(files)} milestones, {len(prd_ids)} requirements"
+    print(f"OK: {summary}, dependencies point backward only.")
     return 0
 
 

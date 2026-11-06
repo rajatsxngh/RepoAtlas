@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "m*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-linux:
+    name: Backend (Linux, full checks)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: repoatlas
+          POSTGRES_PASSWORD: repoatlas
+          POSTGRES_DB: repoatlas
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U repoatlas -d repoatlas"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      REPOATLAS_DATABASE_URL: postgresql+psycopg://repoatlas:repoatlas@localhost:5433/repoatlas
+      REPOATLAS_LOG_FORMAT: json
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install
+        run: uv sync --locked
+      - name: Lint, type-check, test, docs lint
+        run: uv run poe check
+      - name: Migrations apply to the service database
+        run: uv run repoatlas db upgrade && uv run repoatlas db current
+
+  backend-windows:
+    name: Backend (Windows, unit tests)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install
+        run: uv sync --locked
+      - name: Unit tests
+        run: uv run poe test-unit
+
+  docs:
+    name: Docs lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Milestone docs lint
+        run: python scripts/check_milestones.py
