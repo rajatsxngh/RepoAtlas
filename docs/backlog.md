@@ -1,0 +1,21 @@
+# Backlog
+
+Ideas that are deliberately **not** part of any milestone. Add new ideas here instead of growing the current milestone. Revisit after launch.
+
+| Idea | Why it might matter | Notes |
+|---|---|---|
+| SCIP-powered product edges | Precise callers for repos whose dependencies can be installed | Needs a safe way to install dependencies for arbitrary repos; today SCIP runs only in the sandbox for curated repos |
+| More languages (Go, Java, Rust) | Wider audience | Each needs extractors, resolvers, and benchmark coverage |
+| Understand-Anything as an evaluation baseline | Compare an LLM-built graph with a code-built graph on the same questions | Needs a fair setup and its graph output for the benchmark repos |
+| On-demand LLM summaries per node | Plain-English descriptions in the node panel | Generated when a node is opened, cached by blob OID; counted in cost metrics |
+| Guided tours | Dependency-ordered walkthroughs for onboarding | Could reuse the agent tools |
+| Community-detection containers | Better grouping for huge flat directories | Louvain or similar at build time |
+| Private repos and authentication | Use on work code | Needs auth, token handling, and a security review |
+| Multi-repo graphs | Microservice systems | Cross-repo symbol keys and resolution |
+| Diff and pull-request upload UI, GitHub app | Impact analysis on real PRs | The engine already accepts unified diffs |
+| Answer caching per snapshot | Lower cost for repeated questions | Measure demand first |
+| Local cross-encoder reranker | Possibly better retrieval | Try behind the existing `Retriever` interface and evaluate on dev |
+| Approximate vector index | Very large deployments | Per-model partial indexes; watch filtering skew |
+| Small-model injection classifier | Better detection of novel injection phrasing | Only if pattern recall proves too low |
+| Test-file-level impact predictions | Matches how people run tests | Report alongside test-function level |
+| A sixth, held-out benchmark repo | Extra check for overfitting | Used once at the end |
