@@ -1,0 +1,27 @@
+# Local development services.
+#   Start:  docker compose -f infra/docker-compose.yml up -d
+#   Stop:   docker compose -f infra/docker-compose.yml down        (add -v to delete the data)
+# The host port defaults to 5433 to avoid clashing with a locally installed Postgres;
+# override it with the REPOATLAS_DB_PORT environment variable in your shell.
+name: repoatlas
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: repoatlas
+      POSTGRES_PASSWORD: repoatlas
+      POSTGRES_DB: repoatlas
+    ports:
+      - "${REPOATLAS_DB_PORT:-5433}:5432"
+    volumes:
+      - repoatlas-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U repoatlas -d repoatlas"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  repoatlas-pg:
