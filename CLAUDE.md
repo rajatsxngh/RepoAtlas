@@ -12,19 +12,23 @@ Work only on the current milestone. Don't start the next one until every exit cr
 
 ## Commands
 
-Filled in during M00. Until the backend exists, only the docs lint works.
-
 | Purpose | Command |
 |---|---|
-| Docs lint | `python scripts/check_milestones.py` |
-| Start Postgres | `docker compose -f infra/docker-compose.yml up -d` |
+| Start Postgres (Docker Desktop must be running) | `docker compose -f infra/docker-compose.yml up -d` |
 | Install backend | `cd backend && uv sync` |
-| Migrate | `cd backend && uv run repoatlas db upgrade` |
-| All backend checks | `cd backend && uv run poe check` |
-| Backend tests only | `cd backend && uv run poe test` |
+| Apply migrations | `cd backend && uv run repoatlas db upgrade` |
+| Show current migration | `cd backend && uv run repoatlas db current` |
+| New migration | `cd backend && uv run repoatlas db revision "add repos table" [--autogenerate]` |
+| Everything CI runs on Linux (needs Postgres) | `cd backend && uv run poe check` |
+| Unit tests only (no services) | `cd backend && uv run poe test-unit` |
+| Format and autofix | `cd backend && uv run poe fmt` |
 | Live LLM tests (opt-in, costs money) | `cd backend && uv run pytest -m live` |
-| Frontend checks | `cd frontend && npm run lint && npm run typecheck && npm test` |
-| End-to-end tests | `cd frontend && npx playwright test` |
+| Docs lint | `python scripts/check_milestones.py` |
+| Install git hooks (once per clone) | `cd backend && uv run pre-commit install` |
+| Frontend checks (once the web app exists) | `cd frontend && npm run lint && npm run typecheck && npm test` |
+| End-to-end tests (once the web app exists) | `cd frontend && npx playwright test` |
+
+Commits run pre-commit hooks automatically (whitespace, YAML/TOML, ruff check and format, docs lint). Migrations live in `backend/src/repoatlas/db/migrations/` and ship with the package; revision IDs are sequential (`0002_…`, at most 32 characters).
 
 ## Conventions
 
