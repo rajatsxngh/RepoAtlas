@@ -1,6 +1,6 @@
 # M01 — Ingestion & parsing
 
-**Type of work:** Static analysis · **Size:** L (11 tasks) · **Status:** Not started
+**Type of work:** Static analysis · **Size:** L (11 tasks) · **Status:** In progress
 
 ## Goal
 
@@ -80,7 +80,7 @@ ING-1, ING-2, ING-3, ING-4, ING-5, ING-6, ING-7, ING-8, ING-9, ING-10, ING-11, I
 
 ## Tasks
 
-- [ ] **T1 — Fetch spike.** Implement both options on one mid-size public repo; compare against the criteria; write the decision addendum.
+- [x] **T1 — Fetch spike.** Implement both options on one mid-size public repo; compare against the criteria; write the decision addendum.
 - [ ] **T2 — URLs and GitHub metadata.** `parse_repo_url` (table-driven tests: valid and invalid forms), `GitHubClient` with recorded responses (public, private, not found, rate-limited).
 - [ ] **T3 — Fetcher.** The chosen source fetch plus the blobless history fetch, with git flags, timeouts, and cleanup.
 - [ ] **T4 — Inventory.** Modes, skip rules, language and test detection, LOC, blob OIDs, size caps (unit tests per rule).
