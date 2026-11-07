@@ -361,15 +361,40 @@ def test_calls_only_match_within_a_language_family() -> None:
     assert set(calls(graph)) == {("js:app.js:run:function", "ts:cart.ts:Cart.add:method")}
 
 
-def test_private_typescript_functions_are_not_name_matched() -> None:
+def test_module_level_functions_are_not_name_matched() -> None:
+    # `items.map()` is almost always Array.prototype.map, not a module's exported `map`;
+    # modules are reached through imports, which T1 and T2 resolve by binding.
     graph = build(
         {
-            "a.ts": "function hidden() {}\nexport function shown() {}\n",
-            "b.ts": "export function run(x: any) { x.hidden(); x.shown(); }\n",
+            "a.ts": "export function map() {}\nexport const api = { list() {} };\n",
+            "b.ts": "export function run(x: any) { x.map(); x.list(); }\n",
+            "util.py": "def helper():\n    pass\n",
+            "app.py": "def run(x):\n    x.helper()\n",
         }
     )
-    assert set(calls(graph)) == {("ts:b.ts:run:function", "ts:a.ts:shown:function")}
-    assert unresolved(graph, "x.hidden").reason == "not_found"
+    assert set(calls(graph)) == {("ts:b.ts:run:function", "ts:a.ts:api.list:function")}
+    assert unresolved(graph, "x.map").reason == "not_found"
+    assert unresolved(graph, "x.helper").reason == "not_found"
+
+
+def test_production_code_never_matches_members_defined_in_tests() -> None:
+    graph = build(
+        {
+            "src/ctx.py": "def pop(resource):\n    resource.close()\n",
+            "tests/test_other.py": "def test_other(other):\n    other.close()\n",
+            "tests/test_ctx.py": (
+                "def test_pop():\n"
+                "    class Wrapper:\n"
+                "        def close(self):\n            pass\n"
+                "    Wrapper().close()\n"
+            ),
+        }
+    )
+    assert unresolved(graph, "resource.close").reason == "not_found"
+    # A class defined inside a function is reachable from its own file only.
+    assert unresolved(graph, "other.close").reason == "not_found"
+    test = "py:tests/test_ctx.py:test_pop:test"
+    assert tier_of(graph, test, "py:tests/test_ctx.py:test_pop.Wrapper.close:method")[0] == "T5"
 
 
 def test_call_statistics_add_up() -> None:

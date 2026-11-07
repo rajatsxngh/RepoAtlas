@@ -3,8 +3,7 @@ name across the repository (the candidates of name-matched calls)."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Iterable, Sequence
 
 from repoatlas.ingest.inventory import Language
 from repoatlas.parsing.models import ParsedFile, Symbol
@@ -16,24 +15,18 @@ def family(language: str) -> Family:
     return "py" if language == "py" else "js"
 
 
-@dataclass(frozen=True, slots=True)
-class Candidate:
-    """A symbol that a name-matched call could reach, with the class or module defining it."""
-
-    symbol: Symbol
-    definer: str
-
-
 class SymbolIndex:
-    def __init__(self, files: Sequence[ParsedFile]) -> None:
+    def __init__(self, files: Sequence[ParsedFile], *, test_paths: Iterable[str] = ()) -> None:
         self.symbols: dict[str, Symbol] = {}
         self.path_of: dict[str, str] = {}
         self.language: dict[str, Language] = {}
+        self.test_paths = frozenset(test_paths)
         self._children: dict[str, dict[str, Symbol]] = {}
         self._top: dict[str, dict[str, Symbol]] = {}
         self._qualnames: dict[str, dict[str, Symbol]] = {}
         self._members: dict[tuple[Family, str], dict[str, Symbol]] = {}
         self._module_level: dict[tuple[Family, str], dict[str, Symbol]] = {}
+        self._local_definers: set[str] = set()
         self._chains: dict[str, list[str]] = {}
         for parsed in files:
             self.language[parsed.path] = parsed.language
@@ -49,26 +42,43 @@ class SymbolIndex:
                 elif symbol.qualname == symbol.name and symbol.kind != "test":
                     top[symbol.name] = symbol
             for symbol in parsed.symbols:
-                definer = self._definer(parsed, symbol)
-                if definer is None:
+                if symbol.kind == "test":
                     continue
-                self._members.setdefault((fam, symbol.name), {})[definer] = symbol
-                module_level = symbol.parent is None and symbol.qualname == symbol.name
-                if module_level:
-                    self._module_level.setdefault((fam, symbol.name), {})[definer] = symbol
+                if symbol.parent is None and symbol.qualname == symbol.name:
+                    self._module_level.setdefault((fam, symbol.name), {})[parsed.path] = symbol
+                    continue
+                definer = self._definer(parsed, symbol)
+                if definer is not None:
+                    self._members.setdefault((fam, symbol.name), {})[definer] = symbol
+                    if self._is_local(definer):
+                        self._local_definers.add(definer)
 
     def _definer(self, parsed: ParsedFile, symbol: Symbol) -> str | None:
-        """Who defines ``symbol`` as a member reachable as ``obj.name``; ``None`` if nobody."""
-        if symbol.kind == "test":
-            return None
+        """The class or object that defines ``symbol`` as a member, or ``None``.
+
+        Members are methods of classes and the functions of object literals, namespaces, and
+        assigned members (``api.get``, ``Router.prototype.route``). Module-level functions are
+        not: modules are reached through imports, which resolve them by binding instead.
+        """
         if symbol.parent is not None:
             parent = self.symbols.get(symbol.parent)
             return symbol.parent if parent is not None and parent.kind == "class" else None
-        if symbol.qualname != symbol.name:  # TS object-literal and assigned members: api.get
+        if symbol.qualname != symbol.name:
             return f"{parsed.path}:{symbol.qualname.rsplit('.', 1)[0]}"
-        if parsed.language != "py" and not symbol.exported and symbol.kind != "class":
-            return None  # a module's private function can't be reached as obj.name
-        return parsed.path
+        return None
+
+    def _is_local(self, definer: str) -> bool:
+        """Whether ``definer`` is a class defined inside a function (reachable in its file only)."""
+        cls = self.symbols.get(definer)
+        current = cls.parent if cls is not None else None
+        while current is not None:
+            outer = self.symbols.get(current)
+            if outer is None:
+                return False
+            if outer.kind != "class":
+                return True
+            current = outer.parent
+        return False
 
     # -- scopes ----------------------------------------------------------------------------
 
@@ -106,10 +116,23 @@ class SymbolIndex:
 
     # -- name matching ---------------------------------------------------------------------
 
-    def member_candidates(self, language: str, name: str) -> list[Symbol]:
-        """Symbols reachable as ``obj.name``: one per defining class or module, sorted by key."""
+    def member_candidates(self, language: str, name: str, caller_path: str) -> list[Symbol]:
+        """Members named ``name`` a call in ``caller_path`` could reach, one per defining class
+        or object, sorted by key.
+
+        Members of classes defined inside functions count only for callers in the same file, and
+        members defined in test files only for callers in test files: production code does not
+        call into tests.
+        """
+        from_test = caller_path in self.test_paths
         found = self._members.get((family(language), name), {})
-        return sorted(found.values(), key=lambda symbol: symbol.key)
+        reachable = [
+            symbol
+            for definer, symbol in found.items()
+            if (from_test or self.path_of[symbol.key] not in self.test_paths)
+            and (definer not in self._local_definers or self.path_of[symbol.key] == caller_path)
+        ]
+        return sorted(reachable, key=lambda symbol: symbol.key)
 
     def module_candidates(self, language: str, name: str) -> list[Symbol]:
         """Module-level functions and classes named ``name`` (for names no scope binds)."""

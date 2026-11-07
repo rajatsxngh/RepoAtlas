@@ -12,9 +12,12 @@ For each call site, in order:
 - ``a.b.m()`` with a plain dotted receiver: ``a.b.m`` defined in the same file is T1; a receiver
   that resolves to a repository module, namespace, or class with member ``m`` is T2; one that
   resolves outside the repository is external; a literal receiver (``", ".join``) is builtin.
-- Anything else is ``obj.m()`` with an unknown ``obj``: name matching across the repository's
-  classes and modules (same language family). One defining class or module is T5; two to five
-  give one T6 edge each, splitting the T6 confidence; more, or none, give an unresolved call.
+- Anything else is ``obj.m()`` with an unknown ``obj``: name matching against the members of the
+  repository's classes and object literals in the same language family (module-level functions
+  are reached through imports instead; classes defined inside functions count only within
+  their file; and production code never matches members defined in test files). One defining
+  class or object is T5; two to five give one T6 edge each, splitting the T6 confidence; more,
+  or none, give an unresolved call.
 
 Calling a class links to the class and to the ``__init__``/``constructor`` it defines or
 inherits, at the same tier. Calling a CommonJS module object reaches its ``module.exports``.
@@ -107,7 +110,7 @@ class CallResolver:
                     return EXTERNAL
                 if kind == "builtin":
                     return BUILTIN
-        return hit if hit is not None else self._by_name(language, name)
+        return hit if hit is not None else self._by_name(path, language, name)
 
     # -- receivers -------------------------------------------------------------------------
 
@@ -206,8 +209,8 @@ class CallResolver:
             return BUILTIN
         return _unresolved("not_found")  # bound to a value that is not a function or class
 
-    def _by_name(self, language: str, name: str) -> CallResolution:
-        found = self.index.member_candidates(language, name)
+    def _by_name(self, path: str, language: str, name: str) -> CallResolution:
+        found = self.index.member_candidates(language, name, path)
         if not found:
             return _unresolved("not_found")
         if len(found) > MAX_CANDIDATES:

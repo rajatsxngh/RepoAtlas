@@ -42,7 +42,7 @@ def build_graph(
         resolved.append((parsed.path, statements))
     import_outcomes = add_import_edges(resolved, edges)
 
-    index = SymbolIndex(files)
+    index = SymbolIndex(files, test_paths=(e.path for e in inventory.files if e.is_test))
     names = NameResolver(index, bindings, resolvers)
     hierarchy = ClassHierarchy.build(files, names)
     names.hierarchy = hierarchy
