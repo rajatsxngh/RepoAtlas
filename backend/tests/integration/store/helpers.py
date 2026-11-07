@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from repoatlas.graph.build import build_graph
-from repoatlas.graph.model import CodeGraph
+from repoatlas.graph.model import CodeGraph, Owner
 from repoatlas.ingest.github import RepoMeta, RepoRef
 from repoatlas.ingest.inventory import Inventory
 from repoatlas.ingest.source import DirectorySourceTree, MemorySourceTree, SourceTree, TreeEntry
@@ -69,4 +69,14 @@ def repo_meta(owner: str = "acme", name: str = "shop", branch: str = "main") -> 
         html_url=f"https://github.com/{owner}/{name}",
         archived=False,
         fork=False,
+    )
+
+
+def with_owners(graph: CodeGraph, owners: dict[str, list[Owner]]) -> CodeGraph:
+    return CodeGraph(
+        nodes=graph.nodes,
+        edges=graph.edges,
+        unresolved=graph.unresolved,
+        owners=owners,
+        stats=graph.stats,
     )

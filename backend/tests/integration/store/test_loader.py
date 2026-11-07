@@ -27,9 +27,11 @@ from tests.integration.store.helpers import (
     build_files,
     fixture_files,
     repo_meta,
+    with_owners,
 )
 
 ROW_TABLES = ("files", "nodes", "edges", "unresolved_calls", "owners")
+pytestmark = pytest.mark.usefixtures("clean_store")
 
 
 def save(engine: Engine, built: Built, sha: str = SHA_A, **kwargs: Any) -> int:
@@ -67,16 +69,6 @@ def snapshot_row(engine: Engine, snapshot_id: int) -> Any:
 def blob_count(engine: Engine) -> int:
     with engine.connect() as connection:
         return int(connection.execute(text("SELECT count(*) FROM blobs")).scalar_one())
-
-
-def with_owners(graph: CodeGraph, owners: dict[str, list[Owner]]) -> CodeGraph:
-    return CodeGraph(
-        nodes=graph.nodes,
-        edges=graph.edges,
-        unresolved=graph.unresolved,
-        owners=owners,
-        stats=graph.stats,
-    )
 
 
 def test_save_snapshot_writes_every_row(pg_engine: Engine, py_small: Built) -> None:
