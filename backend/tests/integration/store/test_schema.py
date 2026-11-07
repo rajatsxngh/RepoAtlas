@@ -12,6 +12,7 @@ from sqlalchemy import Engine, inspect, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+import repoatlas.jobs.models  # noqa: F401  (the jobs table is part of the compared metadata)
 from repoatlas.db import migrate
 from repoatlas.db.base import Base
 from repoatlas.db.engine import create_db_engine
@@ -245,7 +246,7 @@ def test_downgrade_and_upgrade_again(scratch_db_url: str) -> None:
     finally:
         engine.dispose()
     migrate.upgrade(scratch_db_url)
-    assert migrate.current_revision(scratch_db_url) == "0002_graph_store"
+    assert migrate.current_revision(scratch_db_url) == migrate.head_revision()
 
 
 @pytest.mark.parametrize("table", STORE_TABLES)

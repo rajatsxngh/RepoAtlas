@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import signal
 import sys
 import time
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from types import FrameType
 from typing import Annotated, Any, NoReturn, cast
 
 import typer
@@ -18,6 +20,7 @@ from repoatlas.config import get_settings
 from repoatlas.db import migrate
 from repoatlas.db.engine import create_db_engine, redact_url
 from repoatlas.ingest.errors import IngestError
+from repoatlas.jobs.worker import Worker
 from repoatlas.logging import configure
 from repoatlas.pipeline.build import BuildResult, run_build
 from repoatlas.pipeline.graph import GraphOutput, run_graph
@@ -467,3 +470,77 @@ def query_unresolved(
 ) -> None:
     """Call sites with no edge whose callee has this name."""
     _query(lambda store: store.unresolved_calls(snapshot, name))
+
+
+STOP_SIGNALS = ("SIGINT", "SIGTERM", "SIGBREAK")  # SIGBREAK: Ctrl+Break, Windows only
+
+
+def _install_stop_signals(worker: Worker) -> dict[int, Any]:
+    """First signal: stop gracefully. A second one: stop now (``KeyboardInterrupt``)."""
+    presses = 0
+
+    def on_signal(_signum: int, _frame: FrameType | None) -> None:
+        nonlocal presses
+        presses += 1
+        if presses > 1:
+            raise KeyboardInterrupt
+        worker.request_stop()
+        typer.echo("Stopping after the current stage. Press Ctrl+C again to stop now.", err=True)
+
+    previous: dict[int, Any] = {}
+    for name in STOP_SIGNALS:
+        number = getattr(signal, name, None)
+        if number is not None:
+            previous[number] = signal.signal(number, on_signal)
+    return previous
+
+
+WORKER_HELP = (
+    "Run background jobs (snapshot builds) until stopped.\n\n"
+    "Ctrl+C (or Ctrl+Break, or SIGTERM) stops the worker gracefully: the current job stops "
+    "after its current stage and goes back to the queue. Creating or touching the stop file "
+    "does the same, which is the portable way to stop a worker that has no console. Press "
+    "Ctrl+C twice to stop at once; another worker resumes the job after its lease runs out."
+)
+
+
+@app.command("worker", help=WORKER_HELP)
+def worker_command(
+    once: Annotated[bool, typer.Option(help="Process at most one due job, then exit.")] = False,
+    stop_file: Annotated[
+        Path | None,
+        typer.Option(
+            help="Stop gracefully when this file appears or changes "
+            "(default: worker.stop in the data directory)."
+        ),
+    ] = None,
+    worker_id: Annotated[
+        str | None, typer.Option("--id", help="Name in the jobs table (default: host:pid:random).")
+    ] = None,
+) -> None:
+    settings = get_settings()
+    path = stop_file or settings.data_dir / "worker.stop"
+    worker = Worker(settings, stop_file=path, worker_id=worker_id)
+    kinds = ", ".join(worker.kinds) or "no"
+    typer.echo(
+        f"Worker {worker.id}: running {kinds} jobs. Stop with Ctrl+C, or create or touch {path}.",
+        err=True,
+    )
+    previous = _install_stop_signals(worker)
+    try:
+        if once:
+            worker.run_once()
+            worker.close()
+        else:
+            worker.run()
+    except KeyboardInterrupt:
+        worker.close()
+        typer.echo("Stopped at once; the job goes back to the queue.", err=True)
+        raise typer.Exit(code=130) from None
+    except OperationalError as error:
+        worker.close()
+        _connection_failed(settings.database_url, error)
+    finally:
+        for number, handler in previous.items():
+            signal.signal(number, handler)
+    typer.echo(f"Worker {worker.id} stopped after {worker.processed} job(s).", err=True)

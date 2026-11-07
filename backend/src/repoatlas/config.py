@@ -70,6 +70,14 @@ class Settings(BaseSettings):
     web_origins: str = "http://localhost:3000"  # comma-separated origins allowed by CORS
     db_connect_timeout_s: float = 10.0  # opening one database connection, in the API and worker
 
+    # Background jobs and the worker
+    job_lease_s: float = 60.0  # a running job whose worker sends no heartbeat this long is requeued
+    job_heartbeat_s: float = 15.0
+    job_max_attempts: int = 3
+    job_retry_backoff_s: tuple[float, ...] = (10.0, 60.0, 300.0)  # wait after attempt 1, 2, 3+
+    job_timeout_s: float = 3600.0  # one attempt may run at most this long
+    worker_poll_s: float = 2.0  # how often an idle worker looks for due jobs
+
     @property
     def cors_origins(self) -> list[str]:
         """The web app's origins, from the comma-separated ``web_origins``."""
