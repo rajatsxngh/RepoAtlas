@@ -11,7 +11,6 @@ import {
   useReactFlow,
   type NodeMouseHandler,
 } from "@xyflow/react";
-import ELK from "elkjs/lib/elk.bundled.js";
 import {
   useCallback,
   useEffect,
@@ -27,14 +26,15 @@ import { describeError } from "@/lib/api/errors";
 import type { SubgraphLevel } from "@/lib/api/types";
 import { config } from "@/lib/config";
 import { queryKeys } from "@/lib/query";
-import { layoutContainers, type ContainerLayout } from "@/workers/layoutEngine";
 import { CanvasActionsContext, type CanvasActions } from "./actions";
 import { EDGE_TYPES, EdgeMarkers } from "./edges";
-import { boxSize, toFlow } from "./flow";
+import { toFlow } from "./flow";
 import type { HighlightLayer, NodeAction } from "./layers";
+import { getLayoutClient } from "./layoutClient";
 import { planLayout } from "./layoutPlan";
 import { GraphModel, ROOT } from "./model";
 import { NODE_TYPES } from "./nodes";
+import { useMapLayout } from "./useMapLayout";
 
 export interface GraphCanvasHandle {
   /** Expands the node's ancestors in order so the node is visible. */
@@ -59,14 +59,6 @@ export interface GraphCanvasProps {
   ref?: Ref<GraphCanvasHandle>;
 }
 
-type LaidOut = ContainerLayout & { signature: string };
-
-let elk: InstanceType<typeof ELK> | null = null;
-function getElk() {
-  elk ??= new ELK();
-  return elk;
-}
-
 function Canvas({
   snapshotId,
   onSelect,
@@ -79,7 +71,6 @@ function Canvas({
   const flow = useReactFlow();
   const [model] = useState(() => new GraphModel(nodeCap));
   const [version, setVersion] = useState(0);
-  const [layouts, setLayouts] = useState<ReadonlyMap<string, LaidOut>>(() => new Map());
   const [loadError, setLoadError] = useState<unknown>(null);
   const [attempt, setAttempt] = useState(0);
   const fitted = useRef(false);
@@ -119,31 +110,10 @@ function Canvas({
 
   const visible = useMemo(() => (version >= 0 ? model.visibleNodes() : []), [model, version]);
   const edges = useMemo(() => (version >= 0 ? model.visibleEdges() : []), [model, version]);
-  const planned = useMemo(
-    () => planLayout(visible, edges, (entry) => boxSize(entry, layouts)),
-    [visible, edges, layouts],
-  );
-
-  useEffect(() => {
-    const pending = planned.filter(
-      (container) => layouts.get(container.id)?.signature !== container.signature,
-    );
-    if (!pending.length) return;
-    let alive = true;
-    void layoutContainers(getElk(), pending).then((results) => {
-      if (!alive) return;
-      setLayouts((previous) => {
-        const next = new Map(previous);
-        results.forEach((result, index) =>
-          next.set(result.id, { ...result, signature: pending[index]!.signature }),
-        );
-        return next;
-      });
-    });
-    return () => {
-      alive = false;
-    };
-  }, [planned, layouts]);
+  const structure = useMemo(() => planLayout(visible, edges), [visible, edges]);
+  const [client] = useState(() => (typeof window === "undefined" ? null : getLayoutClient()));
+  const layout = useMapLayout(structure, client);
+  const layouts = layout.placed;
 
   const graph = useMemo(
     () =>
@@ -151,7 +121,7 @@ function Canvas({
         visible,
         edges,
         layouts,
-        loading: new Set(),
+        loading: layout.pending,
         selected: selectedKey,
         childCount: (key) => model.childrenOf(key)?.length,
         fileCount: (key) => {
@@ -164,7 +134,7 @@ function Canvas({
           return count;
         },
       }),
-    [visible, edges, layouts, selectedKey, model],
+    [visible, edges, layouts, layout.pending, selectedKey, model],
   );
 
   useEffect(() => {
@@ -241,6 +211,16 @@ function Canvas({
 
   return (
     <CanvasActionsContext.Provider value={actions}>
+      <span
+        hidden
+        data-testid="map-state"
+        data-visible-nodes={visible.length}
+        data-rendered-nodes={graph.nodes.length}
+        data-rendered-edges={graph.edges.length}
+        data-visible-edges={edges.length}
+        data-layout-pending={layout.pending.size}
+        data-layout-ms={layout.lastMs ?? ""}
+      />
       <EdgeMarkers />
       <ReactFlow
         nodes={graph.nodes}

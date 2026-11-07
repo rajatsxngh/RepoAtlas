@@ -4,21 +4,40 @@
  * between its children's descendants, lifted to the children.
  */
 
-import type { ContainerInput, LayoutEdge } from "@/workers/layoutEngine";
-import { boxSize, nodeLabel } from "./flow";
+import type { LayoutEdge } from "@/workers/layoutEngine";
+import { nodeLabel } from "./flow";
 import { ROOT, type VisibleEdge, type VisibleNode } from "./model";
+import { MORE_SIZE, leafSize, type Size } from "./sizes";
 
-export interface PlannedContainer extends ContainerInput {
+export interface PlannedChild {
+  id: string;
+  label: string;
+  /** The child is an expanded container; its size comes from its own layout. */
+  nested: boolean;
+  /** Its box while collapsed (or while its own layout is pending). */
+  leaf: Size;
+}
+
+export interface PlannedContainer {
+  id: string;
+  label: string;
+  children: PlannedChild[];
+  edges: LayoutEdge[];
   /** Changes when the children or their edges change (then ELK runs again). */
   signature: string;
   depth: number;
+}
+
+function plannedChild(entry: VisibleNode): PlannedChild {
+  if (entry.type === "more") return { id: entry.id, label: "", nested: false, leaf: MORE_SIZE };
+  const label = nodeLabel(entry.node);
+  return { id: entry.id, label, nested: entry.expanded, leaf: leafSize(label) };
 }
 
 /** Containers in children-first order, each with what ELK needs. */
 export function planLayout(
   visible: readonly VisibleNode[],
   edges: readonly VisibleEdge[],
-  sizeOf: (entry: VisibleNode) => { width: number; height: number },
 ): PlannedContainer[] {
   const parentOf = new Map<string, string>();
   const depthOf = new Map<string, number>([[ROOT, 0]]);
@@ -40,11 +59,7 @@ export function planLayout(
     }
   }
   for (const entry of visible) {
-    const container = containers.get(entry.parent ?? ROOT);
-    if (!container) continue;
-    const nested = entry.type === "node" && entry.expanded;
-    const size = sizeOf(entry);
-    container.children.push({ id: entry.id, width: size.width, height: size.height, nested });
+    containers.get(entry.parent ?? ROOT)?.children.push(plannedChild(entry));
   }
   const chain = (id: string): string[] => {
     const out = [id];
@@ -71,12 +86,9 @@ export function planLayout(
   }
   const planned = [...containers.values()];
   for (const container of planned) {
-    const edgeIds = [
-      ...new Set(container.edges.map((e: LayoutEdge) => `${e.source}>${e.target}`)),
-    ].sort();
-    container.signature = `${container.children.map((c) => c.id).join("\n")}\n--\n${edgeIds.join("\n")}`;
+    const edgeIds = [...new Set(container.edges.map((e) => `${e.source}>${e.target}`))].sort();
+    const children = container.children.map((c) => c.id).join("\n");
+    container.signature = `${children}\n--\n${edgeIds.join("\n")}`;
   }
   return planned.sort((a, b) => b.depth - a.depth);
 }
-
-export { boxSize };

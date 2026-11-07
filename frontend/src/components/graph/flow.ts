@@ -1,8 +1,7 @@
 /** Turns the visible graph and its layout into React Flow nodes and edges. */
 
-import type { Edge as FlowEdge, Node as FlowNode } from "@xyflow/react";
+import { Position, type Edge as FlowEdge, type Node as FlowNode } from "@xyflow/react";
 import type { ApiNode, EdgeKind } from "@/lib/api/types";
-import type { ContainerLayout } from "@/workers/layoutEngine";
 import { ROOT, mayHaveChildren, type VisibleEdge, type VisibleNode } from "./model";
 import { CONTENT_OFFSET, MORE_SIZE, containerSize, leafSize, type Size } from "./sizes";
 
@@ -65,10 +64,16 @@ export function nodeMeta(node: ApiNode, fileCount?: number): string {
   }
 }
 
+/** Where a container's children sit, and how much room they take. */
+export interface PlacedContainer {
+  positions: Readonly<Record<string, { x: number; y: number }>>;
+  content: Size;
+}
+
 export interface FlowInput {
   visible: readonly VisibleNode[];
   edges: readonly VisibleEdge[];
-  layouts: ReadonlyMap<string, ContainerLayout>;
+  layouts: ReadonlyMap<string, PlacedContainer>;
   /** Containers whose children are being fetched or laid out. */
   loading: ReadonlySet<string>;
   selected: string | null;
@@ -84,7 +89,7 @@ export interface FlowOutput {
 }
 
 /** The box a visible node takes: a leaf, a laid-out container, or the "more" pill. */
-export function boxSize(entry: VisibleNode, layouts: ReadonlyMap<string, ContainerLayout>): Size {
+export function boxSize(entry: VisibleNode, layouts: ReadonlyMap<string, PlacedContainer>): Size {
   if (entry.type === "more") return MORE_SIZE;
   const label = nodeLabel(entry.node);
   const layout = entry.expanded ? layouts.get(entry.id) : undefined;
@@ -112,6 +117,28 @@ export function toFlow(input: FlowInput): FlowOutput {
       position: { x: position.x + offset.x, y: position.y + offset.y },
       width: size.width,
       height: size.height,
+      // The map sets every box's size itself, so it also declares the size and the anchors.
+      // Without declared handles React Flow waits for DOM measurements, which it drops whenever
+      // a node object is replaced, and edges vanish.
+      measured: { width: size.width, height: size.height },
+      handles: [
+        {
+          type: "target" as const,
+          position: Position.Top,
+          x: size.width / 2,
+          y: 0,
+          width: 1,
+          height: 1,
+        },
+        {
+          type: "source" as const,
+          position: Position.Bottom,
+          x: size.width / 2,
+          y: size.height,
+          width: 1,
+          height: 1,
+        },
+      ],
       style: { width: size.width, height: size.height },
       ...(parentId === null ? {} : { parentId }),
       draggable: false,

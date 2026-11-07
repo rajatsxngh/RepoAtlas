@@ -25,8 +25,6 @@ function edge(source: string, target: string): VisibleEdge {
   };
 }
 
-const size = () => ({ width: 150, height: 44 });
-
 describe("planLayout", () => {
   const visible = [
     node("dir:a", null, true),
@@ -37,7 +35,7 @@ describe("planLayout", () => {
   ];
 
   it("lists containers children first, with their direct children", () => {
-    const planned = planLayout(visible, [], size);
+    const planned = planLayout(visible, []);
     expect(planned.map((c) => c.id)).toEqual(["dir:a/x", "dir:a", ROOT]);
     expect(planned[1]!.children.map((c) => [c.id, c.nested])).toEqual([
       ["dir:a/x", true],
@@ -46,15 +44,11 @@ describe("planLayout", () => {
   });
 
   it("lifts edges to the children of the container where their ends meet", () => {
-    const planned = planLayout(
-      visible,
-      [
-        edge("file:a/x/1.py", "dir:b"),
-        edge("file:a/x/1.py", "file:a/2.py"),
-        edge("dir:a/x", "file:a/x/1.py"),
-      ],
-      size,
-    );
+    const planned = planLayout(visible, [
+      edge("file:a/x/1.py", "dir:b"),
+      edge("file:a/x/1.py", "file:a/2.py"),
+      edge("dir:a/x", "file:a/x/1.py"),
+    ]);
     const byId = Object.fromEntries(planned.map((c) => [c.id, c.edges]));
     expect(byId[ROOT]).toEqual([{ source: "dir:a", target: "dir:b" }]);
     expect(byId["dir:a"]).toEqual([{ source: "dir:a/x", target: "file:a/2.py" }]);
@@ -62,10 +56,10 @@ describe("planLayout", () => {
   });
 
   it("changes a container's signature only when its children or edges change", () => {
-    const first = planLayout(visible, [edge("file:a/2.py", "dir:b")], size);
-    const second = planLayout(visible, [edge("file:a/2.py", "dir:b")], size);
+    const first = planLayout(visible, [edge("file:a/2.py", "dir:b")]);
+    const second = planLayout(visible, [edge("file:a/2.py", "dir:b")]);
     expect(second.map((c) => c.signature)).toEqual(first.map((c) => c.signature));
-    const third = planLayout(visible.slice(0, 4), [edge("file:a/2.py", "dir:a/x")], size);
+    const third = planLayout(visible.slice(0, 4), [edge("file:a/2.py", "dir:a/x")]);
     expect(third.find((c) => c.id === ROOT)!.signature).not.toBe(
       first.find((c) => c.id === ROOT)!.signature,
     );
