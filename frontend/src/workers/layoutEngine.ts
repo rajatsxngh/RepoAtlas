@@ -18,6 +18,8 @@ export interface LayoutChild {
 export interface LayoutEdge {
   source: string;
   target: string;
+  /** How many relationships the edge stands for (default 1); the strongest shape the layout. */
+  weight?: number;
 }
 
 export interface ContainerInput {
@@ -42,10 +44,15 @@ export const LAYOUT_OPTIONS: LayoutOptions = {
   "elk.algorithm": "layered",
   "elk.direction": "DOWN",
   "elk.edgeRouting": "POLYLINE",
-  "elk.spacing.nodeNode": "28",
+  "elk.spacing.nodeNode": "22",
   "elk.layered.spacing.nodeNodeBetweenLayers": "56",
-  "elk.layered.spacing.edgeNodeBetweenLayers": "20",
-  "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+  // The map draws edges straight between node borders, not along ELK's routes, so the room ELK
+  // keeps around routed edges is kept small.
+  "elk.layered.spacing.edgeNodeBetweenLayers": "6",
+  "elk.layered.spacing.edgeEdgeBetweenLayers": "4",
+  "elk.spacing.edgeEdge": "4",
+  "elk.spacing.edgeNode": "6",
+  "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF", // replaced per container by placementFor()
   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
   "elk.layered.crossingMinimization.forceNodeModelOrder": "false",
   "elk.separateConnectedComponents": "true",
@@ -66,6 +73,78 @@ export function aspectRatioFor(childCount: number): number {
   );
 }
 
+/**
+ * Each child keeps its strongest few outgoing and incoming edges as layout constraints (the map
+ * still draws every edge). Dense containers otherwise fill with long edges that ELK threads
+ * through every layer in between, which spreads the layout out and slows it down.
+ */
+export const SKELETON_EDGES = 3;
+
+/**
+ * Network simplex places nodes about twice as compactly as Brandes-Koepf on dense containers, but
+ * its cost climbs steeply with size (a dense 120-node container took about 30 s, against about
+ * 1 s). Containers up to this many children get the compact placement.
+ */
+export const COMPACT_PLACEMENT_MAX_CHILDREN = 40;
+
+export function placementFor(childCount: number): "NETWORK_SIMPLEX" | "BRANDES_KOEPF" {
+  return childCount <= COMPACT_PLACEMENT_MAX_CHILDREN ? "NETWORK_SIMPLEX" : "BRANDES_KOEPF";
+}
+
+interface WeightedEdge {
+  source: string;
+  target: string;
+  weight: number;
+}
+
+function byWeightThenId(other: (edge: WeightedEdge) => string) {
+  return (a: WeightedEdge, b: WeightedEdge) => {
+    if (a.weight !== b.weight) return b.weight - a.weight;
+    const x = other(a);
+    const y = other(b);
+    return x < y ? -1 : x > y ? 1 : 0;
+  };
+}
+
+/**
+ * The edges to lay out: duplicates merged (weights added), self-loops and edges to unknown nodes
+ * dropped, then each node's `perNode` strongest outgoing and incoming edges (ties broken by the
+ * other end's id, so the result is deterministic), in their original order.
+ */
+export function skeletonEdges(
+  edges: readonly LayoutEdge[],
+  ids: ReadonlySet<string>,
+  perNode: number = SKELETON_EDGES,
+): WeightedEdge[] {
+  const merged = new Map<string, WeightedEdge>();
+  for (const edge of edges) {
+    if (!ids.has(edge.source) || !ids.has(edge.target) || edge.source === edge.target) continue;
+    const id = `${edge.source}\u0000${edge.target}`;
+    const existing = merged.get(id);
+    if (existing) existing.weight += edge.weight ?? 1;
+    else merged.set(id, { source: edge.source, target: edge.target, weight: edge.weight ?? 1 });
+  }
+  const all = [...merged.values()];
+  const outgoing = new Map<string, WeightedEdge[]>();
+  const incoming = new Map<string, WeightedEdge[]>();
+  for (const edge of all) {
+    const out = outgoing.get(edge.source);
+    if (out) out.push(edge);
+    else outgoing.set(edge.source, [edge]);
+    const into = incoming.get(edge.target);
+    if (into) into.push(edge);
+    else incoming.set(edge.target, [edge]);
+  }
+  const keep = new Set<WeightedEdge>();
+  for (const list of outgoing.values()) {
+    for (const edge of list.sort(byWeightThenId((e) => e.target)).slice(0, perNode)) keep.add(edge);
+  }
+  for (const list of incoming.values()) {
+    for (const edge of list.sort(byWeightThenId((e) => e.source)).slice(0, perNode)) keep.add(edge);
+  }
+  return all.filter((edge) => keep.has(edge));
+}
+
 /** Lays out the containers in order (children before parents). */
 export async function layoutContainers(
   elk: ELK,
@@ -84,22 +163,18 @@ export async function layoutContainers(
       return { id: child.id, width: size.width, height: size.height };
     });
     const ids = new Set(container.children.map((child) => child.id));
-    const seen = new Set<string>();
-    const edges = container.edges
-      .filter((edge) => ids.has(edge.source) && ids.has(edge.target) && edge.source !== edge.target)
-      .filter((edge) => {
-        const id = `${edge.source}\u0000${edge.target}`;
-        if (seen.has(id)) return false;
-        seen.add(id);
-        return true;
-      })
-      .map((edge, index) => ({ id: `e${index}`, sources: [edge.source], targets: [edge.target] }));
+    const edges = skeletonEdges(container.edges, ids).map((edge, index) => ({
+      id: `e${index}`,
+      sources: [edge.source],
+      targets: [edge.target],
+    }));
     const positions: Record<string, { x: number; y: number }> = {};
     let content: Size = { width: 0, height: 0 };
     if (children.length) {
       const layoutOptions = {
         ...LAYOUT_OPTIONS,
         "elk.aspectRatio": String(aspectRatioFor(children.length)),
+        "elk.layered.nodePlacement.strategy": placementFor(children.length),
       };
       const laid = await elk.layout({ id: "root", layoutOptions, children, edges });
       let right = 0;

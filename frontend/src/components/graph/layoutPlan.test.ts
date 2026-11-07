@@ -14,13 +14,13 @@ function node(key: string, parent: string | null, expanded = false, depth = 0): 
   return { type: "node", id: key, node: apiNode, parent, expanded, depth };
 }
 
-function edge(source: string, target: string): VisibleEdge {
+function edge(source: string, target: string, count = 1): VisibleEdge {
   return {
     id: `${source}|${target}|calls`,
     source,
     target,
     kind: "calls",
-    count: 1,
+    count,
     minConfidence: 1,
     maxConfidence: 1,
   };
@@ -51,8 +51,8 @@ describe("planLayout", () => {
       edge("dir:a/x", "file:a/x/1.py"),
     ]);
     const byId = Object.fromEntries(planned.map((c) => [c.id, c.edges]));
-    expect(byId[ROOT]).toEqual([{ source: "dir:a", target: "dir:b" }]);
-    expect(byId["dir:a"]).toEqual([{ source: "dir:a/x", target: "file:a/2.py" }]);
+    expect(byId[ROOT]).toEqual([{ source: "dir:a", target: "dir:b", weight: 1 }]);
+    expect(byId["dir:a"]).toEqual([{ source: "dir:a/x", target: "file:a/2.py", weight: 1 }]);
     expect(byId["dir:a/x"]).toEqual([]);
   });
 
@@ -62,6 +62,14 @@ describe("planLayout", () => {
     expect(second.map((c) => c.signature)).toEqual(first.map((c) => c.signature));
     const third = planLayout(visible.slice(0, 4), [edge("file:a/2.py", "dir:a/x")]);
     expect(third.find((c) => c.id === ROOT)!.signature).not.toBe(
+      first.find((c) => c.id === ROOT)!.signature,
+    );
+    // Weights choose the edges that shape the layout, so a new weight lays out again.
+    const heavier = planLayout(visible, [edge("file:a/2.py", "dir:b", 7)]);
+    expect(heavier.find((c) => c.id === ROOT)!.edges).toEqual([
+      { source: "dir:a", target: "dir:b", weight: 7 },
+    ]);
+    expect(heavier.find((c) => c.id === ROOT)!.signature).not.toBe(
       first.find((c) => c.id === ROOT)!.signature,
     );
   });

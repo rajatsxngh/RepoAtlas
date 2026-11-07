@@ -92,11 +92,17 @@ export function planLayout(
       b = parent(b);
     }
     if (belowA === null || belowB === null || belowA === belowB) continue;
-    containers.get(a)?.edges.push({ source: belowA, target: belowB });
+    containers.get(a)?.edges.push({ source: belowA, target: belowB, weight: edge.count });
   }
   const planned = [...containers.values()];
   for (const container of planned) {
-    const edgeIds = [...new Set(container.edges.map((e) => `${e.source}>${e.target}`))].sort();
+    // Weights pick the edges that shape the layout, so they belong in the signature too.
+    const weights = new Map<string, number>();
+    for (const e of container.edges) {
+      const id = `${e.source}>${e.target}`;
+      weights.set(id, (weights.get(id) ?? 0) + (e.weight ?? 1));
+    }
+    const edgeIds = [...weights].map(([id, weight]) => `${id}:${weight}`).sort();
     const children = container.children.map((c) => c.id).join("\n");
     container.signature = `${children}\n--\n${edgeIds.join("\n")}`;
   }
