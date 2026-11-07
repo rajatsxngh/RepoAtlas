@@ -61,7 +61,7 @@ FND-1, FND-2, FND-3, FND-4, FND-5, FND-6, FND-7, FND-8
 ## Tasks
 
 - [x] **T1 — Initialize the repo.** `git init`; `.gitignore` (Python, Node, `.env`, `.venv`, caches, large eval artifacts), `.gitattributes`, `.editorconfig`, LICENSE (after the owner picks one), README stub linking to `docs/`.
-- [ ] **T2 — Prerequisites (owner).** Install Docker Desktop with the WSL2 backend; confirm `docker compose version`. Create `.env` from `.env.example`; optionally add `REPOATLAS_GITHUB_TOKEN` (raises the GitHub API limit from 60 requests per hour) and `REPOATLAS_ANTHROPIC_API_KEY`.
+- [x] **T2 — Prerequisites (owner).** Install Docker Desktop with the WSL2 backend; confirm `docker compose version`. Create `.env` from `.env.example`; optionally add `REPOATLAS_GITHUB_TOKEN` (raises the GitHub API limit from 60 requests per hour) and `REPOATLAS_ANTHROPIC_API_KEY`.
 - [x] **T3 — Backend project.** `uv init --package` in `backend/`; dependencies above; ruff, mypy, and pytest config in `pyproject.toml`; poe tasks.
 - [x] **T4 — Local database.** `infra/docker-compose.yml` with the `db` service; `.env.example` with `REPOATLAS_DATABASE_URL=postgresql+psycopg://repoatlas:repoatlas@localhost:5433/repoatlas`.
 - [x] **T5 — Settings, logging, database, migrations.** Implement the modules above; Alembic init; `0001_baseline`; `repoatlas db upgrade` and `db current`.
@@ -71,8 +71,8 @@ FND-1, FND-2, FND-3, FND-4, FND-5, FND-6, FND-7, FND-8
 
 ## Exit criteria
 
-- [ ] `docker compose -f infra/docker-compose.yml up -d` then `uv run repoatlas db upgrade` succeeds, and `uv run repoatlas db current` shows `0001_baseline`.
-- [ ] `uv run poe check` passes locally on Windows.
+- [x] `docker compose -f infra/docker-compose.yml up -d` then `uv run repoatlas db upgrade` succeeds, and `uv run repoatlas db current` shows `0001_baseline`.
+- [x] `uv run poe check` passes locally on Windows.
 - [x] `python scripts/check_milestones.py` passes.
 - [ ] CI passes on Linux and Windows after the first push. (Creating the GitHub repo and pushing happen only after the owner approves.)
 
@@ -94,4 +94,14 @@ Manual: open the CI run and confirm all three jobs are green.
 
 ## Results
 
-_Filled in at the gate._
+_Local checks recorded 2026-11-07. The gate closes once CI passes on the first push._
+
+| Check | Evidence |
+|---|---|
+| Local Postgres | `pgvector/pgvector:pg16` (digest `sha256:0dd3149a06e4…`), healthy on port 5433; extensions `vector` 0.8.7 and `pg_trgm` 1.6 |
+| Migrations | `repoatlas db upgrade` reaches `0001_baseline`; a second upgrade is a no-op; `repoatlas db current` prints `0001_baseline` |
+| `poe check` on Windows | ruff and format clean; mypy clean (21 files); 36 tests passed (28 unit, 8 integration) in about 7 s; docs lint OK |
+| Test isolation | No `repoatlas_test_*` databases remain after the run |
+| Packaging | The built wheel contains `repoatlas/db/migrations/` (env, template, versions) and `py.typed` |
+| Toolchain | Python 3.12.13 via uv 0.12.3; Docker 29.9.2, Compose v5.6.1, Docker Desktop 4.98 on WSL 2 |
+| CI on Linux and Windows | Pending: the first push needs the owner's OK |
