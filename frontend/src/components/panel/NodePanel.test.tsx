@@ -1,10 +1,10 @@
-import { screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { NodeAction } from "@/components/graph/layers";
 import { XSS_PAYLOADS } from "@/lib/api/mock/fixtures/xss";
 import { renderWithApi } from "@/test/render";
-import { NodePanel } from "./NodePanel";
+import { NodePanel, breakable, relationContext } from "./NodePanel";
 
 const ACTIONS: NodeAction[] = [
   { id: "trace", label: "Trace it", appliesTo: ["method", "function"] },
@@ -32,15 +32,16 @@ describe("NodePanel", () => {
     expect(panel).toHaveTextContent("src/shop/cart.py · lines 14–15");
     expect(panel).toHaveTextContent("py:src/shop/cart.py:Cart.add:method");
 
-    expect(await within(panel).findByRole("button", { name: "add_item" })).toBeVisible();
-    expect(within(panel).getByRole("button", { name: "round_money" })).toBeVisible();
+    expect(await within(panel).findByRole("button", { name: /^add_item / })).toBeVisible();
+    // Each connection leads with its name, then where it lives (a symbol's file).
+    expect(within(panel).getByRole("button", { name: "round_money helpers.py" })).toBeVisible();
     expect(panel).toHaveTextContent("Tested by 2 tests");
     expect(panel).toHaveTextContent(/\d+%/);
 
     expect(within(panel).queryByRole("button", { name: "Folder thing" })).toBeNull();
     await user.click(within(panel).getByRole("button", { name: "Trace it" }));
     expect(onAction).toHaveBeenCalledWith("py:src/shop/cart.py:Cart.add:method", "trace");
-    await user.click(within(panel).getByRole("button", { name: "round_money" }));
+    await user.click(within(panel).getByRole("button", { name: /^round_money / }));
     expect(onNavigate).toHaveBeenCalledWith("py:src/shop/utils/helpers.py:round_money:function");
 
     expect(await within(panel).findByRole("figure")).toHaveTextContent("def add(self");
@@ -65,6 +66,27 @@ describe("NodePanel", () => {
     expect(await within(panel).findByText("<svg onload=alert('file')>.py")).toBeVisible();
     expect(await within(panel).findByText(XSS_PAYLOADS.owner)).toBeVisible();
     expect(panel.querySelector("img, script, b")).toBeNull();
+  });
+
+  it("lets long paths and keys wrap at separators, keeping repo text as text", () => {
+    const text = "py:<img src=x onerror=alert(1)>/shop.cart.py:Cart.add:method";
+    const { container } = render(<code>{breakable(text)}</code>);
+    expect(container.textContent).toBe(text);
+    // A break chance after each "/", ":", and "." and nowhere else.
+    expect(container.querySelectorAll("wbr")).toHaveLength(7);
+    expect(container.querySelector("img")).toBeNull();
+    expect(render(<code>{breakable("README")}</code>).container.querySelector("wbr")).toBeNull();
+  });
+
+  it("places a connection by its folder (files) or its file (symbols)", () => {
+    expect(relationContext({ kind: "file", path: "tests/test_itsdangerous/test_signer.py" })).toBe(
+      "tests/test_itsdangerous",
+    );
+    expect(relationContext({ kind: "file", path: "setup.py" })).toBe("");
+    expect(relationContext({ kind: "dir", path: "src/shop" })).toBe("src");
+    expect(relationContext({ kind: "function", path: "src/shop/utils/helpers.py" })).toBe(
+      "helpers.py",
+    );
   });
 
   it("closes", async () => {

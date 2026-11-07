@@ -8,7 +8,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Check, Copy, X } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { CodeViewer } from "@/components/code/CodeViewer";
 import { KIND_LABELS, KindIcon } from "@/components/graph/KindIcon";
 import type { NodeAction } from "@/components/graph/layers";
@@ -30,6 +30,18 @@ export interface NodePanelProps {
 }
 
 const LIST_LIMIT = 8;
+
+/** Text with line-break chances after "/", ":", and "." (as <wbr> elements, never markup). */
+export function breakable(text: string): ReactNode {
+  const parts = text.split(/(?<=[/:.])/);
+  return parts.map((part, index) => (
+    <Fragment key={index}>
+      {part}
+      {index < parts.length - 1 ? <wbr /> : null}
+    </Fragment>
+  ));
+}
+
 const DATE = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric" });
 
 function relationFor(
@@ -68,6 +80,17 @@ function useNeighbors(
   });
 }
 
+/**
+ * Where a connection lives, shown after its name: a file's folder, or a symbol's file. Names come
+ * first so that siblings with long shared paths stay tellable apart when the row is cut off.
+ */
+export function relationContext(node: Pick<ApiNode, "kind" | "path">): string {
+  const slash = node.path.lastIndexOf("/");
+  if (node.kind === "file" || node.kind === "dir")
+    return slash > 0 ? node.path.slice(0, slash) : "";
+  return slash >= 0 ? node.path.slice(slash + 1) : node.path;
+}
+
 function Relation({
   title,
   query,
@@ -90,19 +113,30 @@ function Relation({
       </h4>
       {sorted.length ? (
         <ul className="mt-1.5 space-y-0.5">
-          {sorted.slice(0, LIST_LIMIT).map(({ node }) => (
-            <li key={node.key}>
-              <button
-                type="button"
-                className="flex w-full min-w-0 cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-[12px] text-fg hover:bg-surface-2"
-                onClick={() => onNavigate?.(node.key)}
-                title={node.kind === "file" ? node.path : `${node.qualified_name} — ${node.path}`}
-              >
-                <KindIcon kind={node.kind} className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{node.kind === "file" ? node.path : node.name}</span>
-              </button>
-            </li>
-          ))}
+          {sorted.slice(0, LIST_LIMIT).map(({ node }) => {
+            const where = relationContext(node);
+            return (
+              <li key={node.key}>
+                <button
+                  type="button"
+                  className="flex w-full min-w-0 cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-[12px] text-fg hover:bg-surface-2"
+                  onClick={() => onNavigate?.(node.key)}
+                  title={node.kind === "file" ? node.path : `${node.qualified_name} — ${node.path}`}
+                >
+                  <KindIcon kind={node.kind} className="h-3.5 w-3.5 shrink-0" />
+                  <span className="min-w-0 truncate">
+                    {node.name}
+                    {where ? (
+                      <>
+                        {" "}
+                        <span className="ml-0.5 text-fg-faint">{where}</span>
+                      </>
+                    ) : null}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
           {sorted.length > LIST_LIMIT ? (
             <li className="px-1.5 text-[11px] text-fg-faint">
               and {sorted.length - LIST_LIMIT} more
@@ -258,8 +292,8 @@ export function NodePanel({
             <dl className="space-y-2.5 text-[12px]">
               <div>
                 <dt className="text-fg-faint">Path</dt>
-                <dd className="mt-0.5 font-mono break-all text-fg">
-                  {node.path}
+                <dd className="mt-0.5 font-mono [overflow-wrap:anywhere] text-fg">
+                  {breakable(node.path)}
                   {lineText(node) ? (
                     <span className="text-fg-muted"> · {lineText(node)}</span>
                   ) : null}
@@ -268,8 +302,8 @@ export function NodePanel({
               <div>
                 <dt className="text-fg-faint">Symbol key</dt>
                 <dd className="mt-0.5 flex items-start gap-1">
-                  <code className="min-w-0 flex-1 font-mono break-all text-fg-muted">
-                    {node.key}
+                  <code className="min-w-0 flex-1 font-mono [overflow-wrap:anywhere] text-fg-muted">
+                    {breakable(node.key)}
                   </code>
                   <CopyKey value={node.key} />
                 </dd>
