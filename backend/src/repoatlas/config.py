@@ -58,6 +58,8 @@ class Settings(BaseSettings):
     max_repo_size_kb: int = 500_000  # GitHub-reported size, which includes history
     git_timeout_s: float = 300.0
     history_depth: int = 1000  # generations of history fetched for ownership analysis
+    max_source_files: int = 5_000  # after skip rules
+    max_file_bytes: int = 1_000_000
 
     @field_validator("log_level", mode="before")
     @classmethod

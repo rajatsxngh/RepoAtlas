@@ -137,6 +137,33 @@ class DirectorySourceTree(SourceTree):
         return path.read_bytes()
 
 
+class MemorySourceTree(SourceTree):
+    """Files held in memory, for tests: ``{path: bytes}`` or ``{path: (mode, bytes)}``."""
+
+    def __init__(
+        self, files: dict[str, bytes | tuple[str, bytes]], *, label: str = "memory"
+    ) -> None:
+        self.label = label
+        self.commit = None
+        self._data: dict[str, bytes] = {}
+        found: list[TreeEntry] = []
+        for path, value in files.items():
+            mode, data = value if isinstance(value, tuple) else ("100644", value)
+            self._data[path] = data
+            size = None if mode == GITLINK_MODE else len(data)
+            oid = data.decode("ascii") if mode == GITLINK_MODE else blob_oid(data)
+            found.append(TreeEntry(path, mode, oid, size))
+        self._entries = sorted(found, key=lambda entry: entry.path)
+
+    def entries(self) -> list[TreeEntry]:
+        return self._entries
+
+    def read(self, entry: TreeEntry) -> bytes:
+        if entry.mode == GITLINK_MODE:
+            raise FetchError(f"{entry.path} is not a file.")
+        return self._data[entry.path]
+
+
 def _parse_ls_tree(listing: bytes) -> list[TreeEntry]:
     """Parse ``git ls-tree -r -l -z`` records: ``<mode> <type> <oid> <size>\\t<path>\\0``."""
     entries: list[TreeEntry] = []
