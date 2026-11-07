@@ -206,6 +206,12 @@ def test_default_exports() -> None:
     assert columns(symbol(klass, "default")) == (1, 7, 14)
 
 
+def test_byte_order_mark_is_skipped_but_counted_in_columns() -> None:
+    parsed = parse_source(b"\xef\xbb\xbfexport function f() {}\n", TS)
+    assert columns(symbol(parsed, "f")) == (1, 19, 20)  # columns index the blob's bytes
+    assert parsed.issue_count == 0
+
+
 def test_object_literal_methods_at_module_scope() -> None:
     parsed = ts(
         "export const api = {\n"

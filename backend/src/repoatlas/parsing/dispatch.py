@@ -8,17 +8,18 @@ from repoatlas.parsing.python import PythonExtractor
 from repoatlas.parsing.ts_runtime import MAX_ISSUES_PER_FILE, collect_issues, grammar_for, parse
 from repoatlas.parsing.typescript import TypeScriptExtractor
 
-_BOM = b"\xef\xbb\xbf"
-
 
 def parse_file(entry: FileEntry, data: bytes) -> ParsedFile:
-    """Extract symbols, imports, calls, and tests; syntax errors are recorded, never raised."""
+    """Extract symbols, imports, calls, and tests; syntax errors are recorded, never raised.
+
+    Ranges index into ``data`` itself. tree-sitter skips a leading UTF-8 byte order mark, and its
+    three bytes still count toward the columns of line 1.
+    """
     if entry.skip_reason is not None:
         raise ValueError(f"{entry.path} is skipped ({entry.skip_reason}) and is not parsed.")
-    source = data.removeprefix(_BOM)
     issues: list[ParseIssue] = []
     try:
-        source.decode("utf-8")
+        data.decode("utf-8")
     except UnicodeDecodeError:
         issues.append(
             ParseIssue(
@@ -28,13 +29,13 @@ def parse_file(entry: FileEntry, data: bytes) -> ParsedFile:
             )
         )
 
-    tree = parse(grammar_for(entry.path), source)
+    tree = parse(grammar_for(entry.path), data)
     extractor: PythonExtractor | TypeScriptExtractor
     if entry.language == "py":
-        extractor = PythonExtractor(source, entry.path, is_test=entry.is_test)
+        extractor = PythonExtractor(data, entry.path, is_test=entry.is_test)
     else:
         extractor = TypeScriptExtractor(
-            source, entry.path, lang=entry.language, is_test=entry.is_test
+            data, entry.path, lang=entry.language, is_test=entry.is_test
         )
     symbols, imports, calls, bases, routes, tests, exports = extractor.run(tree.root_node)
 

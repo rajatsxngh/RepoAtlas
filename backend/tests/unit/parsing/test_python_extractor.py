@@ -382,9 +382,9 @@ def test_syntax_errors_are_recorded_and_extraction_continues() -> None:
     assert "fine" in {s.qualname for s in parsed.symbols}
 
 
-def test_byte_order_mark_is_ignored() -> None:
+def test_byte_order_mark_is_skipped_but_counted_in_columns() -> None:
     parsed = parse_source(b"\xef\xbb\xbfdef f(): pass\n", PATH)
-    assert symbol(parsed, "f").name_range.start_col == 4
+    assert symbol(parsed, "f").name_range.start_col == 7  # columns index the blob's bytes
     assert parsed.issue_count == 0
 
 
