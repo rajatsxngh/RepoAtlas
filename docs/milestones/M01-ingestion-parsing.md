@@ -81,13 +81,13 @@ ING-1, ING-2, ING-3, ING-4, ING-5, ING-6, ING-7, ING-8, ING-9, ING-10, ING-11, I
 ## Tasks
 
 - [x] **T1 — Fetch spike.** Implement both options on one mid-size public repo; compare against the criteria; write the decision addendum.
-- [ ] **T2 — URLs and GitHub metadata.** `parse_repo_url` (table-driven tests: valid and invalid forms), `GitHubClient` with recorded responses (public, private, not found, rate-limited).
-- [ ] **T3 — Fetcher.** The chosen source fetch plus the blobless history fetch, with git flags, timeouts, and cleanup.
-- [ ] **T4 — Inventory.** Modes, skip rules, language and test detection, LOC, blob OIDs, size caps (unit tests per rule).
-- [ ] **T5 — Models and symbol keys.** Pydantic models with canonical JSON; `make_symbol_key`/`parse_symbol_key` with round-trip and escaping tests.
-- [ ] **T6 — Tree-sitter runtime.** Pinned grammars; one wrapper module; smoke tests per language.
-- [ ] **T7 — Python extractor.** At least 25 test cases (decorators, nested and async functions, properties, relative and star imports, `__all__`, calls on `self`, route decorators, pytest classes).
-- [ ] **T8 — TypeScript/JavaScript extractor.** At least 25 test cases (arrow functions, generators, default and re-exports, type-only and dynamic imports, `require`, `new` calls, class members, `describe`/`it`).
+- [x] **T2 — URLs and GitHub metadata.** `parse_repo_url` (table-driven tests: valid and invalid forms), `GitHubClient` with recorded responses (public, private, not found, rate-limited).
+- [x] **T3 — Fetcher.** The chosen source fetch plus the blobless history fetch, with git flags, timeouts, and cleanup.
+- [x] **T4 — Inventory.** Modes, skip rules, language and test detection, LOC, blob OIDs, size caps (unit tests per rule).
+- [x] **T5 — Models and symbol keys.** Pydantic models with canonical JSON; `make_symbol_key`/`parse_symbol_key` with round-trip and escaping tests.
+- [x] **T6 — Tree-sitter runtime.** Pinned grammars; one wrapper module; smoke tests per language.
+- [x] **T7 — Python extractor.** At least 25 test cases (decorators, nested and async functions, properties, relative and star imports, `__all__`, calls on `self`, route decorators, pytest classes).
+- [x] **T8 — TypeScript/JavaScript extractor.** At least 25 test cases (arrow functions, generators, default and re-exports, type-only and dynamic imports, `require`, `new` calls, class members, `describe`/`it`).
 - [ ] **T9 — Fixtures and CLI.** `py_small` and `ts_small` fixture repos with golden JSON; `repoatlas parse` command.
 - [ ] **T10 — Cross-OS determinism.** CI job comparing digests on Linux and Windows.
 - [ ] **T11 — Real-repo smoke.** Script that parses two pinned public repos (one Python, one TypeScript); record file counts, skip counts, parse-issue rate, and runtime in Results. Not part of CI.
