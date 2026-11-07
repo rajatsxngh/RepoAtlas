@@ -12,7 +12,9 @@ keys: references inside a snapshot (``parent_id``, ``src_id``, ``dst_id``, ``cal
 their OID but have no stored text.
 
 Positions are stored as four columns per range (1-based lines, 0-based UTF-8 byte columns), so a
-graph read back from the store equals the graph that was saved.
+graph read back from the store equals the graph that was saved. ``meta`` is ``jsonb``, which keeps
+every value the graph builder writes exactly; it would turn a float of 1e16 or more (which JSON
+writes in exponent form) into an integer, so graph meta should not hold such floats.
 """
 
 from __future__ import annotations
