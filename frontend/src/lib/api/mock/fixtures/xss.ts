@@ -10,11 +10,11 @@ import { syntheticOwners } from "../owners";
 
 export const XSS_PAYLOADS = {
   dir: "<img src=x onerror=alert('dir')>",
-  file: "<script>alert('file')</script>.py",
+  file: "<svg onload=alert('file')>.py",
   tsFile: '"><svg onload=alert(1)>.ts',
   test: "<img src=x onerror=alert('test')> renders",
   route: "/<script>alert('route')</script>",
-  owner: "<img src=x onerror=alert('owner')>",
+  owner: "&lt;img src=x onerror=alert('owner')&gt; & \"Ra\" Lima",
   comment: "<script>alert('comment')</script>",
   docstring: "<b onmouseover=alert('docstring')>hover</b>",
 } as const;

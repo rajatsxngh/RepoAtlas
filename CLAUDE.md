@@ -29,7 +29,8 @@ Work only on the current milestone. Don't start the next one until every exit cr
 | Docs lint | `python scripts/check_milestones.py` |
 | Install git hooks (once per clone) | `cd backend && uv run pre-commit install` |
 | Frontend checks | `cd frontend && npm run lint && npm run typecheck && npm test` |
-| End-to-end tests (builds the app; mock specs need nothing else running) | `cd frontend && npx playwright test` |
+| End-to-end tests (Postgres running; starts the API and a worker on fixture repos, builds the web app) | `cd frontend && npx playwright test` |
+| End-to-end tests in mock mode only (no services) | `cd frontend && E2E_MOCK_ONLY=1 npx playwright test --project mock` |
 
 Commits run pre-commit hooks automatically (whitespace, YAML/TOML, ruff check and format, docs lint). Migrations live in `backend/src/repoatlas/db/migrations/` and ship with the package; revision IDs are sequential (`0002_…`, at most 32 characters).
 

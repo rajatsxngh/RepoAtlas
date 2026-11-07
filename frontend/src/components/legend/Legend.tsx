@@ -36,10 +36,13 @@ function Line({ color, dash, width = 2 }: { color: string; dash?: string; width?
 
 export interface LegendProps {
   layers?: readonly HighlightLayer[];
+  /** How many edges the map draws out of those between its nodes (the edge budget). */
+  edges?: { total: number; drawn: number };
   defaultOpen?: boolean;
 }
 
-export function Legend({ layers = [], defaultOpen = false }: LegendProps) {
+export function Legend({ layers = [], edges, defaultOpen = false }: LegendProps) {
+  const trimmed = edges && edges.drawn < edges.total;
   const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
   return (
@@ -56,6 +59,14 @@ export function Legend({ layers = [], defaultOpen = false }: LegendProps) {
       >
         <Info className="h-4 w-4 text-fg-faint" aria-hidden="true" />
         <span className="flex-1">Legend</span>
+        {trimmed ? (
+          <span
+            className="rounded-full bg-warn-soft px-1.5 text-[11px] text-warn tabular-nums"
+            title="The map draws the strongest links only"
+          >
+            {edges.drawn.toLocaleString("en-US")} of {edges.total.toLocaleString("en-US")} links
+          </span>
+        ) : null}
         {layers.length ? (
           <span className="rounded-full bg-surface-3 px-1.5 text-[11px] text-fg-muted tabular-nums">
             {layers.length} {layers.length === 1 ? "layer" : "layers"}
@@ -113,6 +124,13 @@ export function Legend({ layers = [], defaultOpen = false }: LegendProps) {
                 Wider and numbered: many edges
               </li>
             </ul>
+            {trimmed ? (
+              <p className="mt-2 text-fg-muted">
+                Showing the strongest {edges.drawn.toLocaleString("en-US")} of{" "}
+                {edges.total.toLocaleString("en-US")} links between the nodes on screen (highlighted
+                and selected ones always show). Close containers to see the rest.
+              </p>
+            ) : null}
           </div>
           {layers.length ? (
             <div>

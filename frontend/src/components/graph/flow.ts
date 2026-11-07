@@ -98,6 +98,8 @@ export interface FlowInput {
   pulse?: string | null;
   /** Where the highlight layers land. */
   layers?: ResolvedLayers;
+  /** Most edges to draw (default `EDGE_BUDGET`). */
+  edgeBudget?: number;
   childCount: (key: string) => number | undefined;
   fileCount: (key: string) => number | undefined;
 }
@@ -107,6 +109,44 @@ export interface FlowOutput {
   edges: MapFlowEdge[];
   /** Box size of every rendered node, by id. */
   sizes: Map<string, Size>;
+  /** Edges between drawn nodes, and how many of them are drawn (the edge budget). */
+  edgeCount: { total: number; drawn: number };
+}
+
+/**
+ * Most edges drawn at once. Like the node cap, it keeps big maps readable and fast: thousands
+ * of overlapping lines carry no information and make every update slow.
+ */
+export const EDGE_BUDGET = 1200;
+
+const KIND_ORDER: Record<EdgeKind, number> = {
+  calls: 0,
+  imports: 1,
+  inherits: 2,
+  routes_to: 3,
+  tested_by: 4,
+  contains: 5,
+};
+
+/**
+ * The edges to draw when there are more than the budget: highlighted ones, then those touching
+ * the selected node, then the heaviest (most underlying edges), then by kind and id.
+ */
+export function withinBudget(
+  edges: readonly VisibleEdge[],
+  budget: number,
+  keep: (edge: VisibleEdge) => number,
+): VisibleEdge[] {
+  if (edges.length <= budget) return [...edges];
+  return [...edges]
+    .sort(
+      (a, b) =>
+        keep(b) - keep(a) ||
+        b.count - a.count ||
+        KIND_ORDER[a.kind] - KIND_ORDER[b.kind] ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    )
+    .slice(0, budget);
 }
 
 /** The box a visible node takes: a leaf, a laid-out container, or the "more" pill. */
@@ -219,10 +259,17 @@ export function toFlow(input: FlowInput): FlowOutput {
       });
     }
   }
-  const drawn = input.edges.filter(
+  const between = input.edges.filter(
     (edge) => rendered.has(edge.source) && rendered.has(edge.target),
   );
   const highlighted = input.layers?.edges;
+  const drawn = withinBudget(between, input.edgeBudget ?? EDGE_BUDGET, (edge) =>
+    highlighted?.has(edge.id)
+      ? 2
+      : edge.source === input.selected || edge.target === input.selected
+        ? 1
+        : 0,
+  );
   const dimOthers = Boolean(highlighted?.size || input.layers?.extra.length);
   const { offsets, labelled } = bundle(drawn);
   const edges: MapFlowEdge[] = drawn.map((edge) => ({
@@ -266,5 +313,5 @@ export function toFlow(input: FlowInput): FlowOutput {
       },
     });
   }
-  return { nodes, edges, sizes };
+  return { nodes, edges, sizes, edgeCount: { total: between.length, drawn: drawn.length } };
 }

@@ -62,8 +62,8 @@ describe("NodePanel", () => {
       <NodePanel snapshotId={3} nodeKey={`file:${XSS_PAYLOADS.dir}/${XSS_PAYLOADS.file}`} />,
     );
     const panel = screen.getByRole("complementary", { name: "Node details" });
-    expect(await within(panel).findByText("<script>alert('file')</script>.py")).toBeVisible();
-    expect(await within(panel).findByText("<img src=x onerror=alert('owner')>")).toBeVisible();
+    expect(await within(panel).findByText("<svg onload=alert('file')>.py")).toBeVisible();
+    expect(await within(panel).findByText(XSS_PAYLOADS.owner)).toBeVisible();
     expect(panel.querySelector("img, script, b")).toBeNull();
   });
 

@@ -66,28 +66,33 @@ export function planLayout(
   for (const entry of visible) {
     containers.get(entry.parent ?? ROOT)?.children.push(plannedChild(entry));
   }
-  const chain = (id: string): string[] => {
-    const out = [id];
-    for (let at = parentOf.get(id); at !== undefined; at = parentOf.get(at)) out.push(at);
-    return out;
-  };
+  const depth = (id: string) => depthOf.get(id) ?? 0;
+  const parent = (id: string) => parentOf.get(id) ?? ROOT;
   for (const edge of edges) {
-    // Both chains end at the root, so they always meet; the edge belongs to the container where
-    // they meet, between the two children on the way down. An edge between a container and
-    // something inside it is not a layout constraint.
-    const up = chain(edge.source);
-    const down = chain(edge.target);
-    const downSet = new Set(down);
-    const meet = up.findIndex((id) => downSet.has(id));
-    if (meet <= 0) continue;
-    const lca = up[meet]!;
-    const at = down.indexOf(lca);
-    if (at <= 0) continue;
-    const sourceChild = up[meet - 1]!;
-    const targetChild = down[at - 1]!;
-    const container = containers.get(lca);
-    if (!container || sourceChild === targetChild) continue;
-    container.edges.push({ source: sourceChild, target: targetChild });
+    // Climb from both ends to the container where they meet; the edge belongs to that container,
+    // between the two children on the way down. An edge between a container and something
+    // inside it is not a layout constraint. (Depth-based climbing: no allocation per edge.)
+    let a = edge.source;
+    let b = edge.target;
+    if (!depthOf.has(a) || !depthOf.has(b)) continue;
+    let belowA: string | null = null;
+    let belowB: string | null = null;
+    while (depth(a) > depth(b)) {
+      belowA = a;
+      a = parent(a);
+    }
+    while (depth(b) > depth(a)) {
+      belowB = b;
+      b = parent(b);
+    }
+    while (a !== b) {
+      belowA = a;
+      belowB = b;
+      a = parent(a);
+      b = parent(b);
+    }
+    if (belowA === null || belowB === null || belowA === belowB) continue;
+    containers.get(a)?.edges.push({ source: belowA, target: belowB });
   }
   const planned = [...containers.values()];
   for (const container of planned) {

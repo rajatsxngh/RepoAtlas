@@ -3,6 +3,7 @@
 import {
   EdgeLabelRenderer,
   useInternalNode,
+  useStore,
   type EdgeProps,
   type InternalNode,
 } from "@xyflow/react";
@@ -56,6 +57,8 @@ function shift(from: Point, to: Point, offset: number, flipped: boolean): [Point
 export const MapEdge = memo(function MapEdge({ source, target, data }: EdgeProps<MapFlowEdge>) {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
+  // Counts only read up close; zoomed out they'd be hundreds of hidden elements to keep current.
+  const near = useStore((state) => state.transform[2] >= 0.85);
   if (!sourceNode || !targetNode || !data) return null;
   const ends = floatingEnds(rectOf(sourceNode), rectOf(targetNode));
   const [from, to] = shift(ends.from, ends.to, data.offset, source > target);
@@ -91,7 +94,7 @@ export const MapEdge = memo(function MapEdge({ source, target, data }: EdgeProps
       >
         <title>{title}</title>
       </path>
-      {data.count > 1 && data.showCount ? (
+      {near && data.count > 1 && data.showCount ? (
         <EdgeLabelRenderer>
           <div
             className="ra-edge-count nodrag nopan"

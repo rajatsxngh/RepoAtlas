@@ -47,7 +47,7 @@ describe("CodeViewer", () => {
     renderWithApi(
       <CodeViewer
         snapshotId={3}
-        path="<img src=x onerror=alert('dir')>/<script>alert('file')</script>.py"
+        path="<img src=x onerror=alert('dir')>/<svg onload=alert('file')>.py"
         startLine={1}
         endLine={17}
       />,

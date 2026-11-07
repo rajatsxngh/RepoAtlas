@@ -143,8 +143,13 @@ describe("mock graph reads", () => {
     expect(root.nodes.map((node) => node.name).join(" ")).toContain("<img src=x onerror=");
     const file = root.nodes.find((node) => node.kind === "dir")!;
     const inner = xss.subgraph(file.key, "dir").nodes[0]!;
-    expect(inner.name).toBe("<script>alert('file')</script>.py");
+    expect(inner.name).toBe("<svg onload=alert('file')>.py");
     expect(xss.code(inner.path, 1, 1).text).toContain("<script>");
-    expect(xss.nodeDetail(inner.key).owners[0]!.author_name).toContain("<");
+    expect(
+      xss
+        .nodeDetail(inner.key)
+        .owners.map((o) => o.author_name)
+        .join(),
+    ).toContain("&lt;img");
   });
 });

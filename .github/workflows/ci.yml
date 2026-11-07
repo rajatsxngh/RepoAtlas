@@ -110,6 +110,23 @@ jobs:
   frontend:
     name: Frontend (lint, types, unit tests, end to end)
     runs-on: ubuntu-latest
+    # The end-to-end specs run the real API and a worker (backend/tests/e2e/stack.py) on Postgres.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: repoatlas
+          POSTGRES_PASSWORD: repoatlas
+          POSTGRES_DB: repoatlas
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U repoatlas -d repoatlas"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      REPOATLAS_DATABASE_URL: postgresql+psycopg://repoatlas:repoatlas@localhost:5433/repoatlas
     defaults:
       run:
         working-directory: frontend
@@ -128,9 +145,16 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm test
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install the backend (for the API the end-to-end tests run)
+        working-directory: backend
+        run: uv sync --locked
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium
-      - name: End-to-end tests
+      - name: End-to-end tests (real API with fixture repos, and mock mode)
         run: npx playwright test
       - name: Keep the Playwright report
         if: failure()

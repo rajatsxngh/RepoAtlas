@@ -14,5 +14,7 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],
     restoreMocks: true,
     unstubEnvs: true,
+    // Canvas tests run React Flow and ELK in jsdom; under a parallel run they need headroom.
+    testTimeout: 20_000,
   },
 });

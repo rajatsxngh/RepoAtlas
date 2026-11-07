@@ -27,6 +27,15 @@ Run these from `frontend/` (Node 22.12 or later).
 
 `NEXT_PUBLIC_*` values are inlined when the app is built, so set them before `npm run build` or `npm run dev`.
 
+## End-to-end tests
+
+`npx playwright test` runs two projects:
+
+- `app` (`e2e/app/`): the web app against the real API and a worker, started by `backend/tests/e2e/stack.py` over local fixture repositories (`repoatlas-e2e/shop`, `repoatlas-e2e/xss`; GitHub is never contacted). It needs Postgres running (`docker compose -f infra/docker-compose.yml up -d`) and creates its own `<database>_e2e` database.
+- `mock` (`e2e/mock/`): a mock-mode build, including the stress test on the 10,000-node synthetic graph (every expansion laid out in under 2 seconds, never more than the node cap visible).
+
+`E2E_MOCK_ONLY=1 npx playwright test --project mock` runs the mock project without any services.
+
 ## Mock mode
 
 With `NEXT_PUBLIC_API_MOCK=1` the API client answers from memory (`src/lib/api/mock/`), with the API's routes, models, and error model. Builds are simulated: a build request walks the real stage names over a couple of seconds.

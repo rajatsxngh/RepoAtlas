@@ -6,7 +6,8 @@ afterEach(() => {
   cleanup();
 });
 
-// React Flow measures the DOM; jsdom has no layout, so give it the boxes the app asked for.
+// React Flow measures the DOM; jsdom has no layout, so give it the boxes the app asked for
+// (and a screen-sized box otherwise, so the viewport isn't empty and nothing is culled).
 // (Adapted from React Flow's testing guide.)
 class ResizeObserverStub {
   constructor(private readonly callback: ResizeObserverCallback) {}
@@ -30,17 +31,22 @@ Object.assign(globalThis, {
   DOMMatrixReadOnly: globalThis.DOMMatrixReadOnly ?? DOMMatrixReadOnlyStub,
 });
 
+/** An inline size in pixels, else the fallback (percentages and auto have no layout here). */
+function pixels(value: string, fallback: number): number {
+  return value.endsWith("px") ? Number.parseFloat(value) || fallback : fallback;
+}
+
 Object.defineProperties(HTMLElement.prototype, {
   offsetHeight: {
     configurable: true,
     get(this: HTMLElement) {
-      return Number.parseFloat(this.style.height) || 1;
+      return pixels(this.style.height, 800);
     },
   },
   offsetWidth: {
     configurable: true,
     get(this: HTMLElement) {
-      return Number.parseFloat(this.style.width) || 1;
+      return pixels(this.style.width, 1200);
     },
   },
 });

@@ -41,6 +41,7 @@ import { planLayout } from "./layoutPlan";
 import { GraphModel, ROOT, childLevel, mayHaveChildren } from "./model";
 import { NodeMenu } from "./NodeMenu";
 import { NODE_TYPES } from "./nodes";
+import { createStabilizer } from "./stable";
 import { useMapLayout } from "./useMapLayout";
 
 export interface GraphCanvasHandle {
@@ -162,28 +163,42 @@ function Canvas({
     [layers, edges, visible, model],
   );
 
+  const [stabilize] = useState(createStabilizer);
   const graph = useMemo(
     () =>
-      toFlow({
-        visible,
-        edges,
-        layouts,
-        loading: fetching.size ? new Set([...layout.pending, ...fetching]) : layout.pending,
-        selected: selectedKey,
-        pulse,
-        layers: resolvedLayers,
-        childCount: (key) => model.childrenOf(key)?.length,
-        fileCount: (key) => {
-          const node = model.nodes.get(key);
-          if (node?.kind !== "dir" || !model.hasFileEdges) return undefined;
-          const prefix = node.path === "." ? "" : `${node.path}/`;
-          let count = 0;
-          for (const other of model.nodes.values())
-            if (other.kind === "file" && other.path.startsWith(prefix)) count += 1;
-          return count;
-        },
-      }),
-    [visible, edges, layouts, layout.pending, fetching, selectedKey, pulse, resolvedLayers, model],
+      stabilize(
+        toFlow({
+          visible,
+          edges,
+          layouts,
+          loading: fetching.size ? new Set([...layout.pending, ...fetching]) : layout.pending,
+          selected: selectedKey,
+          pulse,
+          layers: resolvedLayers,
+          childCount: (key) => model.childrenOf(key)?.length,
+          fileCount: (key) => {
+            const node = model.nodes.get(key);
+            if (node?.kind !== "dir" || !model.hasFileEdges) return undefined;
+            const prefix = node.path === "." ? "" : `${node.path}/`;
+            let count = 0;
+            for (const other of model.nodes.values())
+              if (other.kind === "file" && other.path.startsWith(prefix)) count += 1;
+            return count;
+          },
+        }),
+      ),
+    [
+      visible,
+      edges,
+      layouts,
+      layout.pending,
+      fetching,
+      selectedKey,
+      pulse,
+      resolvedLayers,
+      model,
+      stabilize,
+    ],
   );
 
   // Resolve reveals once their node is drawn and nothing waits for layout.
@@ -523,6 +538,7 @@ function Canvas({
         data-rendered-nodes={graph.nodes.length}
         data-rendered-edges={graph.edges.length}
         data-visible-edges={edges.length}
+        data-drawn-edges={graph.edgeCount.drawn}
         data-layout-pending={layout.pending.size}
         data-layout-ms={layout.lastMs ?? ""}
       />
@@ -576,7 +592,7 @@ function Canvas({
           ariaLabel="Overview of the map"
         />
         <Panel position="bottom-left">
-          <Legend layers={layers} />
+          <Legend layers={layers} edges={graph.edgeCount} />
         </Panel>
       </ReactFlow>
       {!model.isLoaded(ROOT) ? (
