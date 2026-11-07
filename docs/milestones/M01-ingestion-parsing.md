@@ -12,20 +12,28 @@ Turn a public GitHub URL into a deterministic inventory of source files and per-
 
 ## Provides
 
+- **`repoatlas.ingest.errors`** — `IngestError` (a stable `code` plus a user-facing message) and its subclasses `InvalidRepoUrl`, `RepoNotFound`, `RepoPrivate`, `RepoEmpty`, `RepoTooLarge`, `RateLimited` (with `reset_at`), `GitHubError`, `FetchError`.
 - **`repoatlas.ingest.github`**
-  - `parse_repo_url(url: str) -> RepoRef` — strict validation; raises `InvalidRepoUrl` with a reason.
-  - `GitHubClient.get_repo(ref) -> RepoMeta` (`default_branch`, `private`, `size_kb`, `html_url`) and `GitHubClient.resolve_head(ref, branch) -> str` (commit SHA). Uses the token when set; raises `RepoNotFound`, `RepoPrivate`, `RateLimited`.
+  - `parse_repo_url(url: str) -> RepoRef` (`owner`, `name`, `full_name`, `clone_url`) — strict validation; raises `InvalidRepoUrl` with a reason.
+  - `GitHubClient.from_settings(settings)`; `get_repo(ref) -> RepoMeta` (`default_branch`, `private`, `size_kb`, `html_url`, `archived`, `fork`) rejects private repos; `resolve_head(ref, branch) -> str` (commit SHA). Uses the token when set and retries 502/503/504.
+  - `check_repo_size(meta, max_size_kb)` raises `RepoTooLarge`.
+- **`repoatlas.ingest.source`** — `SourceTree` (`label`, `commit`, `entries() -> list[TreeEntry]`, `read(entry) -> bytes`; a context manager) with `GitSourceTree` (git objects), `DirectorySourceTree` (a local folder, such as the fixtures), and `MemorySourceTree` (tests); `TreeEntry(path, mode, oid, size)`; `blob_oid(data)`.
 - **`repoatlas.ingest.fetch`**
-  - `fetch_source(ref, sha, workdir) -> SourceTree` — raw bytes for every file at the commit, read from git objects or the commit's source archive (never a checked-out working tree).
-  - `fetch_history(ref, sha, workdir) -> HistoryStore` — commit history without file contents, queryable with git commands.
+  - `fetch_source(clone_url, sha, dest, *, label, timeout) -> GitSourceTree` — raw bytes for every file at the commit, from a depth-1 fetch into a bare repository (never a working tree).
+  - `fetch_history(clone_url, sha, dest, *, depth, timeout) -> HistoryStore` — commits and trees without file contents (a blobless partial clone). `HistoryStore.git(*args)` runs queries; they must pass `--no-renames`, because rename detection downloads file contents.
+  - `Workspace(base_dir, keep=False)` — a working directory under `data_dir`, removed on exit. Every git call is hermetic (decision 0002 addendum).
 - **`repoatlas.ingest.inventory`**
-  - `build_inventory(tree, settings) -> Inventory` — `FileEntry(path, mode, blob_oid, size, language, loc, is_test, skip_reason)` sorted by path.
-  - Size caps from settings: `max_repo_size_kb`, `max_source_files`, `max_file_bytes`; over-cap repos raise `RepoTooLarge`.
-- **`repoatlas.parsing.models`** (Pydantic, canonical JSON): `Range(start_line, start_col, end_line, end_col)`, `Symbol`, `ImportStmt`, `ImportBinding`, `CallSite`, `ClassBase`, `RouteCandidate`, `TestCase`, `ParseIssue`, `ParsedFile`.
-- **`repoatlas.parsing.parse_file(entry, data: bytes) -> ParsedFile`** — dispatches to `parsing.python` or `parsing.typescript` (TypeScript, TSX, JavaScript).
-- **`repoatlas.parsing.symbols.make_symbol_key(...)` / `parse_symbol_key(...)`** — the grammar in PRD §7.3, with percent-encoding.
-- **CLI:** `repoatlas parse <url|local-path> [--commit SHA] --json <out>`; the output includes an overall `digest` (sha256 of the canonical JSON).
-- **Fixtures:** `backend/tests/fixtures/repos/py_small/`, `backend/tests/fixtures/repos/ts_small/`, each with an `expected.parse.json`.
+  - `build_inventory(tree, *, max_source_files, max_file_bytes) -> Inventory` — `files` (`FileEntry(path, mode, blob_oid, size, language, is_test, loc, skip_reason)` sorted by path), `stats`, and `indexed` (the entries to parse). Over-cap trees raise `RepoTooLarge`.
+  - `language_for(path)`, `is_test_path(path, language)`.
+- **`repoatlas.parsing.models`** (frozen Pydantic, canonical JSON): `Range(start_line, start_col, end_line, end_col)` — 1-based lines and 0-based byte columns into the blob; `Symbol` (`key`, `kind`, `name`, `qualname`, `parent`, `name_range`, `span`, `signature`, `decorators`, `modifiers`, `exported`); `ImportStmt`, `ImportBinding`, `CallSite`, `ClassBase`, `RouteCandidate`, `TestCase`, `Export`, `ParseIssue`, `ParsedFile`.
+  - `name_range` covers the token that names the symbol: an identifier or property, a string literal with its quotes (quoted keys, test titles), or the `default` keyword of an anonymous default export. `span` covers the whole definition, decorators included.
+- **`repoatlas.parsing.parse_file(entry, data: bytes) -> ParsedFile`** — dispatches to `parsing.python` or `parsing.typescript` (TypeScript, TSX, JavaScript). Syntax errors become `ParseIssue`s (up to 20 kept per file; `issue_count` holds the total).
+- **`repoatlas.parsing.symbols`** — `make_symbol_key(...)`, `parse_symbol_key(...)`, and `KeyAllocator` (`~2`, `~3`, … for same-named siblings): the grammar in PRD §7.3, with percent-encoding.
+- **`repoatlas.canonical`** — `canonical_json`, `digest` (sha256 of the canonical JSON), `pretty_json`, `write_text_lf`.
+- **`repoatlas.pipeline.parse`** — `parse_tree(tree, *, max_source_files, max_file_bytes) -> ParseOutput` and `run_parse(target, settings, *, commit=None) -> ParseOutput` (`source`, `commit`, `inventory`, `files`, `stats`, `digest`).
+- **Settings:** `github_api_url`, `max_repo_size_kb`, `max_source_files`, `max_file_bytes`, `git_timeout_s`, `history_depth`.
+- **CLI:** `repoatlas parse <url|local-path> [--commit SHA] [--json <out>|-] [--keep-workdir]`; the output includes an overall `digest` (sha256 of the canonical JSON).
+- **Fixtures:** `backend/tests/fixtures/repos/py_small/` and `backend/tests/fixtures/repos/ts_small/`, with golden output in `backend/tests/fixtures/golden/<name>.parse.json`.
 
 ## Requirements
 
@@ -88,17 +96,17 @@ ING-1, ING-2, ING-3, ING-4, ING-5, ING-6, ING-7, ING-8, ING-9, ING-10, ING-11, I
 - [x] **T6 — Tree-sitter runtime.** Pinned grammars; one wrapper module; smoke tests per language.
 - [x] **T7 — Python extractor.** At least 25 test cases (decorators, nested and async functions, properties, relative and star imports, `__all__`, calls on `self`, route decorators, pytest classes).
 - [x] **T8 — TypeScript/JavaScript extractor.** At least 25 test cases (arrow functions, generators, default and re-exports, type-only and dynamic imports, `require`, `new` calls, class members, `describe`/`it`).
-- [ ] **T9 — Fixtures and CLI.** `py_small` and `ts_small` fixture repos with golden JSON; `repoatlas parse` command.
-- [ ] **T10 — Cross-OS determinism.** CI job comparing digests on Linux and Windows.
-- [ ] **T11 — Real-repo smoke.** Script that parses two pinned public repos (one Python, one TypeScript); record file counts, skip counts, parse-issue rate, and runtime in Results. Not part of CI.
+- [x] **T9 — Fixtures and CLI.** `py_small` and `ts_small` fixture repos with golden JSON; `repoatlas parse` command.
+- [x] **T10 — Cross-OS determinism.** CI job comparing digests on Linux and Windows.
+- [x] **T11 — Real-repo smoke.** Script that parses two pinned public repos (one Python, one TypeScript); record file counts, skip counts, parse-issue rate, and runtime in Results. Not part of CI.
 
 ## Exit criteria
 
-- [ ] At least 25 extractor cases per language pass.
-- [ ] Golden JSON matches for both fixture repos.
+- [x] At least 25 extractor cases per language pass.
+- [x] Golden JSON matches for both fixture repos.
 - [ ] The CI determinism job produces the same digests on Linux and Windows.
-- [ ] Both pinned real repos parse with parse issues in fewer than 1% of files.
-- [ ] Invalid and private repo URLs are rejected with clear error messages.
+- [x] Both pinned real repos parse with parse issues in fewer than 1% of files.
+- [x] Invalid and private repo URLs are rejected with clear error messages.
 
 ## Verification
 
@@ -116,8 +124,47 @@ Manual: open the JSON for a real repo and spot-check 10 symbols and 10 call site
 - GitHub API limits without a token (mitigated by recorded fixtures in tests and an optional token).
 - Grammar edge cases: Python decorators with complex expressions, TypeScript overloads and namespaces, JSX in `.js` files.
 - Very large files and minified code that slip past the skip rules; caps catch most of it.
-- Open: which fetch option wins the spike.
+- Resolved: the spike chose the depth-1 git fetch (decision 0002 addendum).
 
 ## Results
 
-_Filled in at the gate._
+Gate checked on 2026-11-07 on branch `m01-ingestion-parsing`.
+
+**Tests.** `uv run poe check` (with Postgres) passes on Windows: 240 passed, 1 skipped (creating symlinks needs extra privileges on Windows; that test runs on Linux CI). The extractor suites have 30 Python and 32 TypeScript/JavaScript cases. A fixture test checks that every name range covers its symbol's name and lies inside its span, and that every call lies inside its enclosing symbol.
+
+**Fixtures** (golden JSON in `backend/tests/fixtures/golden/`):
+
+| Fixture | Parsed | Skipped | Symbols / imports / calls / tests / routes | Digest |
+|---|---|---|---|---|
+| `py_small` | 7 (py 7) | declaration 1, generated 1, vendored 1 | 20 / 14 / 34 / 2 / 2 | `31cf59ec616dfb6a…` |
+| `ts_small` | 6 (ts 5, js 1) | declaration 1, generated 1, vendored 2 | 19 / 12 / 35 / 3 / 2 | `13b0ed333b8a253e…` |
+
+**Real-repo smoke** (`uv run python scripts/smoke_parse.py` on this Windows machine; times include the fetch):
+
+| Repo @ commit | Tree entries | Source files | Parsed | Skipped | Symbols | Imports | Calls | Tests | Routes | Files with parse issues | Time |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `pallets/flask` @ `49943b5a9441` | 236 | 83 | 83 (py 83) | none | 1,622 | 648 | 3,961 | 392 | 304 | 0 (0.00%) | 3.7 s |
+| `colinhacks/zod` @ `19c40d207228` | 744 | 524 | 522 (ts 513, js 9) | generated 2 | 4,997 | 1,462 | 49,837 | 2,603 | 0 | 4 (0.77%) | 11.8 s |
+
+- Digests: flask `d64632fe011426a9…`, zod `bc7cd082a87abdca…`.
+- Every zod parse issue comes from TypeScript variance annotations (`interface ZodType<out Output = unknown, …>`, `in T`), which tree-sitter-typescript 0.23.2, the newest release on PyPI, cannot parse. The errors stay inside the type-parameter lists: with the annotations removed, the four files give the same symbols, calls, and imports, and no issues. Logged in the backlog.
+
+**Spot check.** Beyond the 10 symbols and 10 call sites the Verification section asks for, a script checked every symbol and call of both smoke repos against the fetched bytes, and a seeded sample of 10 symbols and 10 calls per repo was reviewed against the source. All of them are right:
+- Each name range covers the symbol's name: exactly for all 1,622 flask symbols and 2,387 zod symbols, and with its quotes for 2,610 zod test titles and quoted keys. Each lies inside its span.
+- Each call lies inside its enclosing symbol, and its source text starts with the recorded callee (callee text turns `?.` into `.` on purpose).
+- The first run found 66 zod symbols whose name range was wider than the name (anonymous `export default function` and `class`, and `a.b.c = function` assignments); they were fixed before the gate.
+
+**Found and fixed at the gate**
+- py-tree-sitter 0.26.0 crashed the interpreter (an access violation, exit 139) partway through flask's `src/flask/app.py`, at a different place on each run and never in a minimal script. The pin is now 0.25.2, on which everything passes; the pin comment and `parsing/ts_runtime.py` say to run the smoke before any tree-sitter upgrade.
+- `parse_file` stripped a leading UTF-8 byte order mark, which shifted line-1 columns by 3 bytes. tree-sitter skips the mark itself while counting its bytes, so the stripping is gone and columns always index the blob.
+
+**Other findings**
+- Anonymous GitHub API calls from this machine returned 504s for a while during T2 while authenticated ones worked. The client retries 502/503/504 and its error suggests setting `REPOATLAS_GITHUB_TOKEN`; unit tests use recorded responses.
+
+**Deviations from the design notes**
+- Fetching uses the depth-1 git fetch the spike chose (decision 0002 addendum). History is a blobless partial clone, and history queries must pass `--no-renames`.
+- `fetch_source` and `fetch_history` take the clone URL, and `build_inventory` takes the caps as keyword arguments instead of the settings object (see Provides).
+- `dist/`, `build/`, `out/`, and `coverage/` count as vendored only at the top of the tree, because nested folders with those names are often real code; the other vendored names match at any depth. Also vendored: `bower_components/`, `_vendor/`, `.nuxt/`, `.tox/`. Also skipped: `.d.mts`, `.d.cts`, and `.pyi` declarations; `.min.mjs` and `.min.cjs`; headers saying "code generated by" or "auto-generated"; and minified files (over 20 KB with a line longer than 5,000 characters).
+- Goldens live in `backend/tests/fixtures/golden/`, so the fixture folders hold only fixture code. Cross-OS determinism rests on the golden tests, which compare the full JSON (not only the digest) in both CI jobs; the CI jobs also print both fixture digests.
+
+**CI.** Pending the first push of this branch.

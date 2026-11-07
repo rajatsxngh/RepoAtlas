@@ -90,7 +90,7 @@ Tiers and confidences live in `graph/tiers.py` (initial values; recalibrated lat
 - Public markers (`meta.public = true`): route nodes; symbols listed in a package's top-level `__init__.py` `__all__`; exports of files named by `package.json` `main`/`exports`.
 
 ### Owners
-- From `HistoryStore`: `git log --name-only --format=%H%x1f%an%x1f%ae%x1f%at -n <N> <sha>` (N defaults to 1,000). No blame or numstat, which would fetch file contents.
+- From `HistoryStore`: `git log --no-renames --name-only --format=%H%x1f%an%x1f%ae%x1f%at -n <N> <sha>` (N defaults to 1,000). No blame, numstat, or rename detection: each would download file contents into the blobless history clone.
 - Per path: authors with commit counts, last commit time, and share of commits. Emails are hashed (sha256, truncated) and never stored in clear text.
 
 ### Determinism

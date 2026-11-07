@@ -19,3 +19,5 @@ Ideas that are deliberately **not** part of any milestone. Add new ideas here in
 | Small-model injection classifier | Better detection of novel injection phrasing | Only if pattern recall proves too low |
 | Test-file-level impact predictions | Matches how people run tests | Report alongside test-function level |
 | A sixth, held-out benchmark repo | Extra check for overfitting | Used once at the end |
+| TypeScript variance annotations | Files with `in`/`out` type parameters (TypeScript 4.7+) report parse issues | tree-sitter-typescript 0.23.2, the newest release on PyPI in November 2026, can't parse them. On zod the errors stay inside the type-parameter lists and cost no symbols. Upgrade the grammar once a release supports them, then rerun `backend/scripts/smoke_parse.py` |
+| py-tree-sitter 0.26 or later | Binding fixes and speedups | 0.26.0 crashed the interpreter mid-extraction on Windows; move the pin only after the smoke script and the full suite pass on the new release |
