@@ -118,6 +118,10 @@ class TsModuleResolver:
                     return "internal", found
         return "external", None
 
+    def is_parsed(self, path: str) -> bool:
+        """Whether ``path`` is a parsed TS/JS file (not skipped by the inventory)."""
+        return path in self._parsed
+
     def config_for(self, path: str) -> TsConfig | None:
         """The nearest config at or above ``path``'s folder."""
         folder = _folder(path)

@@ -17,6 +17,8 @@ from repoatlas.graph.keys import file_key
 from repoatlas.graph.model import CodeGraph, EdgeKind, GraphStats
 from repoatlas.graph.names import NameResolver
 from repoatlas.graph.project import ProjectFiles
+from repoatlas.graph.public import mark_public, public_symbols
+from repoatlas.graph.routes import add_routes, range_key
 from repoatlas.graph.structure import add_contains_edges, build_structure
 from repoatlas.graph.testlinks import add_tested_by_edges
 from repoatlas.graph.tiers import Tier
@@ -50,13 +52,23 @@ def build_graph(
     add_inherits_edges(hierarchy, edges)
     with_unresolved_bases(nodes, hierarchy)
 
+    routes = add_routes(files, names, resolvers.typescript, nodes, edges)
+    nodes.update(routes.nodes)
+
     def caller_of(parsed: ParsedFile, call: CallSite) -> str:
+        inline = routes.callers.get((parsed.path, range_key(call.range)))
+        if inline is not None:
+            return inline
         return call.enclosing if call.enclosing in nodes else file_key(parsed.path)
 
     unresolved, call_counts = add_call_edges(
         files, CallResolver(names, hierarchy), edges, caller_of
     )
     add_tested_by_edges(inventory, resolved, edges.edges(EdgeKind.CALLS), nodes, edges)
+    mark_public(
+        nodes,
+        public_symbols(files, resolvers.python, resolvers.typescript, project or ProjectFiles()),
+    )
 
     add_contains_edges(nodes.values(), edges)
     edge_list = edges.edges()
