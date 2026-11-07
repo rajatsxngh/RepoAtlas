@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr | None = None
     data_dir: Path = Path(".repoatlas")
 
+    # Ingestion
+    github_api_url: str = "https://api.github.com"
+    max_repo_size_kb: int = 500_000  # GitHub-reported size, which includes history
+
     @field_validator("log_level", mode="before")
     @classmethod
     def _normalize_log_level(cls, value: object) -> object:
