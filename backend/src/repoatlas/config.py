@@ -56,6 +56,8 @@ class Settings(BaseSettings):
     # Ingestion
     github_api_url: str = "https://api.github.com"
     max_repo_size_kb: int = 500_000  # GitHub-reported size, which includes history
+    git_timeout_s: float = 300.0
+    history_depth: int = 1000  # generations of history fetched for ownership analysis
 
     @field_validator("log_level", mode="before")
     @classmethod
