@@ -164,3 +164,45 @@ describe("GraphCanvas reveal", () => {
     expect(await screen.findByText(/Couldn't find py:nope.py:ghost:function/)).toBeInTheDocument();
   });
 });
+
+describe("GraphCanvas layers", () => {
+  it("draws layers: bubbled nodes get a count badge, layer edges are recolored, others fade", async () => {
+    const add = "py:src/shop/cart.py:Cart.add:method";
+    const test = "py:tests/test_cart.py:test_add_rounds_prices:test";
+    renderWithApi(
+      <div style={{ width: 1200, height: 800 }}>
+        <GraphCanvas
+          snapshotId={1}
+          layers={[
+            {
+              id: "path",
+              nodeKeys: [test, add],
+              edgeKeys: [`${test}|${add}|calls`],
+              style: "primary",
+              label: "Path",
+            },
+            {
+              id: "risk",
+              nodeKeys: ["dir:vendor"],
+              style: "warning",
+              scores: { "dir:vendor": 0.5 },
+            },
+          ]}
+          onSelect={vi.fn()}
+          onNodeAction={vi.fn()}
+        />
+      </div>,
+    );
+    await screen.findByText("src");
+    await waitFor(() => expect(screen.getAllByLabelText("1 highlighted inside")).toHaveLength(2));
+    expect(document.querySelector('[data-highlight="warning"]')).not.toBeNull();
+    await waitFor(() =>
+      expect(document.querySelector('path[data-highlight="primary"]')).not.toBeNull(),
+    );
+    const others = [
+      ...document.querySelectorAll("path.ra-edge:not([data-highlight])"),
+    ] as SVGPathElement[];
+    expect(others.length).toBeGreaterThan(0);
+    expect(others.every((edge) => edge.style.opacity === "0.22")).toBe(true);
+  });
+});

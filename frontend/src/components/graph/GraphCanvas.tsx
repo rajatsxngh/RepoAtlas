@@ -35,7 +35,7 @@ import { queryKeys } from "@/lib/query";
 import { CanvasActionsContext, type CanvasActions } from "./actions";
 import { EDGE_TYPES, EdgeMarkers } from "./edges";
 import { toFlow } from "./flow";
-import type { HighlightLayer, NodeAction } from "./layers";
+import { resolveLayers, type HighlightLayer, type NodeAction } from "./layers";
 import { getLayoutClient } from "./layoutClient";
 import { planLayout } from "./layoutPlan";
 import { GraphModel, ROOT, childLevel, mayHaveChildren } from "./model";
@@ -46,9 +46,12 @@ import { useMapLayout } from "./useMapLayout";
 export interface GraphCanvasHandle {
   /** Expands the node's ancestors in order so the node is visible. */
   revealNode(key: string): Promise<boolean>;
+  /** Reveals several nodes at once, keeping each one's ancestors open while the others open. */
+  revealNodes(keys: readonly string[]): Promise<boolean>;
   /** Pans and zooms to the node. */
   focusNode(key: string): void;
-  fitView(): void;
+  /** Fits the whole map, or only the given nodes. */
+  fitView(keys?: readonly string[]): void;
   expand(key: string): Promise<boolean>;
   collapse(key: string): void;
 }
@@ -152,6 +155,13 @@ function Canvas({
   const layout = useMapLayout(structure, client);
   const layouts = layout.placed;
 
+  const resolvedLayers = useMemo(
+    () => resolveLayers(layers, (key) => model.proxyOf(key), new Set(edges.map((edge) => edge.id))),
+    // `visible` changes whenever stand-ins do.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [layers, edges, visible, model],
+  );
+
   const graph = useMemo(
     () =>
       toFlow({
@@ -161,6 +171,7 @@ function Canvas({
         loading: fetching.size ? new Set([...layout.pending, ...fetching]) : layout.pending,
         selected: selectedKey,
         pulse,
+        layers: resolvedLayers,
         childCount: (key) => model.childrenOf(key)?.length,
         fileCount: (key) => {
           const node = model.nodes.get(key);
@@ -172,7 +183,7 @@ function Canvas({
           return count;
         },
       }),
-    [visible, edges, layouts, layout.pending, fetching, selectedKey, pulse, model],
+    [visible, edges, layouts, layout.pending, fetching, selectedKey, pulse, resolvedLayers, model],
   );
 
   // Resolve reveals once their node is drawn and nothing waits for layout.
@@ -365,7 +376,7 @@ function Canvas({
 
   /** Opens the node's ancestors, root first, so the node itself is drawn. */
   const reveal = useCallback(
-    async (key: string): Promise<boolean> => {
+    async (key: string, together: readonly string[] = []): Promise<boolean> => {
       if (!(await rootReady.current)) return false;
       // Learn the parents the model doesn't know yet (symbols inside classes or functions).
       let current: string | null = key;
@@ -390,6 +401,9 @@ function Canvas({
       }
       const chain = [...model.ancestorsOf(key)].reverse();
       if (chain[0] !== ROOT) return false;
+      // Nodes revealed together keep each other's ancestors open.
+      const keepOpen = new Set<string>(together);
+      for (const other of together) for (const up of model.ancestorsOf(other)) keepOpen.add(up);
       for (let index = 0; index < chain.length; index += 1) {
         const container = chain[index]!;
         const next = chain[index + 1] ?? key;
@@ -400,6 +414,7 @@ function Canvas({
               keep: [next],
               makeRoom: true,
               hideOthers: true,
+              protect: keepOpen,
             });
             reportClosed(outcome.closed);
             if (!outcome.ok) {
@@ -409,7 +424,7 @@ function Canvas({
             }
           }
         }
-        if (!model.showChild(container, next)) {
+        if (!model.showChild(container, next, keepOpen)) {
           sync();
           setNotice(
             `The map is at its ${model.cap}-node limit. Close a container to show ${labelOf(key)}.`,
@@ -449,8 +464,19 @@ function Canvas({
     ref,
     () => ({
       revealNode: reveal,
+      revealNodes: async (keys) => {
+        let all = true;
+        for (const key of keys) all = (await reveal(key, keys)) && all;
+        return all;
+      },
       focusNode: focus,
-      fitView: () => void flow.fitView({ padding: 0.12, duration: 300, maxZoom: 1.1 }),
+      fitView: (keys) =>
+        void flow.fitView({
+          padding: keys?.length ? 0.25 : 0.12,
+          duration: 300,
+          maxZoom: keys?.length ? 1.2 : 1.1,
+          nodes: keys?.length ? keys.map((id) => ({ id })) : undefined,
+        }),
       expand,
       collapse,
     }),

@@ -413,7 +413,13 @@ export class GraphModel {
    */
   expand(
     key: string,
-    options: { keep?: readonly string[]; makeRoom?: boolean; hideOthers?: boolean } = {},
+    options: {
+      keep?: readonly string[];
+      makeRoom?: boolean;
+      hideOthers?: boolean;
+      /** Never closed or hidden to make room (for example other nodes being revealed). */
+      protect?: ReadonlySet<string>;
+    } = {},
   ): ExpandOutcome {
     if (key === ROOT) return { ok: true, closed: [] };
     const children = this.childrenOf(key);
@@ -426,7 +432,12 @@ export class GraphModel {
     // When closing others to make room, aim for enough room to be useful.
     const useful = Math.min(children.length, Math.max(minimum, USEFUL_ROOM));
     let closed: string[] = [];
-    const protect = new Set([key, ...this.ancestorsOf(key), ...(options.keep ?? [])]);
+    const protect = new Set([
+      key,
+      ...this.ancestorsOf(key),
+      ...(options.keep ?? []),
+      ...(options.protect ?? []),
+    ]);
     if (options.makeRoom && this.cap - this.visibleCount() < useful) {
       closed = this.makeRoom(useful, protect);
     }
@@ -489,14 +500,14 @@ export class GraphModel {
   }
 
   /** Makes sure `child` is shown in `container` (used when revealing a node). */
-  showChild(container: string, child: string): boolean {
+  showChild(container: string, child: string, keep: ReadonlySet<string> = new Set()): boolean {
     const shown = this.shown.get(container);
     if (!shown) return false;
     if (shown.has(child)) return true;
     // Showing the last hidden child removes the "more" node, so it costs nothing.
     const costs = this.hiddenIn(container).length > 1;
     if (costs && this.visibleCount() >= this.cap) {
-      const protect = new Set([child, container, ...this.ancestorsOf(container)]);
+      const protect = new Set([child, container, ...this.ancestorsOf(container), ...keep]);
       this.makeRoom(1, protect);
       if (this.visibleCount() >= this.cap) this.hideOthers(1, protect);
       if (this.visibleCount() >= this.cap) return false;

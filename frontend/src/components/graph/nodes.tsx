@@ -7,6 +7,41 @@ import { Spinner } from "@/components/ui/Spinner";
 import { useCanvasActions } from "./actions";
 import type { ContainerFlowNode, EntityFlowNode, MoreFlowNode } from "./flow";
 import { KIND_LABELS, KindIcon } from "./KindIcon";
+import type { NodeHighlight } from "./layers";
+
+/** A ring in the layer's color whose strength follows the score, plus a hidden-count badge. */
+function highlightStyle(highlight: NodeHighlight | undefined): React.CSSProperties | undefined {
+  if (!highlight || highlight.style === "muted") return undefined;
+  const strength = Math.round(35 + 65 * highlight.score);
+  return {
+    boxShadow: `0 0 0 ${highlight.direct ? 3 : 2}px color-mix(in srgb, var(--ra-hl-${highlight.style}) ${strength}%, transparent), var(--ra-shadow)`,
+  };
+}
+
+function HighlightBadge({ highlight }: { highlight: NodeHighlight | undefined }) {
+  if (!highlight) return null;
+  const label = highlight.hidden
+    ? `${highlight.hidden} highlighted inside`
+    : `Highlighted (${highlight.layers.join(", ")})`;
+  return (
+    <span
+      className="pointer-events-none absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center gap-0.5 rounded-full px-1 text-[10px] font-semibold text-white shadow-card"
+      style={{ background: `var(--ra-hl-${highlight.style})` }}
+      title={label}
+      aria-label={label}
+      data-highlight={highlight.style}
+    >
+      {highlight.hidden ? `+${highlight.hidden}` : ""}
+      {highlight.styles.slice(1).map((style) => (
+        <span
+          key={style}
+          className="h-1.5 w-1.5 rounded-full ring-1 ring-white/70"
+          style={{ background: `var(--ra-hl-${style})` }}
+        />
+      ))}
+    </span>
+  );
+}
 
 /** Invisible anchors: edges float between node borders, but React Flow wants handles. */
 function Anchors() {
@@ -33,7 +68,7 @@ export const EntityNode = memo(function EntityNode({
   selected,
 }: NodeProps<EntityFlowNode>) {
   const actions = useCanvasActions();
-  const { node, label, meta, expandable, loading, pulse } = data;
+  const { node, label, meta, expandable, loading, pulse, highlight } = data;
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter") actions.select(id);
     else if ((event.key === " " || event.key === "ArrowRight") && expandable) {
@@ -49,7 +84,8 @@ export const EntityNode = memo(function EntityNode({
     <div
       className={`ra-node group flex h-full w-full items-center gap-2.5 rounded-lg border bg-surface pr-1.5 pl-2.5 shadow-card transition-[border-color,box-shadow] ${
         selected ? "border-focus ring-2 ring-focus/30" : "border-line hover:border-line-strong"
-      } ${node.kind === "test" ? "ra-node-test" : ""} ${pulse ? "ra-pulse" : ""}`}
+      } ${node.kind === "test" ? "ra-node-test" : ""} ${pulse ? "ra-pulse" : ""} ${highlight?.style === "muted" ? "opacity-45" : ""}`}
+      style={highlightStyle(highlight)}
       title={node.kind === "dir" || node.kind === "file" ? node.path : node.qualified_name}
       onKeyDown={onKeyDown}
       onDoubleClick={() => expandable && actions.toggle(id)}
@@ -59,6 +95,7 @@ export const EntityNode = memo(function EntityNode({
       }}
     >
       <Anchors />
+      <HighlightBadge highlight={highlight} />
       <span
         className="ra-kind-tile flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
         data-kind={node.kind}
@@ -101,10 +138,11 @@ export const ContainerNode = memo(function ContainerNode({
   selected,
 }: NodeProps<ContainerFlowNode>) {
   const actions = useCanvasActions();
-  const { node, label, shown, total, loading, pulse } = data;
+  const { node, label, shown, total, loading, pulse, highlight } = data;
   return (
     <div
       className={`ra-container h-full w-full rounded-xl border ${selected ? "border-focus ring-2 ring-focus/25" : "border-line-strong"} ${pulse ? "ra-pulse" : ""}`}
+      style={highlightStyle(highlight)}
       data-kind={node.kind}
       onContextMenu={(event) => {
         event.preventDefault();
@@ -145,8 +183,9 @@ export const ContainerNode = memo(function ContainerNode({
 export const MoreNode = memo(function MoreNode({ data }: NodeProps<MoreFlowNode>) {
   const actions = useCanvasActions();
   return (
-    <div className="flex h-full w-full items-center justify-center">
+    <div className="relative flex h-full w-full items-center justify-center">
       <Anchors />
+      <HighlightBadge highlight={data.highlight} />
       <button
         type="button"
         className="nodrag flex h-full w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-dashed border-line-strong bg-surface-2 text-[12px] font-medium text-fg-muted transition-colors hover:border-focus hover:text-fg"

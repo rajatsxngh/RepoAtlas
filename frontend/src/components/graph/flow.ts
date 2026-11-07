@@ -3,6 +3,7 @@
 import { Position, type Edge as FlowEdge, type Node as FlowNode } from "@xyflow/react";
 import type { ApiNode, EdgeKind } from "@/lib/api/types";
 import { bundle } from "./edgeStyle";
+import type { HighlightStyle, NodeHighlight, ResolvedLayers } from "./layers";
 import { ROOT, mayHaveChildren, type VisibleEdge, type VisibleNode } from "./model";
 import { CONTENT_OFFSET, MORE_SIZE, containerSize, leafSize, type Size } from "./sizes";
 
@@ -15,6 +16,7 @@ export type EntityData = {
   dimmed: boolean;
   /** Briefly ringed after a search or reveal brings it into view. */
   pulse: boolean;
+  highlight?: NodeHighlight;
 };
 
 export type ContainerData = {
@@ -25,9 +27,10 @@ export type ContainerData = {
   total: number;
   loading: boolean;
   pulse: boolean;
+  highlight?: NodeHighlight;
 };
 
-export type MoreData = { container: string; hidden: number };
+export type MoreData = { container: string; hidden: number; highlight?: NodeHighlight };
 
 export type EdgeData = {
   kind: EdgeKind;
@@ -38,6 +41,12 @@ export type EdgeData = {
   offset: number;
   /** This edge carries its pair's count label. */
   showCount: boolean;
+  /** Drawn in a highlight layer's color, on top. */
+  highlight?: HighlightStyle;
+  /** Faded while a layer highlights other edges. */
+  dimmed?: boolean;
+  /** Not a graph edge of this view: a layer edge with nothing else to land on. */
+  extra?: boolean;
 };
 
 export type EntityFlowNode = FlowNode<EntityData, "entity">;
@@ -87,6 +96,8 @@ export interface FlowInput {
   selected: string | null;
   /** A node to ring briefly (after focusNode). */
   pulse?: string | null;
+  /** Where the highlight layers land. */
+  layers?: ResolvedLayers;
   childCount: (key: string) => number | undefined;
   fileCount: (key: string) => number | undefined;
 }
@@ -161,7 +172,11 @@ export function toFlow(input: FlowInput): FlowOutput {
         ...common,
         type: "more",
         selectable: false,
-        data: { container: entry.container, hidden: entry.hidden.length },
+        data: {
+          container: entry.container,
+          hidden: entry.hidden.length,
+          highlight: input.layers?.nodes.get(entry.id),
+        },
       });
       continue;
     }
@@ -182,6 +197,7 @@ export function toFlow(input: FlowInput): FlowOutput {
           total,
           loading: input.loading.has(entry.id),
           pulse: input.pulse === entry.id,
+          highlight: input.layers?.nodes.get(entry.id),
         },
       });
     } else {
@@ -198,6 +214,7 @@ export function toFlow(input: FlowInput): FlowOutput {
           loading: input.loading.has(entry.id),
           dimmed: false,
           pulse: input.pulse === entry.id,
+          highlight: input.layers?.nodes.get(entry.id),
         },
       });
     }
@@ -205,6 +222,8 @@ export function toFlow(input: FlowInput): FlowOutput {
   const drawn = input.edges.filter(
     (edge) => rendered.has(edge.source) && rendered.has(edge.target),
   );
+  const highlighted = input.layers?.edges;
+  const dimOthers = Boolean(highlighted?.size || input.layers?.extra.length);
   const { offsets, labelled } = bundle(drawn);
   const edges: MapFlowEdge[] = drawn.map((edge) => ({
     id: edge.id,
@@ -220,7 +239,32 @@ export function toFlow(input: FlowInput): FlowOutput {
       maxConfidence: edge.maxConfidence,
       offset: offsets.get(edge.id) ?? 0,
       showCount: labelled.has(edge.id),
+      highlight: highlighted?.get(edge.id)?.style,
+      dimmed: dimOthers && !highlighted?.has(edge.id),
     },
+    ...(highlighted?.has(edge.id) ? { zIndex: 1000 } : {}),
   }));
+  for (const extra of input.layers?.extra ?? []) {
+    if (!rendered.has(extra.source) || !rendered.has(extra.target)) continue;
+    edges.push({
+      id: extra.id,
+      source: extra.source,
+      target: extra.target,
+      type: "map",
+      selectable: false,
+      focusable: false,
+      zIndex: 1000,
+      data: {
+        kind: extra.kind,
+        count: 1,
+        minConfidence: 1,
+        maxConfidence: 1,
+        offset: 0,
+        showCount: false,
+        highlight: extra.style,
+        extra: true,
+      },
+    });
+  }
   return { nodes, edges, sizes };
 }
