@@ -2,6 +2,10 @@
 
 Extractors use plain ``Node`` attributes (``type``, ``children``, ``child_by_field_name``, byte
 offsets, points), which have been stable across releases; the query API is avoided entirely.
+
+The binding stays on py-tree-sitter 0.25.2: 0.26.0 crashed the interpreter (an access violation on
+Windows) partway through extracting real files such as flask's ``app.py``, and no unit test caught
+it. Before upgrading any tree-sitter package, run ``scripts/smoke_parse.py`` as well as the tests.
 """
 
 from __future__ import annotations

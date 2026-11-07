@@ -69,4 +69,4 @@ def test_collapse() -> None:
 def test_grammar_versions_lists_all_packages() -> None:
     versions = ts_runtime.grammar_versions()
     assert set(versions) == set(ts_runtime.GRAMMAR_PACKAGES)
-    assert versions["tree-sitter"] == "0.26.0"
+    assert versions["tree-sitter"] == "0.25.2"
