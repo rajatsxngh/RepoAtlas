@@ -178,7 +178,7 @@ def test_contains_edges_form_a_tree() -> None:
         assert edge.provenance == Provenance.TREE_SITTER
         assert edge.confidence == 1.0 and edge.site is None and edge.meta == {}
         assert graph.nodes[edge.dst].parent_key == edge.src
-    assert graph.stats.edges_by_kind == {"contains": len(contains)}
+    assert graph.stats.edges_by_kind["contains"] == len(contains)
     assert sum(graph.stats.nodes_by_kind.values()) == len(graph.nodes)
 
 

@@ -103,7 +103,7 @@ Tiers and confidences live in `graph/tiers.py` (initial values; recalibrated lat
 - [x] **T3 — Python module resolver.** Tests for src layouts, namespace packages, relative imports, `__init__` re-exports, external imports.
 - [x] **T4 — TypeScript/JavaScript module resolver.** Tests for extensions, `index` files, `.js` → `.ts`, `tsconfig` `paths`/`baseUrl`/`extends`, re-export chains.
 - [x] **T5 — Bindings and import edges.**
-- [ ] **T6 — Call resolver.** One test per tier plus ambiguity, unresolved, external, and constructor cases.
+- [x] **T6 — Call resolver.** One test per tier plus ambiguity, unresolved, external, and constructor cases.
 - [ ] **T7 — Inheritance edges.**
 - [ ] **T8 — Test links.** Import-based, call-based, and convention-based `tested_by` edges.
 - [ ] **T9 — Routes and public markers.** FastAPI, Flask, Express, Next.js fixtures.

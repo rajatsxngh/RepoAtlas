@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-TargetKind = Literal["module", "symbol", "member", "external", "missing"]
+TargetKind = Literal["module", "symbol", "member", "external", "missing", "builtin"]
 ImportOutcome = Literal["internal", "external", "missing"]
 
 
@@ -33,6 +33,7 @@ class Target:
     - ``external``: outside the analyzed code — a package, the standard library, or a file the
       inventory skipped (``name`` says which).
     - ``missing``: looks like repository code (a relative import, say) but nothing is there.
+    - ``builtin``: a language builtin or runtime global (``len``, ``console``).
     """
 
     kind: TargetKind
@@ -60,6 +61,10 @@ class Target:
     @classmethod
     def for_missing(cls, name: str) -> Target:
         return cls("missing", name=name)
+
+    @classmethod
+    def for_builtin(cls, name: str) -> Target:
+        return cls("builtin", name=name)
 
 
 @dataclass(frozen=True, slots=True)
