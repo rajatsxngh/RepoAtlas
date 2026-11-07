@@ -107,7 +107,7 @@ Tiers and confidences live in `graph/tiers.py` (initial values; recalibrated lat
 - [x] **T7 — Inheritance edges.**
 - [x] **T8 — Test links.** Import-based, call-based, and convention-based `tested_by` edges.
 - [x] **T9 — Routes and public markers.** FastAPI, Flask, Express, Next.js fixtures.
-- [ ] **T10 — Owners.** From a small fixture history (a scripted git repo created in the test).
+- [x] **T10 — Owners.** From a small fixture history (a scripted git repo created in the test).
 - [ ] **T11 — Golden graphs, CLI, hand check.** `expected.graph.json` for both fixtures; `repoatlas graph`; build a pinned mid-size repo and hand-verify 20 randomly sampled edges (seeded sample) — record the table in Results.
 
 ## Exit criteria
