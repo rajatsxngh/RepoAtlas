@@ -24,16 +24,20 @@ def api_settings(**overrides: Any) -> Settings:
         "database_url": NOWHERE_DB,
         "data_dir": Path(".repoatlas-test"),
         "db_connect_timeout_s": 1.0,
+        "rate_limit_enabled": False,  # the rate-limit tests turn it on
     }
     values.update(overrides)
     return Settings(_env_file=None, **values)
 
 
 @asynccontextmanager
-async def client_for(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
-    """An HTTP client that calls ``app`` in process. Unexpected exceptions become responses
-    (as they would for a real client) instead of being raised into the test."""
-    transport = httpx.ASGITransport(app=app, raise_app_exceptions=False)
+async def client_for(
+    app: FastAPI, *, address: str = "127.0.0.1"
+) -> AsyncIterator[httpx.AsyncClient]:
+    """An HTTP client that calls ``app`` in process from ``address``. Unexpected exceptions
+    become responses (as they would for a real client) instead of being raised into the
+    test."""
+    transport = httpx.ASGITransport(app=app, raise_app_exceptions=False, client=(address, 50000))
     async with httpx.AsyncClient(transport=transport, base_url=BASE_URL) as client:
         yield client
 

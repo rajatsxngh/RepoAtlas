@@ -247,6 +247,7 @@ def install(app: FastAPI) -> None:
 # Responses every route documents in the OpenAPI spec (status → description).
 COMMON_ERRORS: dict[int | str, dict[str, Any]] = {
     422: {"model": ErrorResponse, "description": "Invalid request"},
+    429: {"model": ErrorResponse, "description": "Rate limited (see Retry-After)"},
     500: {"model": ErrorResponse, "description": "Internal error"},
 }
 

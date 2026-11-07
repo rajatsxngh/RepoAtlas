@@ -137,5 +137,5 @@ def test_an_unknown_store_error_is_internal_and_says_nothing_more() -> None:
 
 def test_documented_responses_are_sorted_and_use_the_error_model() -> None:
     responses = documented(404, 409)
-    assert list(responses) == [404, 409, 422, 500]
+    assert list(responses) == [404, 409, 422, 429, 500]
     assert responses[409]["description"] == "Conflict"

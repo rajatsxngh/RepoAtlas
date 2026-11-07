@@ -5,9 +5,10 @@ owns the snapshot adjacency cache, so one app should serve every request of a pr
 with ``uvicorn repoatlas.api.app:create_app --factory``.
 
 Middleware, outermost first: a request ID for every request (echoed in ``X-Request-ID`` and
-bound to the log context), CORS for the web app's origins, and a last-resort handler that turns
-unexpected exceptions into a 500 in the error model. Routes run as plain functions in the
-threadpool, because the store and the GitHub client are synchronous.
+bound to the log context), CORS for the web app's origins, a last-resort handler that turns
+unexpected exceptions into a 500 in the error model, per-client rate limits (inside CORS, so a
+browser can read a 429's ``Retry-After``), and the symbol-key path fix. Routes run as plain
+functions in the threadpool, because the store and the GitHub client are synchronous.
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ from repoatlas.api.middleware import (
     RequestContextMiddleware,
     UnhandledErrorMiddleware,
 )
+from repoatlas.api.ratelimit import RateLimiter, RateLimitMiddleware
 from repoatlas.api.routes import health, jobs, repos, snapshots
 from repoatlas.config import Settings, get_settings
 from repoatlas.db.engine import create_db_engine
@@ -49,6 +51,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         configure(settings)
     engine = create_db_engine(
         settings.database_url, connect_timeout_s=settings.db_connect_timeout_s
+    )
+
+    limiter = RateLimiter.from_settings(settings) if settings.rate_limit_enabled else None
+    limits = (
+        []
+        if limiter is None
+        else [Middleware(RateLimitMiddleware, limiter=limiter, prefix=API_PREFIX)]
     )
 
     @asynccontextmanager
@@ -77,9 +86,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 max_age=600,
             ),
             Middleware(UnhandledErrorMiddleware),
+            *limits,
             Middleware(EncodedKeyMiddleware, prefix=API_PREFIX),
         ],
     )
+    app.state.rate_limiter = limiter
     app.state.settings = settings
     app.state.engine = engine
     app.state.store = GraphStore.from_settings(settings, engine)

@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     # API
     web_origins: str = "http://localhost:3000"  # comma-separated origins allowed by CORS
     db_connect_timeout_s: float = 10.0  # opening one database connection, in the API and worker
+    rate_limit_enabled: bool = True
+    builds_per_hour: int = 5  # build requests per client
+    reads_per_minute: int = 120  # other API requests per client
+    rate_limit_salt: SecretStr | None = None  # hashes client addresses; random per process if unset
 
     # Background jobs and the worker
     job_lease_s: float = 60.0  # a running job whose worker sends no heartbeat this long is requeued
