@@ -21,6 +21,7 @@ out/
 frontend/coverage/
 frontend/test-results/
 frontend/playwright-report/
+frontend/.schema.d.ts.check
 
 # Environment and secrets
 .env

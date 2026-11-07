@@ -55,7 +55,7 @@ EdgeKinds = Annotated[
 
 
 @router.get("", summary="A snapshot", responses=documented(404))
-def snapshot(snapshot_id: SnapshotIdPath, store: StoreDep, engine: EngineDep) -> SnapshotView:
+def get_snapshot(snapshot_id: SnapshotIdPath, store: StoreDep, engine: EngineDep) -> SnapshotView:
     """The repository, commit, configuration fingerprint, status, build stats, error, and
     latest build job of a snapshot, whatever its status."""
     info = store.snapshot(snapshot_id)
@@ -63,7 +63,7 @@ def snapshot(snapshot_id: SnapshotIdPath, store: StoreDep, engine: EngineDep) ->
 
 
 @router.get("/subgraph", summary="Children and aggregated edges", responses=READ_ERRORS)
-def subgraph(
+def get_subgraph(
     snapshot_id: ReadySnapshot,
     store: StoreDep,
     parent: ParentKey = "dir:.",
@@ -81,7 +81,7 @@ def subgraph(
 
 
 @router.get("/nodes/{key}", summary="A node", responses=READ_ERRORS)
-def node(snapshot_id: ReadySnapshot, key: KeyPath, store: StoreDep) -> NodeDetail:
+def get_node(snapshot_id: ReadySnapshot, key: KeyPath, store: StoreDep) -> NodeDetail:
     """A node, the owners of its file, and its edge counts by kind."""
     symbol = decode_key(key)
     found = store.get_node(snapshot_id, symbol)
@@ -101,7 +101,7 @@ def node(snapshot_id: ReadySnapshot, key: KeyPath, store: StoreDep) -> NodeDetai
 
 
 @router.get("/nodes/{key}/neighbors", summary="Neighbors of a node", responses=READ_ERRORS)
-def neighbors(
+def get_neighbors(
     snapshot_id: ReadySnapshot,
     key: KeyPath,
     store: StoreDep,
@@ -115,7 +115,7 @@ def neighbors(
 
 
 @router.get("/locate", summary="The symbol at a line", responses=READ_ERRORS)
-def locate(
+def locate_line(
     snapshot_id: ReadySnapshot, store: StoreDep, path: RepoPathQuery, line: LineQuery
 ) -> Node:
     """The innermost class, function, method, or test containing the line, else the file."""
@@ -123,7 +123,7 @@ def locate(
 
 
 @router.get("/search", summary="Find symbols", responses=READ_ERRORS)
-def search(
+def search_symbols(
     snapshot_id: ReadySnapshot,
     store: StoreDep,
     q: Annotated[
@@ -143,7 +143,7 @@ def search(
 
 
 @router.get("/path", summary="A shortest path", responses=READ_ERRORS)
-def shortest_path(
+def find_path(
     snapshot_id: ReadySnapshot,
     store: StoreDep,
     src: FromKey,
@@ -159,7 +159,7 @@ def shortest_path(
 
 
 @router.get("/code", summary="Lines of a file", responses=READ_ERRORS)
-def code(
+def read_code(
     snapshot_id: ReadySnapshot,
     store: StoreDep,
     path: RepoPathQuery,

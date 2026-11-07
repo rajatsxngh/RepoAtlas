@@ -18,6 +18,7 @@ from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 
@@ -75,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         docs_url=f"{API_PREFIX}/docs",
         redoc_url=None,
         lifespan=lifespan,
+        generate_unique_id_function=_operation_id,
         middleware=[
             Middleware(RequestContextMiddleware),
             Middleware(
@@ -99,3 +101,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     for router in (repos.router, jobs.router, snapshots.router, health.router):
         app.include_router(router, prefix=API_PREFIX)
     return app
+
+
+def _operation_id(route: APIRoute) -> str:
+    """OpenAPI operation IDs are the route functions' names (``get_snapshot``, ``read_code``)."""
+    return route.name

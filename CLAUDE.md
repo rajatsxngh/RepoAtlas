@@ -23,6 +23,9 @@ Work only on the current milestone. Don't start the next one until every exit cr
 | Unit tests only (no services) | `cd backend && uv run poe test-unit` |
 | Format and autofix | `cd backend && uv run poe fmt` |
 | Live LLM tests (opt-in, costs money) | `cd backend && uv run pytest -m live` |
+| Run the API (dev, reloads on change) | `cd backend && uv run uvicorn repoatlas.api.app:create_app --factory --reload` |
+| Run a worker (stop: Ctrl+C, or create `.repoatlas/worker.stop`) | `cd backend && uv run repoatlas worker` |
+| Regenerate the OpenAPI spec and TS types (commit both) | `scripts/gen_api_types.sh` (Windows: `scripts/gen_api_types.ps1`; `--check` / `-Check` only checks) |
 | Docs lint | `python scripts/check_milestones.py` |
 | Install git hooks (once per clone) | `cd backend && uv run pre-commit install` |
 | Frontend checks (once the web app exists) | `cd frontend && npm run lint && npm run typecheck && npm test` |

@@ -1,0 +1,17 @@
+{
+  "name": "repoatlas-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RepoAtlas web app. The API types in src/lib/api/schema.d.ts are generated from backend/openapi.json.",
+  "license": "MIT",
+  "scripts": {
+    "gen:api": "openapi-typescript ../backend/openapi.json -o src/lib/api/schema.d.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  }
+}

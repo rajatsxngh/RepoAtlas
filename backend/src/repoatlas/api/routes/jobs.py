@@ -13,7 +13,7 @@ router = APIRouter(tags=["builds"])
 
 
 @router.get("/jobs/{job_id}", summary="A job's status and progress", responses=documented(404))
-def job_status(job_id: JobIdPath, engine: EngineDep) -> JobView:
+def get_job_status(job_id: JobIdPath, engine: EngineDep) -> JobView:
     """Status (``queued``, ``running``, ``succeeded``, ``failed``), current stage, progress
     from 0 to 1, attempts, and why the last attempt failed."""
     job = get_job(job_id, engine=engine)

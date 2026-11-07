@@ -44,6 +44,8 @@ query_app = typer.Typer(
     help="Read a stored snapshot (debugging). Results are JSON on stdout.", no_args_is_help=True
 )
 app.add_typer(query_app, name="query")
+api_app = typer.Typer(help="The HTTP API.", no_args_is_help=True)
+app.add_typer(api_app, name="api")
 
 
 def _show_version(value: bool) -> None:
@@ -544,3 +546,36 @@ def worker_command(
         for number, handler in previous.items():
             signal.signal(number, handler)
     typer.echo(f"Worker {worker.id} stopped after {worker.processed} job(s).", err=True)
+
+
+@api_app.command("openapi")
+def api_openapi(
+    out: Annotated[
+        str, typer.Option(help="Where to write the spec ('-' = stdout).")
+    ] = "openapi.json",
+    check: Annotated[
+        bool, typer.Option(help="Write nothing; exit 1 if the file is not the current spec.")
+    ] = False,
+) -> None:
+    """Export the OpenAPI spec (commit it as backend/openapi.json)."""
+    from repoatlas.api.openapi import render_spec  # the app is only needed here
+
+    text = render_spec()
+    if out == "-":
+        _echo_json(text)
+        return
+    path = Path(out)
+    if check:
+        current = path.read_text(encoding="utf-8") if path.is_file() else None
+        if current != text:
+            typer.secho(
+                f"{path} is out of date. Run: uv run repoatlas api openapi --out {out} "
+                "(then scripts/gen_api_types.sh or .ps1 for the web app's types).",
+                err=True,
+                fg=typer.colors.RED,
+            )
+            raise typer.Exit(code=1)
+        typer.echo(f"{path} is up to date.")
+        return
+    write_text_lf(path, text)
+    typer.echo(f"Wrote {path}.")

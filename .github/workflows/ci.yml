@@ -56,6 +56,8 @@ jobs:
           uv run repoatlas graph tests/fixtures/repos/ts_small
       - name: Migrations apply to the service database
         run: uv run repoatlas db upgrade && uv run repoatlas db current
+      - name: The committed OpenAPI spec matches the code
+        run: uv run repoatlas api openapi --out openapi.json --check
 
   backend-windows:
     name: Backend (Windows, unit tests)
@@ -81,6 +83,29 @@ jobs:
         run: |
           uv run repoatlas graph tests/fixtures/repos/py_small
           uv run repoatlas graph tests/fixtures/repos/ts_small
+
+  api-types:
+    name: API types (generated from the committed spec)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install the pinned generator
+        run: npm ci --no-audit --no-fund
+      - name: The committed TypeScript types match backend/openapi.json
+        run: |
+          npx --no openapi-typescript ../backend/openapi.json --output src/lib/api/schema.d.ts
+          git diff --exit-code -- src/lib/api/schema.d.ts || {
+            echo "::error::frontend/src/lib/api/schema.d.ts is stale. Run scripts/gen_api_types.sh and commit it."
+            exit 1
+          }
 
   docs:
     name: Docs lint
