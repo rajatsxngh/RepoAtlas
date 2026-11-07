@@ -85,7 +85,7 @@ MAP-1, MAP-2, MAP-3, MAP-4, MAP-5, MAP-6, MAP-7, MAP-8, MAP-9, MAP-10, MAP-11
 - [x] **T3 — Landing and build flow.** URL input with client-side validation hints → `POST /repos` → poll `/jobs/{id}` with stage names → redirect to `/s/[id]`; error states (private, too large, rate limited).
 - [x] **T4 — Canvas base.** React Flow with root-level containers and aggregated edges.
 - [x] **T5 — Layout worker.** elkjs in a worker, incremental layout within containers, stale-result handling.
-- [ ] **T6 — Expansion and node cap.** Expand/collapse, "+N more" grouping.
+- [x] **T6 — Expansion and node cap.** Expand/collapse, "+N more" grouping.
 - [ ] **T7 — Styling and legend.** Kinds, confidence dashes, counts, layer legend entries.
 - [ ] **T8 — Node panel and code viewer.** Including owners, counts, node actions, escaped highlighting.
 - [ ] **T9 — Search and reveal.** `SearchBox`, `revealNode`, `focusNode`.

@@ -17,6 +17,8 @@ import { ROOT_KEY, derivedAncestors, fileKeyOf, parseKey } from "@/lib/graph/key
 
 export const ROOT = ROOT_KEY;
 const MORE_PREFIX = "more:";
+/** Room worth making (by closing other containers) when opening one at the cap. */
+const USEFUL_ROOM = 24;
 
 export function moreId(container: string): string {
   return `${MORE_PREFIX}${container}`;
@@ -346,4 +348,131 @@ export class GraphModel {
   fileOf(key: string): string | null {
     return fileKeyOf(key);
   }
+
+  // --- expanding and collapsing -------------------------------------------------------------
+
+  private expansionOrder = new Map<string, number>();
+  private expansions = 0;
+
+  /** Expanded containers below `key` (not `key` itself). */
+  private expandedBelow(key: string): string[] {
+    return [...this.expanded].filter(
+      (other) => other !== ROOT && other !== key && this.ancestorsOf(other).includes(key),
+    );
+  }
+
+  /**
+   * Closes the least recently opened containers that are not in `protect` until `room` more
+   * nodes fit under the cap. Returns the containers it closed.
+   */
+  makeRoom(room: number, protect: ReadonlySet<string>): string[] {
+    const closed: string[] = [];
+    const candidates = [...this.expanded]
+      .filter((key) => key !== ROOT && !protect.has(key))
+      .sort((a, b) => (this.expansionOrder.get(a) ?? 0) - (this.expansionOrder.get(b) ?? 0));
+    for (const key of candidates) {
+      if (this.cap - this.visibleCount() >= room) break;
+      if (!this.expanded.has(key)) continue;
+      // Closing an outer container also closes everything inside it; skip ones that hold a
+      // protected container.
+      if (this.expandedBelow(key).some((inner) => protect.has(inner))) continue;
+      this.collapse(key);
+      closed.push(key);
+    }
+    return closed;
+  }
+
+  /**
+   * Expands a loaded, visible container. Shows all its children if they fit under the cap, else
+   * the largest ones and a "more" node. With `makeRoom`, closes the least recently opened other
+   * containers first when the cap leaves too little room.
+   */
+  expand(
+    key: string,
+    options: { keep?: readonly string[]; makeRoom?: boolean } = {},
+  ): ExpandOutcome {
+    if (key === ROOT) return { ok: true, closed: [] };
+    const children = this.childrenOf(key);
+    if (!children) return { ok: false, reason: "not-loaded", closed: [] };
+    if (!children.length) return { ok: false, reason: "empty", closed: [] };
+    if (!this.isVisible(key)) return { ok: false, reason: "hidden", closed: [] };
+    if (this.expanded.has(key)) return { ok: true, closed: [] };
+    // Opening needs room for every child, or at least for the kept ones plus a "more" node.
+    const minimum = Math.min(children.length, Math.max(2, (options.keep?.length ?? 0) + 1));
+    // When closing others to make room, aim for enough room to be useful.
+    const useful = Math.min(children.length, Math.max(minimum, USEFUL_ROOM));
+    let closed: string[] = [];
+    if (options.makeRoom && this.cap - this.visibleCount() < useful) {
+      closed = this.makeRoom(useful, new Set([key, ...this.ancestorsOf(key)]));
+    }
+    const room = this.cap - this.visibleCount();
+    if (room < minimum) return { ok: false, reason: "cap", closed };
+    this.shown.set(key, new Set(this.pickShown(key, room, options.keep)));
+    this.expanded.add(key);
+    this.expansions += 1;
+    this.expansionOrder.set(key, this.expansions);
+    this.touch();
+    return { ok: true, closed };
+  }
+
+  /** Collapses a container and everything expanded inside it. */
+  collapse(key: string): void {
+    if (key === ROOT || !this.expanded.has(key)) return;
+    for (const inner of [key, ...this.expandedBelow(key)]) {
+      this.expanded.delete(inner);
+      this.shown.delete(inner);
+      this.expansionOrder.delete(inner);
+    }
+    this.touch();
+  }
+
+  /** Hidden children of an expanded container (the members of its "more" node). */
+  hiddenIn(container: string): string[] {
+    const shown = this.shown.get(container);
+    return (this.childrenOf(container) ?? []).filter((child) => !shown?.has(child));
+  }
+
+  /**
+   * Shows more of a container's hidden children, largest first, as far as the cap allows.
+   * Returns how many were revealed (0 when the cap is reached).
+   */
+  showMore(container: string): number {
+    const hidden = this.hiddenIn(container);
+    const shown = this.shown.get(container);
+    if (!hidden.length || !shown) return 0;
+    const count = this.visibleCount();
+    // Revealing every hidden child also removes the "more" node, which frees one slot.
+    const revealAll = hidden.length <= this.cap - count + 1;
+    const take = revealAll ? hidden.length : this.cap - count;
+    if (take <= 0) return 0;
+    const picked = hidden
+      .map((child, index) => ({ child, index, size: this.sizeOf(child) }))
+      .sort((a, b) => b.size - a.size || a.index - b.index)
+      .slice(0, take)
+      .map((item) => item.child);
+    for (const child of picked) shown.add(child);
+    this.touch();
+    return picked.length;
+  }
+
+  /** Makes sure `child` is shown in `container` (used when revealing a node). */
+  showChild(container: string, child: string): boolean {
+    const shown = this.shown.get(container);
+    if (!shown) return false;
+    if (shown.has(child)) return true;
+    const count = this.visibleCount();
+    const hidden = this.hiddenIn(container).length;
+    // Showing the last hidden child removes the "more" node, so it costs nothing.
+    if (hidden > 1 && count >= this.cap) {
+      this.makeRoom(1, new Set([container, ...this.ancestorsOf(container)]));
+      if (this.visibleCount() >= this.cap) return false;
+    }
+    shown.add(child);
+    this.touch();
+    return true;
+  }
 }
+
+export type ExpandOutcome =
+  | { ok: true; closed: string[] }
+  | { ok: false; reason: "not-loaded" | "empty" | "hidden" | "cap"; closed: string[] };

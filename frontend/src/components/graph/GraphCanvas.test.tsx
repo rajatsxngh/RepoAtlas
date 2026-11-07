@@ -37,3 +37,27 @@ describe("GraphCanvas", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Not found");
   });
 });
+
+describe("GraphCanvas expansion", () => {
+  it("opens a folder into its children and closes it again", async () => {
+    renderCanvas();
+    fireEvent.click(await screen.findByRole("button", { name: "Open src" }));
+    expect(await screen.findByText("shop")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Close src" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(document.querySelector('[data-id="dir:tests|dir:src/shop|calls"]')).not.toBeNull(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Close src" }));
+    await waitFor(() => expect(screen.queryByText("shop")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Open src" })).toBeInTheDocument();
+  });
+
+  it("opens files into their symbols", async () => {
+    renderCanvas();
+    fireEvent.click(await screen.findByRole("button", { name: "Open src" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Open shop" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Open cart.py" }));
+    expect(await screen.findByText("GiftCart")).toBeInTheDocument();
+    expect(screen.getByText("Cart")).toBeInTheDocument();
+  });
+});
