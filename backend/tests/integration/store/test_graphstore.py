@@ -127,7 +127,7 @@ def test_search_rejects_bad_requests(stored: Stored) -> None:
     for query, limit in (("  ", 20), ("Cart", 0), ("Cart", 101)):
         with pytest.raises(InvalidQuery):
             stored.store.find_symbols(stored.py, query, limit=limit)
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidQuery, match="node kind"):
         stored.store.find_symbols(stored.py, "Cart", kinds=["module"])
 
 

@@ -167,7 +167,10 @@ class GraphStore:
         }
         kind_filter = ""
         if kinds is not None:
-            params["kinds"] = sorted({NodeKind(kind).value for kind in kinds})
+            try:
+                params["kinds"] = sorted({NodeKind(kind).value for kind in kinds})
+            except ValueError as error:
+                raise InvalidQuery(f"Unknown node kind: {error}") from None
             kind_filter = "AND n.kind = ANY(:kinds)"
         statement = text(
             f"SELECT {rows.NODE_SELECT}, "

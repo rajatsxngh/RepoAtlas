@@ -72,7 +72,8 @@ def blob_count(engine: Engine) -> int:
 
 
 def test_save_snapshot_writes_every_row(pg_engine: Engine, py_small: Built) -> None:
-    snapshot_id = save(pg_engine, py_small, extra_stats={"timings": {"parse": 0.5}})
+    extra = {"timings": {"parse": 0.5}, "graph_digest": "not the digest"}
+    snapshot_id = save(pg_engine, py_small, extra_stats=extra)
     graph = py_small.graph
     assert counts(pg_engine, snapshot_id) == {
         "files": len(py_small.inventory.files),

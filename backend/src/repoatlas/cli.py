@@ -318,9 +318,6 @@ def _query(read: Callable[[GraphStore], QueryResult], missing: str = "Not found.
     except StoreError as error:
         typer.secho(f"Error: {error}", err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1) from None
-    except ValueError as error:  # an unknown kind or direction
-        typer.secho(f"Error: {error}", err=True, fg=typer.colors.RED)
-        raise typer.Exit(code=1) from None
     except OperationalError as error:
         _connection_failed(settings.database_url, error)
     finally:

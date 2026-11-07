@@ -64,7 +64,9 @@ def save_snapshot(
 
     ``blobs`` maps blob OIDs to raw bytes and must cover every indexed (not skipped) file the
     store does not already have; it may be lazy, since only missing OIDs are looked up.
-    ``extra_stats`` are merged into the snapshot's ``stats`` (for example step timings).
+    ``extra_stats`` are merged into the snapshot's ``stats`` (for example step timings); the keys
+    the store computes itself (``graph``, ``graph_digest``, ``inventory``, ``blobs``, ``rows``,
+    ``store_seconds``) always win.
     """
     engine = engine or get_engine()
     ref = begin_snapshot(repo_meta, sha, fingerprint, engine=engine)
@@ -86,12 +88,12 @@ def save_snapshot(
                 )
             counts = _write(connection, ref.id, inventory, blobs, graph)
             stats: dict[str, JsonValue] = {
+                **(extra_stats or {}),  # never overrides what the store computes below
                 "graph": graph.stats.model_dump(mode="json"),
                 "graph_digest": graph.digest(),
                 "inventory": inventory.stats.model_dump(mode="json"),
                 **counts,
                 "store_seconds": round(time.perf_counter() - started, 3),
-                **(extra_stats or {}),
             }
             connection.execute(
                 text(
