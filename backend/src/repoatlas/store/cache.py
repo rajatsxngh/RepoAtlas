@@ -25,6 +25,10 @@ from repoatlas.graph.model import CodeGraph, EdgeKind, NodeKind
 
 Direction = Literal["in", "out", "both"]
 DIRECTIONS: tuple[Direction, ...] = ("in", "out", "both")
+# dir: a directory's subdirectories and files · file: every file below a directory ·
+# symbol: the symbols (and routes) directly inside a file or symbol
+Level = Literal["dir", "file", "symbol"]
+LEVELS: tuple[Level, ...] = ("dir", "file", "symbol")
 NODE_KINDS: tuple[NodeKind, ...] = tuple(NodeKind)
 EDGE_KINDS: tuple[EdgeKind, ...] = tuple(EdgeKind)
 DEFAULT_GRAPH_CACHE_MB = 512
@@ -71,6 +75,28 @@ class PathFound:
     nodes: list[int]
     edges: list[int]
     directed: bool
+
+
+@dataclass(frozen=True, slots=True)
+class Link:
+    """Edges of one kind from one child to another, aggregated."""
+
+    src: int
+    dst: int
+    kind: EdgeKind
+    count: int
+    min_confidence: float
+    max_confidence: float
+
+
+@dataclass(frozen=True, slots=True)
+class Aggregate:
+    """A parent's children at a level (key order) and the links between them."""
+
+    parent: int
+    level: Level
+    children: list[int]
+    links: list[Link]
 
 
 class SnapshotGraph:
@@ -128,6 +154,8 @@ class SnapshotGraph:
         self._in = [_csr(count, self.edge_dst, chosen) for chosen in by_kind]
         self.extra_bytes = 0  # memoized results add to the estimate
         self._base_bytes = self._measure()
+        self._tree: tuple[array[int], array[int], array[int]] | None = None
+        self._aggregates: dict[tuple[int, Level], Aggregate] = {}
 
     @classmethod
     def from_code_graph(cls, graph: CodeGraph, snapshot_id: int = 0) -> SnapshotGraph:
@@ -290,6 +318,129 @@ class SnapshotGraph:
                     reached.append(neighbor)
             frontier = reached
         return None
+
+    # --- containment and aggregation --------------------------------------------------------
+
+    def children_of(self, node: int) -> list[int]:
+        """Direct children in the containment tree (``contains`` edges), in key order."""
+        order, enter, leave = self._containment()
+        children = []
+        position = enter[node] + 1
+        while position <= leave[node]:
+            child = order[position]
+            children.append(child)
+            position = leave[child] + 1
+        return children
+
+    def descendants(self, node: int) -> list[int]:
+        """Every node below ``node`` in the containment tree, in depth-first (key) order."""
+        order, enter, leave = self._containment()
+        return list(order[enter[node] + 1 : leave[node] + 1])
+
+    def aggregate(self, parent: int, level: Level) -> Aggregate:
+        """Children of ``parent`` at ``level`` and the edges between them (memoized).
+
+        Every edge is mapped to the pair of children that contain its endpoints; edges inside
+        one child, or with an end outside all of them, are dropped. Counts and confidence
+        ranges are kept per (source child, destination child, kind). ``contains`` edges never
+        link two children, so they never appear.
+        """
+        memo = self._aggregates.get((parent, level))
+        if memo is not None:
+            return memo
+        if level not in LEVELS:
+            raise ValueError(f"Unknown level {level!r}.")
+        kind = self.kind_of(parent)
+        if level in ("dir", "file") and kind != NodeKind.DIR:
+            raise ValueError(f"Level {level!r} needs a directory, not a {kind.value}.")
+        if level == "symbol" and kind == NodeKind.DIR:
+            raise ValueError("Level 'symbol' needs a file or a symbol, not a directory.")
+        file_code = _NODE_CODE[NodeKind.FILE]
+        if level == "file":  # positions are in key order; preorder is not
+            children = sorted(
+                n for n in self.descendants(parent) if self.node_kinds[n] == file_code
+            )
+        else:
+            children = self.children_of(parent)
+
+        order, enter, leave = self._containment()
+        owner = array("i", [-1]) * len(order)  # preorder position -> child number
+        for number, child in enumerate(children):
+            size = leave[child] - enter[child] + 1
+            owner[enter[child] : leave[child] + 1] = array("i", [number]) * size
+        totals: dict[tuple[int, int, int], list[float]] = {}
+        contains = _EDGE_CODE[EdgeKind.CONTAINS]
+        for position in range(enter[parent] + 1, leave[parent] + 1):
+            src_child = owner[position]
+            if src_child < 0:
+                continue
+            node = order[position]
+            for code, (offsets, edges) in enumerate(self._out):
+                if code == contains:
+                    continue
+                for edge in edges[offsets[node] : offsets[node + 1]]:
+                    dst_child = owner[enter[self.edge_dst[edge]]]
+                    if dst_child < 0 or dst_child == src_child:
+                        continue
+                    confidence = self.edge_confidence[edge]
+                    total = totals.get((src_child, dst_child, code))
+                    if total is None:
+                        totals[(src_child, dst_child, code)] = [1, confidence, confidence]
+                    else:
+                        total[0] += 1
+                        total[1] = min(total[1], confidence)
+                        total[2] = max(total[2], confidence)
+        links = [
+            Link(
+                src=children[src_child],
+                dst=children[dst_child],
+                kind=EDGE_KINDS[code],
+                count=int(count),
+                min_confidence=low,
+                max_confidence=high,
+            )
+            for (src_child, dst_child, code), (count, low, high) in sorted(totals.items())
+        ]
+        result = Aggregate(parent=parent, level=level, children=children, links=links)
+        self._aggregates[(parent, level)] = result
+        self.extra_bytes += 200 + 8 * len(children) + 120 * len(links)
+        return result
+
+    def _containment(self) -> tuple[array[int], array[int], array[int]]:
+        """Preorder of the containment tree (children in key order) and, per node, the
+        positions where its subtree starts and ends: ``x`` is below ``n`` exactly when
+        ``enter[n] < enter[x] <= leave[n]``."""
+        if self._tree is not None:
+            return self._tree
+        count = len(self.keys)
+        children: list[list[int]] = [[] for _ in range(count)]
+        roots = []
+        for node in range(count):
+            parent = self.parents[node]
+            if parent < 0:
+                roots.append(node)
+            else:
+                children[parent].append(node)
+        order = array("i")
+        enter = array("i", [-1]) * count
+        leave = array("i", [-1]) * count
+        stack: list[tuple[int, bool]] = [(root, False) for root in reversed(roots)]
+        while stack:
+            node, done = stack.pop()
+            if done:
+                leave[node] = len(order) - 1
+                continue
+            enter[node] = len(order)
+            order.append(node)
+            stack.append((node, True))
+            stack.extend((child, False) for child in reversed(children[node]))
+        for node in range(count):  # only nodes on a parent cycle are left; none in practice
+            if enter[node] < 0:
+                enter[node] = leave[node] = len(order)
+                order.append(node)
+        self._tree = (order, enter, leave)
+        self.extra_bytes += _ARRAY_OVERHEAD * 3 + 12 * count
+        return self._tree
 
 
 def _unwind(previous: dict[int, tuple[int, int]], dst: int) -> tuple[list[int], list[int]]:

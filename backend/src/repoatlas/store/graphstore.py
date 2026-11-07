@@ -30,8 +30,10 @@ from repoatlas.graph.model import (
 from repoatlas.store import rows
 from repoatlas.store.cache import (
     DIRECTIONS,
+    LEVELS,
     Direction,
     EdgeRecord,
+    Level,
     NodeRecord,
     SnapshotGraph,
     SnapshotGraphCache,
@@ -44,12 +46,14 @@ from repoatlas.store.errors import (
     SnapshotNotReady,
 )
 from repoatlas.store.results import (
+    AggregatedEdge,
     GraphPath,
     Hop,
     MatchKind,
     Neighborhood,
     RepoInfo,
     SnapshotInfo,
+    Subgraph,
     SymbolMatch,
 )
 
@@ -251,6 +255,43 @@ class GraphStore:
             edges=[edges[edge_id] for edge_id in edge_ids],
             directed=found.directed,
             kinds=list(chosen),
+        )
+
+    def subgraph(self, snapshot_id: int, parent_key: str, level: Level) -> Subgraph:
+        """The children of ``parent_key`` and the edges between them, aggregated per (source
+        child, destination child, kind) with counts and confidence ranges.
+
+        ``dir``: a directory's subdirectories and files · ``file``: every file below a
+        directory · ``symbol``: the symbols directly inside a file, class, or function.
+        Results are memoized per (snapshot, parent, level).
+        """
+        if level not in LEVELS:
+            raise InvalidQuery(f"The level must be one of {', '.join(LEVELS)}.")
+        graph = self.graph(snapshot_id)
+        parent = _position(graph, parent_key)
+        try:
+            found = graph.aggregate(parent, level)
+        except ValueError as error:
+            raise InvalidQuery(str(error)) from None
+        self.cache.shrink()  # memoized results count toward the cache's size
+        ids = [graph.node_ids[parent], *(graph.node_ids[child] for child in found.children)]
+        with self.engine.connect() as connection:
+            nodes = _nodes_by_id(connection, ids)
+        return Subgraph(
+            parent=nodes[ids[0]],
+            level=level,
+            nodes=[nodes[node_id] for node_id in ids[1:]],
+            edges=[
+                AggregatedEdge(
+                    src=graph.keys[link.src],
+                    dst=graph.keys[link.dst],
+                    kind=link.kind,
+                    count=link.count,
+                    min_confidence=link.min_confidence,
+                    max_confidence=link.max_confidence,
+                )
+                for link in found.links
+            ],
         )
 
     # --- per-file and per-name data -------------------------------------------------------

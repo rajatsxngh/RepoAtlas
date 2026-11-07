@@ -9,7 +9,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, JsonValue
 
 from repoatlas.graph.model import Edge, EdgeKind, Node
-from repoatlas.store.cache import Direction
+from repoatlas.store.cache import Direction, Level
 from repoatlas.store.models import SnapshotStatus
 
 MatchKind = Literal["exact", "prefix", "fuzzy"]
@@ -75,3 +75,23 @@ class GraphPath(_Result):
     edges: list[Edge]
     directed: bool
     kinds: list[EdgeKind]
+
+
+class AggregatedEdge(_Result):
+    """Edges of one kind between two children: how many, and their confidence range."""
+
+    src: str
+    dst: str
+    kind: EdgeKind
+    count: int
+    min_confidence: float
+    max_confidence: float
+
+
+class Subgraph(_Result):
+    """The children of ``parent`` at ``level`` (key order) and the edges between them."""
+
+    parent: Node
+    level: Level
+    nodes: list[Node]
+    edges: list[AggregatedEdge]
