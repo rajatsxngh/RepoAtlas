@@ -1,8 +1,10 @@
 """Public markers (GRA-8): what users of a package reach, marked ``meta.public = true``.
 
 - Route nodes (``graph.routes`` marks them).
-- Names in the ``__all__`` of a top-level package's ``__init__.py`` (a package directly under a
-  Python root), resolved to where they are defined.
+- The names a top-level package's ``__init__.py`` exports (a package directly under a Python
+  root, outside test folders), resolved to where they are defined: its ``__all__``, or without
+  one its public names, as ``from package import *`` binds them (so ``from .app import Flask as
+  Flask`` counts).
 - Exports of the files a ``package.json`` names in ``main``, ``module``, or ``exports``
   (conditions and subpaths included; ``*`` patterns and type declarations skipped), following
   ``export *`` chains. An entry that points at build output (``dist/``, ``lib/``, ``build/``,
@@ -39,18 +41,20 @@ def public_symbols(
     python: PythonModuleResolver,
     typescript: TsModuleResolver,
     project: ProjectFiles,
+    test_paths: Iterable[str] = (),
 ) -> set[str]:
     """Keys of the symbols a package makes public."""
     keys: set[str] = set()
+    tests = set(test_paths)
     for parsed in files:
-        if parsed.language != "py" or not parsed.path.endswith("__init__.py") or not parsed.exports:
+        if parsed.language != "py" or not parsed.path.endswith("__init__.py"):
             continue
         package = _folder(parsed.path)
-        if not package or _folder(package) not in python.roots:
+        if not package or _folder(package) not in python.roots or parsed.path in tests:
             continue
         module = ModuleRef(parsed.path, package)
-        for export in parsed.exports:
-            target = python.lookup(module, export.name)
+        for name in sorted(python.public_names(module)):
+            target = python.lookup(module, name)
             if target.kind == "symbol" and target.key is not None:
                 keys.add(target.key)
 

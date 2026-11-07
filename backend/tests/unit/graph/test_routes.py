@@ -241,6 +241,27 @@ def test_top_level_package_all_marks_symbols_public() -> None:
     }
 
 
+def test_packages_without_all_export_their_public_names() -> None:
+    graph = graph_of(
+        {
+            "src/flask/__init__.py": (
+                "import os\n"
+                "from .app import Flask as Flask\n"
+                "from .helpers import _private as _private\n"
+                "def get_version():\n    return '1'\n"
+            ),
+            "src/flask/app.py": "class Flask:\n    pass\n",
+            "src/flask/helpers.py": "def _private():\n    pass\n",
+            "tests/__init__.py": "from tests.util import helper\n",
+            "tests/util.py": "def helper():\n    pass\n",
+        }
+    )
+    assert public(graph) == {
+        "py:src/flask/app.py:Flask:class",
+        "py:src/flask/__init__.py:get_version:function",
+    }
+
+
 def test_package_json_entries_mark_exports_public() -> None:
     files = {
         "src/index.ts": (

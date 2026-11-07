@@ -94,7 +94,9 @@ def build_graph(
         files, CallResolver(names, hierarchy), edges, caller_of
     )
     add_tested_by_edges(inventory, resolved, edges.edges(EdgeKind.CALLS), nodes, edges)
-    mark_public(nodes, public_symbols(files, resolvers.python, resolvers.typescript, project))
+    test_paths = [entry.path for entry in inventory.files if entry.is_test]
+    public = public_symbols(files, resolvers.python, resolvers.typescript, project, test_paths)
+    mark_public(nodes, public)
 
     log = history or CommitLog()
     owners = compute_owners(log, (entry.path for entry in inventory.files), settings.owner_commits)
