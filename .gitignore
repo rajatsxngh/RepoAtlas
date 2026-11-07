@@ -17,7 +17,10 @@ build/
 # Node / web app
 node_modules/
 .next/
+.next-*/
 out/
+*.tsbuildinfo
+frontend/next-env.d.ts
 frontend/coverage/
 frontend/test-results/
 frontend/playwright-report/

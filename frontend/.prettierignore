@@ -1,0 +1,11 @@
+# Generated or installed
+node_modules/
+.next/
+.next-*/
+out/
+coverage/
+playwright-report/
+test-results/
+next-env.d.ts
+package-lock.json
+src/lib/api/schema.d.ts

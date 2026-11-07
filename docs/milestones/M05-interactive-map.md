@@ -1,6 +1,6 @@
 # M05 — Interactive map
 
-**Type of work:** Frontend · **Size:** L (11 tasks) · **Status:** Not started
+**Type of work:** Frontend · **Size:** L (11 tasks) · **Status:** In progress
 
 ## Goal
 
@@ -80,7 +80,7 @@ MAP-1, MAP-2, MAP-3, MAP-4, MAP-5, MAP-6, MAP-7, MAP-8, MAP-9, MAP-10, MAP-11
 
 ## Tasks
 
-- [ ] **T1 — Scaffold.** Next.js app, Tailwind, ESLint, Prettier, Vitest, Playwright; CI job.
+- [x] **T1 — Scaffold.** Next.js app, Tailwind, ESLint, Prettier, Vitest, Playwright; CI job.
 - [ ] **T2 — API client and mock mode.** Typed client over generated types; fixtures for mock mode.
 - [ ] **T3 — Landing and build flow.** URL input with client-side validation hints → `POST /repos` → poll `/jobs/{id}` with stage names → redirect to `/s/[id]`; error states (private, too large, rate limited).
 - [ ] **T4 — Canvas base.** React Flow with root-level containers and aggregated edges.

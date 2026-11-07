@@ -28,8 +28,8 @@ Work only on the current milestone. Don't start the next one until every exit cr
 | Regenerate the OpenAPI spec and TS types (commit both) | `scripts/gen_api_types.sh` (Windows: `scripts/gen_api_types.ps1`; `--check` / `-Check` only checks) |
 | Docs lint | `python scripts/check_milestones.py` |
 | Install git hooks (once per clone) | `cd backend && uv run pre-commit install` |
-| Frontend checks (once the web app exists) | `cd frontend && npm run lint && npm run typecheck && npm test` |
-| End-to-end tests (once the web app exists) | `cd frontend && npx playwright test` |
+| Frontend checks | `cd frontend && npm run lint && npm run typecheck && npm test` |
+| End-to-end tests (builds the app; mock specs need nothing else running) | `cd frontend && npx playwright test` |
 
 Commits run pre-commit hooks automatically (whitespace, YAML/TOML, ruff check and format, docs lint). Migrations live in `backend/src/repoatlas/db/migrations/` and ship with the package; revision IDs are sequential (`0002_…`, at most 32 characters).
 

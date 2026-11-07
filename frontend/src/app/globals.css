@@ -1,0 +1,246 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Components use the semantic utilities below (bg-surface, text-fg, border-line,
+ * …), so one set of variables switches the whole app between light and dark. The theme follows
+ * the system unless <html data-theme="light|dark"> pins it.
+ */
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --color-canvas: var(--ra-canvas);
+  --color-surface: var(--ra-surface);
+  --color-surface-2: var(--ra-surface-2);
+  --color-surface-3: var(--ra-surface-3);
+  --color-line: var(--ra-line);
+  --color-line-strong: var(--ra-line-strong);
+  --color-fg: var(--ra-fg);
+  --color-fg-muted: var(--ra-fg-muted);
+  --color-fg-faint: var(--ra-fg-faint);
+  --color-accent: var(--ra-accent);
+  --color-accent-fg: var(--ra-accent-fg);
+  --color-focus: var(--ra-focus);
+  --color-danger: var(--ra-danger);
+  --color-danger-soft: var(--ra-danger-soft);
+  --color-warn: var(--ra-warn);
+  --color-warn-soft: var(--ra-warn-soft);
+  --color-ok: var(--ra-ok);
+
+  --color-kind-dir: var(--ra-kind-dir);
+  --color-kind-file: var(--ra-kind-file);
+  --color-kind-class: var(--ra-kind-class);
+  --color-kind-function: var(--ra-kind-function);
+  --color-kind-method: var(--ra-kind-method);
+  --color-kind-route: var(--ra-kind-route);
+  --color-kind-test: var(--ra-kind-test);
+
+  --color-edge-calls: var(--ra-edge-calls);
+  --color-edge-imports: var(--ra-edge-imports);
+  --color-edge-inherits: var(--ra-edge-inherits);
+  --color-edge-tested-by: var(--ra-edge-tested-by);
+  --color-edge-routes-to: var(--ra-edge-routes-to);
+
+  --color-hl-primary: var(--ra-hl-primary);
+  --color-hl-secondary: var(--ra-hl-secondary);
+  --color-hl-warning: var(--ra-hl-warning);
+  --color-hl-muted: var(--ra-hl-muted);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+}
+
+:root {
+  color-scheme: light;
+  --ra-canvas: #f6f7f9;
+  --ra-surface: #ffffff;
+  --ra-surface-2: #f3f4f7;
+  --ra-surface-3: #e9ebf0;
+  --ra-line: #dfe2e8;
+  --ra-line-strong: #c4c9d3;
+  --ra-fg: #141821;
+  --ra-fg-muted: #555e6e;
+  --ra-fg-faint: #858d9b;
+  --ra-accent: #1d2230;
+  --ra-accent-fg: #ffffff;
+  --ra-focus: #4f46e5;
+  --ra-danger: #c2264a;
+  --ra-danger-soft: #fdecef;
+  --ra-warn: #b45309;
+  --ra-warn-soft: #fef5e6;
+  --ra-ok: #0f8a5f;
+
+  --ra-kind-dir: #c27c0e;
+  --ra-kind-file: #5b6576;
+  --ra-kind-class: #7c3aed;
+  --ra-kind-function: #2563eb;
+  --ra-kind-method: #4f46e5;
+  --ra-kind-route: #e05a10;
+  --ra-kind-test: #0f9466;
+
+  --ra-edge-calls: #3b78e7;
+  --ra-edge-imports: #9aa3b2;
+  --ra-edge-inherits: #8b5cf6;
+  --ra-edge-tested-by: #16a079;
+  --ra-edge-routes-to: #ee7424;
+
+  --ra-hl-primary: #c026d3;
+  --ra-hl-secondary: #0891b2;
+  --ra-hl-warning: #e11d48;
+  --ra-hl-muted: #a3a9b4;
+
+  --ra-code-comment: #6b7280;
+  --ra-code-keyword: #9333ea;
+  --ra-code-string: #0f7b4f;
+  --ra-code-number: #b45309;
+  --ra-code-function: #1d4ed8;
+  --ra-code-class: #a3510a;
+  --ra-code-operator: #475569;
+  --ra-code-punctuation: #64748b;
+  --ra-code-decorator: #be185d;
+  --ra-code-highlight: #fff4c2;
+  --ra-shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.08);
+  --ra-shadow-lg: 0 8px 24px rgb(16 24 40 / 0.12), 0 2px 6px rgb(16 24 40 / 0.08);
+}
+
+/* The dark palette appears twice: pinned with data-theme, and from the system preference. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ra-canvas: #0b0e14;
+  --ra-surface: #131823;
+  --ra-surface-2: #182030;
+  --ra-surface-3: #202a3d;
+  --ra-line: #263043;
+  --ra-line-strong: #36425a;
+  --ra-fg: #e7eaf0;
+  --ra-fg-muted: #a0a9b8;
+  --ra-fg-faint: #6f7a8c;
+  --ra-accent: #e7eaf0;
+  --ra-accent-fg: #0b0e14;
+  --ra-focus: #8b93ff;
+  --ra-danger: #ff6b8a;
+  --ra-danger-soft: #3a1520;
+  --ra-warn: #f5b041;
+  --ra-warn-soft: #3a2a10;
+  --ra-ok: #3ddc97;
+
+  --ra-kind-dir: #f2c14e;
+  --ra-kind-file: #9aa6b8;
+  --ra-kind-class: #b197fc;
+  --ra-kind-function: #6ea8fe;
+  --ra-kind-method: #8f9cff;
+  --ra-kind-route: #ff9a57;
+  --ra-kind-test: #43d39e;
+
+  --ra-edge-calls: #6ea8fe;
+  --ra-edge-imports: #5d6b82;
+  --ra-edge-inherits: #b197fc;
+  --ra-edge-tested-by: #43d39e;
+  --ra-edge-routes-to: #ff9a57;
+
+  --ra-hl-primary: #f07cff;
+  --ra-hl-secondary: #36d6f0;
+  --ra-hl-warning: #ff6b8a;
+  --ra-hl-muted: #4b566a;
+
+  --ra-code-comment: #7d8799;
+  --ra-code-keyword: #c792ea;
+  --ra-code-string: #a5d6a7;
+  --ra-code-number: #f78c6c;
+  --ra-code-function: #82aaff;
+  --ra-code-class: #ffcb6b;
+  --ra-code-operator: #89ddff;
+  --ra-code-punctuation: #9aa5b8;
+  --ra-code-decorator: #ff79c6;
+  --ra-code-highlight: #3a3415;
+  --ra-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.3);
+  --ra-shadow-lg: 0 10px 30px rgb(0 0 0 / 0.5), 0 2px 8px rgb(0 0 0 / 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ra-canvas: #0b0e14;
+    --ra-surface: #131823;
+    --ra-surface-2: #182030;
+    --ra-surface-3: #202a3d;
+    --ra-line: #263043;
+    --ra-line-strong: #36425a;
+    --ra-fg: #e7eaf0;
+    --ra-fg-muted: #a0a9b8;
+    --ra-fg-faint: #6f7a8c;
+    --ra-accent: #e7eaf0;
+    --ra-accent-fg: #0b0e14;
+    --ra-focus: #8b93ff;
+    --ra-danger: #ff6b8a;
+    --ra-danger-soft: #3a1520;
+    --ra-warn: #f5b041;
+    --ra-warn-soft: #3a2a10;
+    --ra-ok: #3ddc97;
+
+    --ra-kind-dir: #f2c14e;
+    --ra-kind-file: #9aa6b8;
+    --ra-kind-class: #b197fc;
+    --ra-kind-function: #6ea8fe;
+    --ra-kind-method: #8f9cff;
+    --ra-kind-route: #ff9a57;
+    --ra-kind-test: #43d39e;
+
+    --ra-edge-calls: #6ea8fe;
+    --ra-edge-imports: #5d6b82;
+    --ra-edge-inherits: #b197fc;
+    --ra-edge-tested-by: #43d39e;
+    --ra-edge-routes-to: #ff9a57;
+
+    --ra-hl-primary: #f07cff;
+    --ra-hl-secondary: #36d6f0;
+    --ra-hl-warning: #ff6b8a;
+    --ra-hl-muted: #4b566a;
+
+    --ra-code-comment: #7d8799;
+    --ra-code-keyword: #c792ea;
+    --ra-code-string: #a5d6a7;
+    --ra-code-number: #f78c6c;
+    --ra-code-function: #82aaff;
+    --ra-code-class: #ffcb6b;
+    --ra-code-operator: #89ddff;
+    --ra-code-punctuation: #9aa5b8;
+    --ra-code-decorator: #ff79c6;
+    --ra-code-highlight: #3a3415;
+    --ra-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.3);
+    --ra-shadow-lg: 0 10px 30px rgb(0 0 0 / 0.5), 0 2px 8px rgb(0 0 0 / 0.4);
+  }
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background: var(--ra-canvas);
+    color: var(--ra-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ra-focus);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--ra-focus) 25%, transparent);
+  }
+}
+
+@utility shadow-card {
+  box-shadow: var(--ra-shadow);
+}
+
+@utility shadow-pop {
+  box-shadow: var(--ra-shadow-lg);
+}
