@@ -54,7 +54,7 @@ STO-1, STO-2, STO-3, STO-4, STO-5, STO-6, STO-7
 
 - [x] **T1 — Schema.** Migrations and SQLAlchemy models; indexes (unique (`snapshot_id`, `symbol_key`); edges by src and dst; files by (`snapshot_id`, `path`); trigram on node names).
 - [x] **T2 — Loader.** `save_snapshot` with `COPY`, idempotency, failure marking; integration tests.
-- [ ] **T3 — Cache and traversal.** Adjacency build, BFS with depth and kinds, cycle tests (self-loops, mutual recursion, large cycles).
+- [x] **T3 — Cache and traversal.** Adjacency build, BFS with depth and kinds, cycle tests (self-loops, mutual recursion, large cycles).
 - [ ] **T4 — Node reads.** `get_node`, `find_symbols`, `neighbors`, `callers`, `callees`, `shortest_path`, `owners`, `unresolved_calls`.
 - [ ] **T5 — Subgraph aggregation.** Tests on the fixture graphs (root level, nested directory level, file level).
 - [ ] **T6 — Locate and code reads.** Including a request for a path that is not in the snapshot (must fail) and line clamping.

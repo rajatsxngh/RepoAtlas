@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     max_source_files: int = 5_000  # after skip rules
     max_file_bytes: int = 1_000_000
 
+    # Graph store
+    graph_cache_mb: int = 512  # estimated memory for cached snapshot adjacency
+
     @field_validator("log_level", mode="before")
     @classmethod
     def _normalize_log_level(cls, value: object) -> object:
