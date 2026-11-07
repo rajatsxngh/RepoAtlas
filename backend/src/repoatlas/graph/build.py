@@ -14,10 +14,11 @@ from repoatlas.graph.classes import ClassHierarchy, add_inherits_edges, with_unr
 from repoatlas.graph.edges import EdgeSet
 from repoatlas.graph.index import SymbolIndex
 from repoatlas.graph.keys import file_key
-from repoatlas.graph.model import CodeGraph, GraphStats
+from repoatlas.graph.model import CodeGraph, EdgeKind, GraphStats
 from repoatlas.graph.names import NameResolver
 from repoatlas.graph.project import ProjectFiles
 from repoatlas.graph.structure import add_contains_edges, build_structure
+from repoatlas.graph.testlinks import add_tested_by_edges
 from repoatlas.graph.tiers import Tier
 from repoatlas.ingest.inventory import Inventory
 from repoatlas.parsing.models import CallSite, ParsedFile
@@ -55,6 +56,7 @@ def build_graph(
     unresolved, call_counts = add_call_edges(
         files, CallResolver(names, hierarchy), edges, caller_of
     )
+    add_tested_by_edges(inventory, resolved, edges.edges(EdgeKind.CALLS), nodes, edges)
 
     add_contains_edges(nodes.values(), edges)
     edge_list = edges.edges()

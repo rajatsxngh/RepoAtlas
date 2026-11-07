@@ -69,15 +69,18 @@ class EdgeSet:
         if better or same_and_earlier:
             current.confidence, current.site, current.meta = confidence, site, dict(meta or {})
 
-    def edges(self) -> list[Edge]:
+    def edges(self, kind: EdgeKind | None = None) -> list[Edge]:
+        """The collected edges (only those of ``kind``, when given)."""
         result: list[Edge] = []
-        for (src, dst, kind, provenance), pending in self._items.items():
+        for (src, dst, edge_kind, provenance), pending in self._items.items():
+            if kind is not None and edge_kind != kind:
+                continue
             meta = {**pending.meta, "count": pending.count} if pending.counted else pending.meta
             result.append(
                 Edge(
                     src=src,
                     dst=dst,
-                    kind=kind,
+                    kind=edge_kind,
                     provenance=provenance,
                     confidence=pending.confidence,
                     site=pending.site,
