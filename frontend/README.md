@@ -6,26 +6,45 @@ The RepoAtlas web app: Next.js (App Router) with TypeScript, Tailwind CSS, TanSt
 
 Run these from `frontend/` (Node 22.12 or later).
 
-| Purpose | Command |
-|---|---|
-| Install | `npm ci` |
-| Dev server on http://localhost:3000 (needs the API on :8000) | `npm run dev` |
-| Dev server with fixtures instead of the API | `NEXT_PUBLIC_API_MOCK=1 npm run dev` |
-| Lint and formatting check | `npm run lint` |
-| Format and autofix | `npm run format` |
-| Type-check | `npm run typecheck` |
-| Unit tests (Vitest) | `npm test` |
-| End-to-end tests (Playwright) | `npx playwright test` |
+| Purpose                                                      | Command                              |
+| ------------------------------------------------------------ | ------------------------------------ |
+| Install                                                      | `npm ci`                             |
+| Dev server on http://localhost:3000 (needs the API on :8000) | `npm run dev`                        |
+| Dev server with fixtures instead of the API                  | `NEXT_PUBLIC_API_MOCK=1 npm run dev` |
+| Lint and formatting check                                    | `npm run lint`                       |
+| Format and autofix                                           | `npm run format`                     |
+| Type-check                                                   | `npm run typecheck`                  |
+| Unit tests (Vitest)                                          | `npm test`                           |
+| End-to-end tests (Playwright)                                | `npx playwright test`                |
 
 ## Settings
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Origin of the API (its routes live under `/api/v1`) |
-| `NEXT_PUBLIC_API_MOCK` | unset | `1` serves fixtures from memory instead of calling the API |
-| `NEXT_PUBLIC_NODE_CAP` | `300` | Most nodes the map shows at once |
+| Variable               | Default                 | Meaning                                                    |
+| ---------------------- | ----------------------- | ---------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL`  | `http://localhost:8000` | Origin of the API (its routes live under `/api/v1`)        |
+| `NEXT_PUBLIC_API_MOCK` | unset                   | `1` serves fixtures from memory instead of calling the API |
+| `NEXT_PUBLIC_NODE_CAP` | `300`                   | Most nodes the map shows at once                           |
 
 `NEXT_PUBLIC_*` values are inlined when the app is built, so set them before `npm run build` or `npm run dev`.
+
+## Mock mode
+
+With `NEXT_PUBLIC_API_MOCK=1` the API client answers from memory (`src/lib/api/mock/`), with the API's routes, models, and error model. Builds are simulated: a build request walks the real stage names over a couple of seconds.
+
+| Snapshot | Repository (`https://github.com/repoatlas-fixtures/…`) | What it is                                                   |
+| -------- | ------------------------------------------------------ | ------------------------------------------------------------ |
+| 1        | `py-small`                                             | The backend's Python golden fixture (also any unknown name)  |
+| 2        | `ts-small`                                             | The backend's TypeScript golden fixture                      |
+| 3        | `xss`                                                  | HTML and script payloads in names, owners, comments, strings |
+| 4        | `synthetic`                                            | 10,000 generated nodes: a deep tree with dense calls         |
+| 5        | `broken`                                               | Its build always fails                                       |
+
+The names `private`, `too-large`, `empty`, `missing`, `github-down`, and `rate-limited` answer like the matching API errors. A unit test checks the mock against the backend's own answers for the golden fixtures; after the golden graphs change, refresh both data files:
+
+```bash
+npx tsx scripts/import-backend-fixtures.ts
+uv run --project ../backend python scripts/export-mock-expectations.py
+```
 
 ## Safety
 
