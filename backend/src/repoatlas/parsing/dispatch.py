@@ -6,6 +6,7 @@ from repoatlas.ingest.inventory import FileEntry
 from repoatlas.parsing.models import ParsedFile, ParseIssue
 from repoatlas.parsing.python import PythonExtractor
 from repoatlas.parsing.ts_runtime import MAX_ISSUES_PER_FILE, collect_issues, grammar_for, parse
+from repoatlas.parsing.typescript import TypeScriptExtractor
 
 _BOM = b"\xef\xbb\xbf"
 
@@ -28,10 +29,13 @@ def parse_file(entry: FileEntry, data: bytes) -> ParsedFile:
         )
 
     tree = parse(grammar_for(entry.path), source)
+    extractor: PythonExtractor | TypeScriptExtractor
     if entry.language == "py":
         extractor = PythonExtractor(source, entry.path, is_test=entry.is_test)
-    else:  # pragma: no cover - TypeScript/JavaScript extraction lands next
-        raise NotImplementedError(f"No extractor for {entry.language} yet.")
+    else:
+        extractor = TypeScriptExtractor(
+            source, entry.path, lang=entry.language, is_test=entry.is_test
+        )
     symbols, imports, calls, bases, routes, tests, exports = extractor.run(tree.root_node)
 
     syntax_issues, syntax_total = collect_issues(tree.root_node)

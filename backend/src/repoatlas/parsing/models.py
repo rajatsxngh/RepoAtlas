@@ -56,7 +56,7 @@ class CallSite(_Model):
     callee: str
     name: str | None
     receiver: str | None
-    kind: Literal["call", "new"]
+    kind: Literal["call", "new", "jsx"]  # jsx: a component used as <Name …/>
     enclosing: str | None
     range: Range
 
