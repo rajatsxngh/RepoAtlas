@@ -101,7 +101,7 @@ Tiers and confidences live in `graph/tiers.py` (initial values; recalibrated lat
 - [x] **T1 — Graph model.** Dataclasses/Pydantic models, enums, canonical JSON, digest; round-trip tests.
 - [x] **T2 — Structure.** `dir`/`file`/symbol nodes and `contains` edges from parse results.
 - [x] **T3 — Python module resolver.** Tests for src layouts, namespace packages, relative imports, `__init__` re-exports, external imports.
-- [ ] **T4 — TypeScript/JavaScript module resolver.** Tests for extensions, `index` files, `.js` → `.ts`, `tsconfig` `paths`/`baseUrl`/`extends`, re-export chains.
+- [x] **T4 — TypeScript/JavaScript module resolver.** Tests for extensions, `index` files, `.js` → `.ts`, `tsconfig` `paths`/`baseUrl`/`extends`, re-export chains.
 - [ ] **T5 — Bindings and import edges.**
 - [ ] **T6 — Call resolver.** One test per tier plus ambiguity, unresolved, external, and constructor cases.
 - [ ] **T7 — Inheritance edges.**
