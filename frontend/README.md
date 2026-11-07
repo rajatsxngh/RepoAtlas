@@ -17,6 +17,8 @@ Run these from `frontend/` (Node 22.12 or later).
 | Unit tests (Vitest)                                          | `npm test`                           |
 | End-to-end tests (Playwright)                                | `npx playwright test`                |
 
+To run everything at once (Postgres, migrations, the API, a worker, and this app), run `node scripts/dev.mjs` from the repository root. It prints the app's URL (http://localhost:3000, or the next free port) and stops everything on Ctrl+C.
+
 ## Settings
 
 | Variable               | Default                 | Meaning                                                    |
