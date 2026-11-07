@@ -10,7 +10,7 @@ from collections.abc import Iterable, Sequence
 
 from repoatlas.graph.bindings import BindingTable, ModuleResolvers, ResolvedStmt, add_import_edges
 from repoatlas.graph.calls import CallResolver, add_call_edges
-from repoatlas.graph.classes import ClassHierarchy
+from repoatlas.graph.classes import ClassHierarchy, add_inherits_edges, with_unresolved_bases
 from repoatlas.graph.edges import EdgeSet
 from repoatlas.graph.index import SymbolIndex
 from repoatlas.graph.keys import file_key
@@ -46,6 +46,8 @@ def build_graph(
     names = NameResolver(index, bindings, resolvers)
     hierarchy = ClassHierarchy.build(files, names)
     names.hierarchy = hierarchy
+    add_inherits_edges(hierarchy, edges)
+    with_unresolved_bases(nodes, hierarchy)
 
     def caller_of(parsed: ParsedFile, call: CallSite) -> str:
         return call.enclosing if call.enclosing in nodes else file_key(parsed.path)

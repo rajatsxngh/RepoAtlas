@@ -13,9 +13,13 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from pydantic import JsonValue
+
+from repoatlas.graph.edges import EdgeSet
 from repoatlas.graph.index import SymbolIndex
-from repoatlas.graph.model import Provenance
+from repoatlas.graph.model import EdgeKind, Node, Provenance
 from repoatlas.graph.names import NameResolver
+from repoatlas.graph.tiers import INHERITS_CONFIDENCE
 from repoatlas.parsing.models import ParsedFile, Range, Symbol
 
 DOTTED_NAME = re.compile(r"[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*")
@@ -102,3 +106,26 @@ class ClassHierarchy:
     def has_unresolved_bases(self, class_key: str) -> bool:
         """Whether the class or any of its resolved bases has a base outside the repository."""
         return any(current in self.unresolved for current in self.mro(class_key))
+
+
+def add_inherits_edges(hierarchy: ClassHierarchy, edges: EdgeSet) -> None:
+    """``inherits`` edges class → base for every base that resolved to a repository class."""
+    for class_key, links in hierarchy.bases.items():
+        for link in links:
+            edges.add(
+                class_key,
+                link.base,
+                EdgeKind.INHERITS,
+                link.provenance,
+                INHERITS_CONFIDENCE,
+                site=link.site,
+            )
+
+
+def with_unresolved_bases(nodes: dict[str, Node], hierarchy: ClassHierarchy) -> None:
+    """Record each class's bases that did not resolve in its node's ``meta.unresolved_bases``."""
+    for class_key, texts in hierarchy.unresolved.items():
+        node = nodes.get(class_key)
+        if node is not None:
+            meta: dict[str, JsonValue] = {**node.meta, "unresolved_bases": list(texts)}
+            nodes[class_key] = node.model_copy(update={"meta": meta})
