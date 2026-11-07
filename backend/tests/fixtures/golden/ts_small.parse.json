@@ -1,0 +1,1589 @@
+{
+  "commit": null,
+  "digest": "c595a4e7d64b493686cd6a05a5b142319d7c5019beb5d9b071a69e2c6958a5ce",
+  "files": [
+    {
+      "blob_oid": "c6ef7123becd51e750c409e628c10b7f08a25ee9",
+      "calls": [
+        {
+          "callee": "Cart",
+          "enclosing": "ts:src/__tests__/cart.test.ts:Cart > adds items:test",
+          "kind": "new",
+          "name": "Cart",
+          "range": {
+            "end_col": 27,
+            "end_line": 6,
+            "start_col": 17,
+            "start_line": 6
+          },
+          "receiver": null
+        },
+        {
+          "callee": "cart.add",
+          "enclosing": "ts:src/__tests__/cart.test.ts:Cart > adds items:test",
+          "kind": "call",
+          "name": "add",
+          "range": {
+            "end_col": 39,
+            "end_line": 7,
+            "start_col": 4,
+            "start_line": 7
+          },
+          "receiver": "cart"
+        },
+        {
+          "callee": "expect(cart.total).toBe",
+          "enclosing": "ts:src/__tests__/cart.test.ts:Cart > adds items:test",
+          "kind": "call",
+          "name": "toBe",
+          "range": {
+            "end_col": 30,
+            "end_line": 8,
+            "start_col": 4,
+            "start_line": 8
+          },
+          "receiver": "expect(cart.total)"
+        },
+        {
+          "callee": "expect",
+          "enclosing": "ts:src/__tests__/cart.test.ts:Cart > adds items:test",
+          "kind": "call",
+          "name": "expect",
+          "range": {
+            "end_col": 22,
+            "end_line": 8,
+            "start_col": 4,
+            "start_line": 8
+          },
+          "receiver": null
+        },
+        {
+          "callee": "expect(sum([1, 2])).toBe",
+          "enclosing": "ts:src/__tests__/cart.test.ts:Cart > adds items:test~2",
+          "kind": "call",
+          "name": "toBe",
+          "range": {
+            "end_col": 31,
+            "end_line": 12,
+            "start_col": 4,
+            "start_line": 12
+          },
+          "receiver": "expect(sum([1, 2]))"
+        },
+        {
+          "callee": "expect",
+          "enclosing": "ts:src/__tests__/cart.test.ts:Cart > adds items:test~2",
+          "kind": "call",
+          "name": "expect",
+          "range": {
+            "end_col": 23,
+            "end_line": 12,
+            "start_col": 4,
+            "start_line": 12
+          },
+          "receiver": null
+        },
+        {
+          "callee": "sum",
+          "enclosing": "ts:src/__tests__/cart.test.ts:Cart > adds items:test~2",
+          "kind": "call",
+          "name": "sum",
+          "range": {
+            "end_col": 22,
+            "end_line": 12,
+            "start_col": 11,
+            "start_line": 12
+          },
+          "receiver": null
+        },
+        {
+          "callee": "expect(Cart.empty().total).toBe",
+          "enclosing": "ts:src/__tests__/cart.test.ts:Cart > empty > has no total:test",
+          "kind": "call",
+          "name": "toBe",
+          "range": {
+            "end_col": 40,
+            "end_line": 17,
+            "start_col": 6,
+            "start_line": 17
+          },
+          "receiver": "expect(Cart.empty().total)"
+        },
+        {
+          "callee": "expect",
+          "enclosing": "ts:src/__tests__/cart.test.ts:Cart > empty > has no total:test",
+          "kind": "call",
+          "name": "expect",
+          "range": {
+            "end_col": 32,
+            "end_line": 17,
+            "start_col": 6,
+            "start_line": 17
+          },
+          "receiver": null
+        },
+        {
+          "callee": "Cart.empty",
+          "enclosing": "ts:src/__tests__/cart.test.ts:Cart > empty > has no total:test",
+          "kind": "call",
+          "name": "empty",
+          "range": {
+            "end_col": 25,
+            "end_line": 17,
+            "start_col": 13,
+            "start_line": 17
+          },
+          "receiver": "Cart"
+        }
+      ],
+      "class_bases": [],
+      "exports": [],
+      "imports": [
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "describe",
+              "name": "describe"
+            },
+            {
+              "kind": "named",
+              "local": "expect",
+              "name": "expect"
+            },
+            {
+              "kind": "named",
+              "local": "it",
+              "name": "it"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "vitest",
+          "range": {
+            "end_col": 46,
+            "end_line": 1,
+            "start_col": 0,
+            "start_line": 1
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "Cart",
+              "name": "Cart"
+            },
+            {
+              "kind": "named",
+              "local": "sum",
+              "name": "sum"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "../cart",
+          "range": {
+            "end_col": 36,
+            "end_line": 2,
+            "start_col": 0,
+            "start_line": 2
+          },
+          "scope": null,
+          "type_only": false
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "language": "ts",
+      "path": "src/__tests__/cart.test.ts",
+      "routes": [],
+      "symbols": [
+        {
+          "decorators": [],
+          "exported": false,
+          "key": "ts:src/__tests__/cart.test.ts:Cart > adds items:test",
+          "kind": "test",
+          "modifiers": [],
+          "name": "adds items",
+          "name_range": {
+            "end_col": 17,
+            "end_line": 5,
+            "start_col": 5,
+            "start_line": 5
+          },
+          "parent": null,
+          "qualname": "Cart > adds items",
+          "signature": "it(\"adds items\")",
+          "span": {
+            "end_col": 4,
+            "end_line": 9,
+            "start_col": 2,
+            "start_line": 5
+          }
+        },
+        {
+          "decorators": [],
+          "exported": false,
+          "key": "ts:src/__tests__/cart.test.ts:Cart > adds items:test~2",
+          "kind": "test",
+          "modifiers": [],
+          "name": "adds items",
+          "name_range": {
+            "end_col": 17,
+            "end_line": 11,
+            "start_col": 5,
+            "start_line": 11
+          },
+          "parent": null,
+          "qualname": "Cart > adds items",
+          "signature": "it(\"adds items\")",
+          "span": {
+            "end_col": 4,
+            "end_line": 13,
+            "start_col": 2,
+            "start_line": 11
+          }
+        },
+        {
+          "decorators": [],
+          "exported": false,
+          "key": "ts:src/__tests__/cart.test.ts:Cart > empty > has no total:test",
+          "kind": "test",
+          "modifiers": [],
+          "name": "has no total",
+          "name_range": {
+            "end_col": 21,
+            "end_line": 16,
+            "start_col": 7,
+            "start_line": 16
+          },
+          "parent": null,
+          "qualname": "Cart > empty > has no total",
+          "signature": "it(\"has no total\")",
+          "span": {
+            "end_col": 6,
+            "end_line": 18,
+            "start_col": 4,
+            "start_line": 16
+          }
+        }
+      ],
+      "tests": [
+        {
+          "framework": "jest",
+          "key": "ts:src/__tests__/cart.test.ts:Cart > adds items:test",
+          "range": {
+            "end_col": 4,
+            "end_line": 9,
+            "start_col": 2,
+            "start_line": 5
+          },
+          "runner_id": "src/__tests__/cart.test.ts > Cart > adds items",
+          "title_path": [
+            "Cart",
+            "adds items"
+          ]
+        },
+        {
+          "framework": "jest",
+          "key": "ts:src/__tests__/cart.test.ts:Cart > adds items:test~2",
+          "range": {
+            "end_col": 4,
+            "end_line": 13,
+            "start_col": 2,
+            "start_line": 11
+          },
+          "runner_id": "src/__tests__/cart.test.ts > Cart > adds items",
+          "title_path": [
+            "Cart",
+            "adds items"
+          ]
+        },
+        {
+          "framework": "jest",
+          "key": "ts:src/__tests__/cart.test.ts:Cart > empty > has no total:test",
+          "range": {
+            "end_col": 6,
+            "end_line": 18,
+            "start_col": 4,
+            "start_line": 16
+          },
+          "runner_id": "src/__tests__/cart.test.ts > Cart > empty > has no total",
+          "title_path": [
+            "Cart",
+            "empty",
+            "has no total"
+          ]
+        }
+      ]
+    },
+    {
+      "blob_oid": "28008f6d6b8cf4b9abf88538e978131929530315",
+      "calls": [
+        {
+          "callee": "this.items.push",
+          "enclosing": "ts:src/cart.ts:Cart.add:method",
+          "kind": "call",
+          "name": "push",
+          "range": {
+            "end_col": 25,
+            "end_line": 10,
+            "start_col": 4,
+            "start_line": 10
+          },
+          "receiver": "this.items"
+        },
+        {
+          "callee": "sum",
+          "enclosing": "ts:src/cart.ts:Cart.total:method",
+          "kind": "call",
+          "name": "sum",
+          "range": {
+            "end_col": 52,
+            "end_line": 14,
+            "start_col": 11,
+            "start_line": 14
+          },
+          "receiver": null
+        },
+        {
+          "callee": "this.items.map",
+          "enclosing": "ts:src/cart.ts:Cart.total:method",
+          "kind": "call",
+          "name": "map",
+          "range": {
+            "end_col": 51,
+            "end_line": 14,
+            "start_col": 15,
+            "start_line": 14
+          },
+          "receiver": "this.items"
+        },
+        {
+          "callee": "Cart",
+          "enclosing": "ts:src/cart.ts:Cart.empty:method",
+          "kind": "new",
+          "name": "Cart",
+          "range": {
+            "end_col": 21,
+            "end_line": 18,
+            "start_col": 11,
+            "start_line": 18
+          },
+          "receiver": null
+        },
+        {
+          "callee": "values.reduce",
+          "enclosing": "ts:src/cart.ts:sum:function",
+          "kind": "call",
+          "name": "reduce",
+          "range": {
+            "end_col": 82,
+            "end_line": 26,
+            "start_col": 49,
+            "start_line": 26
+          },
+          "receiver": "values"
+        },
+        {
+          "callee": "value.toFixed",
+          "enclosing": "ts:src/cart.ts:formatPrice:function",
+          "kind": "call",
+          "name": "toFixed",
+          "range": {
+            "end_col": 29,
+            "end_line": 29,
+            "start_col": 13,
+            "start_line": 29
+          },
+          "receiver": "value"
+        }
+      ],
+      "class_bases": [],
+      "exports": [
+        {
+          "local": "Cart",
+          "name": "Cart",
+          "range": {
+            "end_col": 1,
+            "end_line": 24,
+            "start_col": 0,
+            "start_line": 6
+          }
+        },
+        {
+          "local": "sum",
+          "name": "sum",
+          "range": {
+            "end_col": 16,
+            "end_line": 26,
+            "start_col": 13,
+            "start_line": 26
+          }
+        },
+        {
+          "local": "formatPrice",
+          "name": "formatPrice",
+          "range": {
+            "end_col": 1,
+            "end_line": 30,
+            "start_col": 0,
+            "start_line": 28
+          }
+        }
+      ],
+      "imports": [],
+      "issue_count": 0,
+      "issues": [],
+      "language": "ts",
+      "path": "src/cart.ts",
+      "routes": [],
+      "symbols": [
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "ts:src/cart.ts:Cart:class",
+          "kind": "class",
+          "modifiers": [],
+          "name": "Cart",
+          "name_range": {
+            "end_col": 17,
+            "end_line": 6,
+            "start_col": 13,
+            "start_line": 6
+          },
+          "parent": null,
+          "qualname": "Cart",
+          "signature": "class Cart",
+          "span": {
+            "end_col": 1,
+            "end_line": 24,
+            "start_col": 0,
+            "start_line": 6
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "ts:src/cart.ts:Cart.add:method",
+          "kind": "method",
+          "modifiers": [],
+          "name": "add",
+          "name_range": {
+            "end_col": 5,
+            "end_line": 9,
+            "start_col": 2,
+            "start_line": 9
+          },
+          "parent": "ts:src/cart.ts:Cart:class",
+          "qualname": "Cart.add",
+          "signature": "add(item: Item): void",
+          "span": {
+            "end_col": 3,
+            "end_line": 11,
+            "start_col": 2,
+            "start_line": 9
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "ts:src/cart.ts:Cart.total:method",
+          "kind": "method",
+          "modifiers": [
+            "getter"
+          ],
+          "name": "total",
+          "name_range": {
+            "end_col": 11,
+            "end_line": 13,
+            "start_col": 6,
+            "start_line": 13
+          },
+          "parent": "ts:src/cart.ts:Cart:class",
+          "qualname": "Cart.total",
+          "signature": "get total(): number",
+          "span": {
+            "end_col": 3,
+            "end_line": 15,
+            "start_col": 2,
+            "start_line": 13
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "ts:src/cart.ts:Cart.empty:method",
+          "kind": "method",
+          "modifiers": [
+            "static"
+          ],
+          "name": "empty",
+          "name_range": {
+            "end_col": 14,
+            "end_line": 17,
+            "start_col": 9,
+            "start_line": 17
+          },
+          "parent": "ts:src/cart.ts:Cart:class",
+          "qualname": "Cart.empty",
+          "signature": "static empty(): Cart",
+          "span": {
+            "end_col": 3,
+            "end_line": 19,
+            "start_col": 2,
+            "start_line": 17
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "ts:src/cart.ts:Cart.clear:method",
+          "kind": "method",
+          "modifiers": [
+            "field"
+          ],
+          "name": "clear",
+          "name_range": {
+            "end_col": 7,
+            "end_line": 21,
+            "start_col": 2,
+            "start_line": 21
+          },
+          "parent": "ts:src/cart.ts:Cart:class",
+          "qualname": "Cart.clear",
+          "signature": "clear = (): void =>",
+          "span": {
+            "end_col": 3,
+            "end_line": 23,
+            "start_col": 2,
+            "start_line": 21
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "ts:src/cart.ts:sum:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "sum",
+          "name_range": {
+            "end_col": 16,
+            "end_line": 26,
+            "start_col": 13,
+            "start_line": 26
+          },
+          "parent": null,
+          "qualname": "sum",
+          "signature": "sum = (values: number[]): number =>",
+          "span": {
+            "end_col": 83,
+            "end_line": 26,
+            "start_col": 0,
+            "start_line": 26
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "ts:src/cart.ts:formatPrice:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "formatPrice",
+          "name_range": {
+            "end_col": 27,
+            "end_line": 28,
+            "start_col": 16,
+            "start_line": 28
+          },
+          "parent": null,
+          "qualname": "formatPrice",
+          "signature": "function formatPrice(value: number): string",
+          "span": {
+            "end_col": 1,
+            "end_line": 30,
+            "start_col": 0,
+            "start_line": 28
+          }
+        },
+        {
+          "decorators": [],
+          "exported": false,
+          "key": "ts:src/cart.ts:ids:function",
+          "kind": "function",
+          "modifiers": [
+            "generator"
+          ],
+          "name": "ids",
+          "name_range": {
+            "end_col": 13,
+            "end_line": 32,
+            "start_col": 10,
+            "start_line": 32
+          },
+          "parent": null,
+          "qualname": "ids",
+          "signature": "function* ids(): Generator<number>",
+          "span": {
+            "end_col": 1,
+            "end_line": 35,
+            "start_col": 0,
+            "start_line": 32
+          }
+        }
+      ],
+      "tests": []
+    },
+    {
+      "blob_oid": "ad494960a8d124da0af8646a91908ca3cb0efd65",
+      "calls": [
+        {
+          "callee": "memo",
+          "enclosing": null,
+          "kind": "call",
+          "name": "memo",
+          "range": {
+            "end_col": 2,
+            "end_line": 7,
+            "start_col": 22,
+            "start_line": 5
+          },
+          "receiver": null
+        },
+        {
+          "callee": "onPress",
+          "enclosing": "ts:src/components/Button.tsx:Button:function",
+          "kind": "call",
+          "name": "onPress",
+          "range": {
+            "end_col": 41,
+            "end_line": 6,
+            "start_col": 32,
+            "start_line": 6
+          },
+          "receiver": null
+        },
+        {
+          "callee": "Button",
+          "enclosing": "ts:src/components/Button.tsx:Toolbar:function",
+          "kind": "jsx",
+          "name": "Button",
+          "range": {
+            "end_col": 52,
+            "end_line": 12,
+            "start_col": 6,
+            "start_line": 12
+          },
+          "receiver": null
+        },
+        {
+          "callee": "save",
+          "enclosing": "ts:src/components/Button.tsx:Toolbar:function",
+          "kind": "call",
+          "name": "save",
+          "range": {
+            "end_col": 48,
+            "end_line": 12,
+            "start_col": 42,
+            "start_line": 12
+          },
+          "receiver": null
+        },
+        {
+          "callee": "console.log",
+          "enclosing": "ts:src/components/Button.tsx:save:function",
+          "kind": "call",
+          "name": "log",
+          "range": {
+            "end_col": 22,
+            "end_line": 18,
+            "start_col": 2,
+            "start_line": 18
+          },
+          "receiver": "console"
+        }
+      ],
+      "class_bases": [],
+      "exports": [
+        {
+          "local": "Button",
+          "name": "Button",
+          "range": {
+            "end_col": 19,
+            "end_line": 5,
+            "start_col": 13,
+            "start_line": 5
+          }
+        },
+        {
+          "local": "Toolbar",
+          "name": "Toolbar",
+          "range": {
+            "end_col": 1,
+            "end_line": 15,
+            "start_col": 0,
+            "start_line": 9
+          }
+        }
+      ],
+      "imports": [
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "memo",
+              "name": "memo"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "react",
+          "range": {
+            "end_col": 29,
+            "end_line": 1,
+            "start_col": 0,
+            "start_line": 1
+          },
+          "scope": null,
+          "type_only": false
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "language": "ts",
+      "path": "src/components/Button.tsx",
+      "routes": [],
+      "symbols": [
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "ts:src/components/Button.tsx:Button:function",
+          "kind": "function",
+          "modifiers": [
+            "wrapped"
+          ],
+          "name": "Button",
+          "name_range": {
+            "end_col": 19,
+            "end_line": 5,
+            "start_col": 13,
+            "start_line": 5
+          },
+          "parent": null,
+          "qualname": "Button",
+          "signature": "Button = memo(function Button({ label, onPress }: Props)",
+          "span": {
+            "end_col": 3,
+            "end_line": 7,
+            "start_col": 0,
+            "start_line": 5
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "ts:src/components/Button.tsx:Toolbar:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "Toolbar",
+          "name_range": {
+            "end_col": 23,
+            "end_line": 9,
+            "start_col": 16,
+            "start_line": 9
+          },
+          "parent": null,
+          "qualname": "Toolbar",
+          "signature": "function Toolbar()",
+          "span": {
+            "end_col": 1,
+            "end_line": 15,
+            "start_col": 0,
+            "start_line": 9
+          }
+        },
+        {
+          "decorators": [],
+          "exported": false,
+          "key": "ts:src/components/Button.tsx:save:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "save",
+          "name_range": {
+            "end_col": 13,
+            "end_line": 17,
+            "start_col": 9,
+            "start_line": 17
+          },
+          "parent": null,
+          "qualname": "save",
+          "signature": "function save()",
+          "span": {
+            "end_col": 1,
+            "end_line": 19,
+            "start_col": 0,
+            "start_line": 17
+          }
+        }
+      ],
+      "tests": []
+    },
+    {
+      "blob_oid": "9cbc6c9f835b53f11b754a1d6bfd8cf686aed847",
+      "calls": [],
+      "class_bases": [],
+      "exports": [
+        {
+          "local": null,
+          "name": "default",
+          "range": {
+            "end_col": 32,
+            "end_line": 2,
+            "start_col": 9,
+            "start_line": 2
+          }
+        },
+        {
+          "local": null,
+          "name": "Item",
+          "range": {
+            "end_col": 18,
+            "end_line": 3,
+            "start_col": 14,
+            "start_line": 3
+          }
+        }
+      ],
+      "imports": [
+        {
+          "bindings": [
+            {
+              "kind": "star",
+              "local": null,
+              "name": null
+            }
+          ],
+          "kind": "reexport",
+          "level": 0,
+          "module": "./cart",
+          "range": {
+            "end_col": 23,
+            "end_line": 1,
+            "start_col": 0,
+            "start_line": 1
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "default",
+              "name": "createServer"
+            }
+          ],
+          "kind": "reexport",
+          "level": 0,
+          "module": "./server",
+          "range": {
+            "end_col": 51,
+            "end_line": 2,
+            "start_col": 0,
+            "start_line": 2
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "Item",
+              "name": "Item"
+            }
+          ],
+          "kind": "reexport",
+          "level": 0,
+          "module": "./cart",
+          "range": {
+            "end_col": 35,
+            "end_line": 3,
+            "start_col": 0,
+            "start_line": 3
+          },
+          "scope": null,
+          "type_only": true
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "language": "ts",
+      "path": "src/index.ts",
+      "routes": [],
+      "symbols": [],
+      "tests": []
+    },
+    {
+      "blob_oid": "376e25a3473aee3b6f51d6df3263e302e77f9016",
+      "calls": [
+        {
+          "callee": "path.join",
+          "enclosing": "js:src/legacy.js:join:function",
+          "kind": "call",
+          "name": "join",
+          "range": {
+            "end_col": 28,
+            "end_line": 5,
+            "start_col": 9,
+            "start_line": 5
+          },
+          "receiver": "path"
+        },
+        {
+          "callee": "format",
+          "enclosing": "js:src/legacy.js:describePath:function",
+          "kind": "call",
+          "name": "format",
+          "range": {
+            "end_col": 46,
+            "end_line": 9,
+            "start_col": 9,
+            "start_line": 9
+          },
+          "receiver": null
+        },
+        {
+          "callee": "path.extname",
+          "enclosing": "js:src/legacy.js:describePath:function",
+          "kind": "call",
+          "name": "extname",
+          "range": {
+            "end_col": 45,
+            "end_line": 9,
+            "start_col": 30,
+            "start_line": 9
+          },
+          "receiver": "path"
+        }
+      ],
+      "class_bases": [],
+      "exports": [
+        {
+          "local": "join",
+          "name": "join",
+          "range": {
+            "end_col": 2,
+            "end_line": 6,
+            "start_col": 0,
+            "start_line": 4
+          }
+        },
+        {
+          "local": "describePath",
+          "name": "describePath",
+          "range": {
+            "end_col": 43,
+            "end_line": 12,
+            "start_col": 0,
+            "start_line": 12
+          }
+        }
+      ],
+      "imports": [
+        {
+          "bindings": [
+            {
+              "kind": "module",
+              "local": "path",
+              "name": null
+            }
+          ],
+          "kind": "require",
+          "level": 0,
+          "module": "path",
+          "range": {
+            "end_col": 28,
+            "end_line": 1,
+            "start_col": 13,
+            "start_line": 1
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "format",
+              "name": "format"
+            }
+          ],
+          "kind": "require",
+          "level": 0,
+          "module": "util",
+          "range": {
+            "end_col": 34,
+            "end_line": 2,
+            "start_col": 19,
+            "start_line": 2
+          },
+          "scope": null,
+          "type_only": false
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "language": "js",
+      "path": "src/legacy.js",
+      "routes": [],
+      "symbols": [
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "js:src/legacy.js:join:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "join",
+          "name_range": {
+            "end_col": 12,
+            "end_line": 4,
+            "start_col": 0,
+            "start_line": 4
+          },
+          "parent": null,
+          "qualname": "join",
+          "signature": "exports.join = function join(...parts)",
+          "span": {
+            "end_col": 2,
+            "end_line": 6,
+            "start_col": 0,
+            "start_line": 4
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "js:src/legacy.js:describePath:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "describePath",
+          "name_range": {
+            "end_col": 21,
+            "end_line": 8,
+            "start_col": 9,
+            "start_line": 8
+          },
+          "parent": null,
+          "qualname": "describePath",
+          "signature": "function describePath(p)",
+          "span": {
+            "end_col": 1,
+            "end_line": 10,
+            "start_col": 0,
+            "start_line": 8
+          }
+        }
+      ],
+      "tests": []
+    },
+    {
+      "blob_oid": "8f62604d8a726496c872278268096afef824d6c1",
+      "calls": [
+        {
+          "callee": "express",
+          "enclosing": null,
+          "kind": "call",
+          "name": "express",
+          "range": {
+            "end_col": 21,
+            "end_line": 5,
+            "start_col": 12,
+            "start_line": 5
+          },
+          "receiver": null
+        },
+        {
+          "callee": "Map",
+          "enclosing": null,
+          "kind": "new",
+          "name": "Map",
+          "range": {
+            "end_col": 37,
+            "end_line": 6,
+            "start_col": 14,
+            "start_line": 6
+          },
+          "receiver": null
+        },
+        {
+          "callee": "app.get",
+          "enclosing": null,
+          "kind": "call",
+          "name": "get",
+          "range": {
+            "end_col": 30,
+            "end_line": 8,
+            "start_col": 0,
+            "start_line": 8
+          },
+          "receiver": "app"
+        },
+        {
+          "callee": "app.post",
+          "enclosing": null,
+          "kind": "call",
+          "name": "post",
+          "range": {
+            "end_col": 2,
+            "end_line": 12,
+            "start_col": 0,
+            "start_line": 9
+          },
+          "receiver": "app"
+        },
+        {
+          "callee": "carts.get(req.params.id).add",
+          "enclosing": null,
+          "kind": "call",
+          "name": "add",
+          "range": {
+            "end_col": 41,
+            "end_line": 10,
+            "start_col": 2,
+            "start_line": 10
+          },
+          "receiver": "carts.get(req.params.id)"
+        },
+        {
+          "callee": "carts.get",
+          "enclosing": null,
+          "kind": "call",
+          "name": "get",
+          "range": {
+            "end_col": 26,
+            "end_line": 10,
+            "start_col": 2,
+            "start_line": 10
+          },
+          "receiver": "carts"
+        },
+        {
+          "callee": "res.sendStatus",
+          "enclosing": null,
+          "kind": "call",
+          "name": "sendStatus",
+          "range": {
+            "end_col": 21,
+            "end_line": 11,
+            "start_col": 2,
+            "start_line": 11
+          },
+          "receiver": "res"
+        },
+        {
+          "callee": "carts.get",
+          "enclosing": "ts:src/server.ts:getCart:function",
+          "kind": "call",
+          "name": "get",
+          "range": {
+            "end_col": 39,
+            "end_line": 15,
+            "start_col": 15,
+            "start_line": 15
+          },
+          "receiver": "carts"
+        },
+        {
+          "callee": "Cart.empty",
+          "enclosing": "ts:src/server.ts:getCart:function",
+          "kind": "call",
+          "name": "empty",
+          "range": {
+            "end_col": 55,
+            "end_line": 15,
+            "start_col": 43,
+            "start_line": 15
+          },
+          "receiver": "Cart"
+        },
+        {
+          "callee": "res.json",
+          "enclosing": "ts:src/server.ts:getCart:function",
+          "kind": "call",
+          "name": "json",
+          "range": {
+            "end_col": 46,
+            "end_line": 16,
+            "start_col": 2,
+            "start_line": 16
+          },
+          "receiver": "res"
+        },
+        {
+          "callee": "formatPrice",
+          "enclosing": "ts:src/server.ts:getCart:function",
+          "kind": "call",
+          "name": "formatPrice",
+          "range": {
+            "end_col": 43,
+            "end_line": 16,
+            "start_col": 20,
+            "start_line": 16
+          },
+          "receiver": null
+        }
+      ],
+      "class_bases": [],
+      "exports": [
+        {
+          "local": "createServer",
+          "name": "createServer",
+          "range": {
+            "end_col": 1,
+            "end_line": 21,
+            "start_col": 0,
+            "start_line": 19
+          }
+        },
+        {
+          "local": "loadAdmin",
+          "name": "loadAdmin",
+          "range": {
+            "end_col": 22,
+            "end_line": 23,
+            "start_col": 13,
+            "start_line": 23
+          }
+        }
+      ],
+      "imports": [
+        {
+          "bindings": [
+            {
+              "kind": "default",
+              "local": "express",
+              "name": "default"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "express",
+          "range": {
+            "end_col": 30,
+            "end_line": 1,
+            "start_col": 0,
+            "start_line": 1
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "Request",
+              "name": "Request"
+            },
+            {
+              "kind": "named",
+              "local": "Response",
+              "name": "Response"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "express",
+          "range": {
+            "end_col": 49,
+            "end_line": 2,
+            "start_col": 0,
+            "start_line": 2
+          },
+          "scope": null,
+          "type_only": true
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "Cart",
+              "name": "Cart"
+            },
+            {
+              "kind": "named",
+              "local": "formatPrice",
+              "name": "formatPrice"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "./cart",
+          "range": {
+            "end_col": 43,
+            "end_line": 3,
+            "start_col": 0,
+            "start_line": 3
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [],
+          "kind": "dynamic",
+          "level": 0,
+          "module": "./admin",
+          "range": {
+            "end_col": 48,
+            "end_line": 23,
+            "start_col": 31,
+            "start_line": 23
+          },
+          "scope": "ts:src/server.ts:loadAdmin:function",
+          "type_only": false
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "language": "ts",
+      "path": "src/server.ts",
+      "routes": [
+        {
+          "handler": "getCart",
+          "methods": [
+            "GET"
+          ],
+          "path": "/carts/:id",
+          "range": {
+            "end_col": 30,
+            "end_line": 8,
+            "start_col": 0,
+            "start_line": 8
+          },
+          "source": "call",
+          "text": "app.get(\"/carts/:id\")"
+        },
+        {
+          "handler": null,
+          "methods": [
+            "POST"
+          ],
+          "path": "/carts/:id/items",
+          "range": {
+            "end_col": 2,
+            "end_line": 12,
+            "start_col": 0,
+            "start_line": 9
+          },
+          "source": "call",
+          "text": "app.post(\"/carts/:id/items\")"
+        }
+      ],
+      "symbols": [
+        {
+          "decorators": [],
+          "exported": false,
+          "key": "ts:src/server.ts:getCart:function",
+          "kind": "function",
+          "modifiers": [
+            "async"
+          ],
+          "name": "getCart",
+          "name_range": {
+            "end_col": 22,
+            "end_line": 14,
+            "start_col": 15,
+            "start_line": 14
+          },
+          "parent": null,
+          "qualname": "getCart",
+          "signature": "async function getCart(req: Request, res: Response): Promise<void>",
+          "span": {
+            "end_col": 1,
+            "end_line": 17,
+            "start_col": 0,
+            "start_line": 14
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "ts:src/server.ts:createServer:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "createServer",
+          "name_range": {
+            "end_col": 28,
+            "end_line": 19,
+            "start_col": 16,
+            "start_line": 19
+          },
+          "parent": null,
+          "qualname": "createServer",
+          "signature": "function createServer()",
+          "span": {
+            "end_col": 1,
+            "end_line": 21,
+            "start_col": 0,
+            "start_line": 19
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "ts:src/server.ts:loadAdmin:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "loadAdmin",
+          "name_range": {
+            "end_col": 22,
+            "end_line": 23,
+            "start_col": 13,
+            "start_line": 23
+          },
+          "parent": null,
+          "qualname": "loadAdmin",
+          "signature": "loadAdmin = () =>",
+          "span": {
+            "end_col": 49,
+            "end_line": 23,
+            "start_col": 0,
+            "start_line": 23
+          }
+        }
+      ],
+      "tests": []
+    }
+  ],
+  "inventory": {
+    "files": [
+      {
+        "blob_oid": "b03dd45ee3b8710c037d278e17b05a8a3ba7bb39",
+        "is_test": false,
+        "language": "js",
+        "loc": null,
+        "mode": "100644",
+        "path": "coverage/report.js",
+        "size": 25,
+        "skip_reason": "vendored"
+      },
+      {
+        "blob_oid": "c6ef7123becd51e750c409e628c10b7f08a25ee9",
+        "is_test": true,
+        "language": "ts",
+        "loc": 17,
+        "mode": "100644",
+        "path": "src/__tests__/cart.test.ts",
+        "size": 432,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "28008f6d6b8cf4b9abf88538e978131929530315",
+        "is_test": false,
+        "language": "ts",
+        "loc": 27,
+        "mode": "100644",
+        "path": "src/cart.ts",
+        "size": 612,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "ad494960a8d124da0af8646a91908ca3cb0efd65",
+        "is_test": false,
+        "language": "ts",
+        "loc": 15,
+        "mode": "100644",
+        "path": "src/components/Button.tsx",
+        "size": 388,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "9cbc6c9f835b53f11b754a1d6bfd8cf686aed847",
+        "is_test": false,
+        "language": "ts",
+        "loc": 3,
+        "mode": "100644",
+        "path": "src/index.ts",
+        "size": 112,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "376e25a3473aee3b6f51d6df3263e302e77f9016",
+        "is_test": false,
+        "language": "js",
+        "loc": 9,
+        "mode": "100644",
+        "path": "src/legacy.js",
+        "size": 264,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "8f62604d8a726496c872278268096afef824d6c1",
+        "is_test": false,
+        "language": "ts",
+        "loc": 18,
+        "mode": "100644",
+        "path": "src/server.ts",
+        "size": 633,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "4a22d71d67ba8b3cbb4d95a0b96349f43dc0422b",
+        "is_test": false,
+        "language": "ts",
+        "loc": null,
+        "mode": "100644",
+        "path": "src/types.d.ts",
+        "size": 26,
+        "skip_reason": "declaration"
+      },
+      {
+        "blob_oid": "0f5a5cfa5f8a22abb39bb1295073ab7e6dc5e768",
+        "is_test": false,
+        "language": "js",
+        "loc": null,
+        "mode": "100644",
+        "path": "src/vendor.min.js",
+        "size": 39,
+        "skip_reason": "generated"
+      },
+      {
+        "blob_oid": "d239f88f9f0e1f8e8067e5d823ee9c1cf2ef2519",
+        "is_test": false,
+        "language": "js",
+        "loc": null,
+        "mode": "100644",
+        "path": "vendor/legacy-lib.js",
+        "size": 39,
+        "skip_reason": "vendored"
+      }
+    ],
+    "stats": {
+      "indexed": 6,
+      "indexed_by_language": {
+        "js": 1,
+        "ts": 5
+      },
+      "skipped": {
+        "declaration": 1,
+        "generated": 1,
+        "vendored": 2
+      },
+      "source_files": 10,
+      "tree_entries": 12
+    }
+  },
+  "source": "dir:ts_small",
+  "stats": {
+    "calls": 35,
+    "files_parsed": 6,
+    "files_with_issues": 0,
+    "imports": 12,
+    "routes": 2,
+    "symbols": 19,
+    "tests": 3
+  }
+}

@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
+import time
+from pathlib import Path
 from typing import Annotated, NoReturn
 
 import typer
 from sqlalchemy.exc import OperationalError
 
 from repoatlas import __version__
+from repoatlas.canonical import pretty_json, write_text_lf
 from repoatlas.config import get_settings
 from repoatlas.db import migrate
 from repoatlas.db.engine import redact_url
+from repoatlas.ingest.errors import IngestError
 from repoatlas.logging import configure
+from repoatlas.pipeline.parse import ParseOutput, run_parse
 
 START_DB_HINT = "Start it with: docker compose -f infra/docker-compose.yml up -d"
 
@@ -96,3 +101,52 @@ def db_revision(
     except OperationalError as error:
         _connection_failed(database_url, error)
     typer.echo(f"Created migration {revision_id}.")
+
+
+@app.command("parse")
+def parse_command(
+    target: Annotated[str, typer.Argument(help="A public GitHub URL or a local directory.")],
+    commit: Annotated[
+        str | None, typer.Option(help="Full commit SHA (default: the default branch's head).")
+    ] = None,
+    json_out: Annotated[
+        str | None,
+        typer.Option("--json", help="Write the full result as JSON to this file ('-' = stdout)."),
+    ] = None,
+    keep_workdir: Annotated[
+        bool, typer.Option(help="Keep the fetched git data for debugging.")
+    ] = False,
+) -> None:
+    """Fetch a repository (or read a directory) and parse its source files."""
+    started = time.perf_counter()
+    try:
+        output = run_parse(target, get_settings(), commit=commit, keep_workdir=keep_workdir)
+    except IngestError as error:
+        typer.secho(f"Error: {error}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from None
+    to_stdout = json_out == "-"
+    if json_out is not None:
+        text = pretty_json(output)
+        if to_stdout:
+            typer.echo(text, nl=False)
+        else:
+            write_text_lf(Path(json_out), text)
+    for line in _parse_summary(output, time.perf_counter() - started):
+        typer.echo(line, err=to_stdout)
+
+
+def _parse_summary(output: ParseOutput, elapsed: float) -> list[str]:
+    inv, stats = output.inventory.stats, output.stats
+    languages = ", ".join(f"{lang} {count:,}" for lang, count in inv.indexed_by_language.items())
+    skipped = ", ".join(f"{reason} {count:,}" for reason, count in inv.skipped.items()) or "none"
+    issue_rate = stats.files_with_issues / stats.files_parsed if stats.files_parsed else 0.0
+    commit = f" @ {output.commit}" if output.commit else ""
+    return [
+        f"Source:   {output.source}{commit}",
+        f"Files:    {stats.files_parsed:,} parsed ({languages or 'none'}); skipped: {skipped}",
+        f"Found:    {stats.symbols:,} symbols, {stats.imports:,} imports, {stats.calls:,} calls, "
+        f"{stats.tests:,} tests, {stats.routes:,} routes",
+        f"Issues:   {stats.files_with_issues:,} files with syntax issues ({issue_rate:.1%})",
+        f"Digest:   {output.digest}",
+        f"Time:     {elapsed:.1f} s",
+    ]

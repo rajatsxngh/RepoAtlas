@@ -1,0 +1,1552 @@
+{
+  "commit": null,
+  "digest": "31cf59ec616dfb6ad6ecfc27a216c0a5c9fde59b9e3120e296d78547e5442ea5",
+  "files": [
+    {
+      "blob_oid": "6def3e88c00aaf4caa3803ff452b07a11599a28a",
+      "calls": [],
+      "class_bases": [],
+      "exports": [
+        {
+          "local": "Cart",
+          "name": "Cart",
+          "range": {
+            "end_col": 17,
+            "end_line": 6,
+            "start_col": 11,
+            "start_line": 6
+          }
+        },
+        {
+          "local": "create_app",
+          "name": "create_app",
+          "range": {
+            "end_col": 31,
+            "end_line": 6,
+            "start_col": 19,
+            "start_line": 6
+          }
+        }
+      ],
+      "imports": [
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "create_app",
+              "name": "create_app"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "shop.app",
+          "range": {
+            "end_col": 31,
+            "end_line": 3,
+            "start_col": 0,
+            "start_line": 3
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "Cart",
+              "name": "Cart"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "shop.cart",
+          "range": {
+            "end_col": 26,
+            "end_line": 4,
+            "start_col": 0,
+            "start_line": 4
+          },
+          "scope": null,
+          "type_only": false
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "language": "py",
+      "path": "src/shop/__init__.py",
+      "routes": [],
+      "symbols": [],
+      "tests": []
+    },
+    {
+      "blob_oid": "0943e8fe35d9e601ed2804fec248a7f9b794e67f",
+      "calls": [
+        {
+          "callee": "FastAPI",
+          "enclosing": null,
+          "kind": "call",
+          "name": "FastAPI",
+          "range": {
+            "end_col": 15,
+            "end_line": 5,
+            "start_col": 6,
+            "start_line": 5
+          },
+          "receiver": null
+        },
+        {
+          "callee": "app.get",
+          "enclosing": null,
+          "kind": "call",
+          "name": "get",
+          "range": {
+            "end_col": 28,
+            "end_line": 9,
+            "start_col": 1,
+            "start_line": 9
+          },
+          "receiver": "app"
+        },
+        {
+          "callee": "_carts.setdefault",
+          "enclosing": "py:src/shop/app.py:get_cart:function",
+          "kind": "call",
+          "name": "setdefault",
+          "range": {
+            "end_col": 45,
+            "end_line": 11,
+            "start_col": 11,
+            "start_line": 11
+          },
+          "receiver": "_carts"
+        },
+        {
+          "callee": "Cart",
+          "enclosing": "py:src/shop/app.py:get_cart:function",
+          "kind": "call",
+          "name": "Cart",
+          "range": {
+            "end_col": 44,
+            "end_line": 11,
+            "start_col": 38,
+            "start_line": 11
+          },
+          "receiver": null
+        },
+        {
+          "callee": "cart.describe",
+          "enclosing": "py:src/shop/app.py:get_cart:function",
+          "kind": "call",
+          "name": "describe",
+          "range": {
+            "end_col": 36,
+            "end_line": 12,
+            "start_col": 21,
+            "start_line": 12
+          },
+          "receiver": "cart"
+        },
+        {
+          "callee": "app.post",
+          "enclosing": null,
+          "kind": "call",
+          "name": "post",
+          "range": {
+            "end_col": 35,
+            "end_line": 15,
+            "start_col": 1,
+            "start_line": 15
+          },
+          "receiver": "app"
+        },
+        {
+          "callee": "_carts[cart_id].add",
+          "enclosing": "py:src/shop/app.py:add_item:function",
+          "kind": "call",
+          "name": "add",
+          "range": {
+            "end_col": 45,
+            "end_line": 19,
+            "start_col": 4,
+            "start_line": 19
+          },
+          "receiver": "_carts[cart_id]"
+        },
+        {
+          "callee": "Decimal",
+          "enclosing": "py:src/shop/app.py:add_item:function",
+          "kind": "call",
+          "name": "Decimal",
+          "range": {
+            "end_col": 44,
+            "end_line": 19,
+            "start_col": 30,
+            "start_line": 19
+          },
+          "receiver": null
+        }
+      ],
+      "class_bases": [],
+      "exports": [],
+      "imports": [
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "FastAPI",
+              "name": "FastAPI"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "fastapi",
+          "range": {
+            "end_col": 27,
+            "end_line": 1,
+            "start_col": 0,
+            "start_line": 1
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "Cart",
+              "name": "Cart"
+            }
+          ],
+          "kind": "static",
+          "level": 1,
+          "module": ".cart",
+          "range": {
+            "end_col": 22,
+            "end_line": 3,
+            "start_col": 0,
+            "start_line": 3
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "Decimal",
+              "name": "Decimal"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "decimal",
+          "range": {
+            "end_col": 31,
+            "end_line": 17,
+            "start_col": 4,
+            "start_line": 17
+          },
+          "scope": "py:src/shop/app.py:add_item:function",
+          "type_only": false
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "language": "py",
+      "path": "src/shop/app.py",
+      "routes": [
+        {
+          "handler": "py:src/shop/app.py:get_cart:function",
+          "methods": [
+            "GET"
+          ],
+          "path": "/carts/{cart_id}",
+          "range": {
+            "end_col": 28,
+            "end_line": 9,
+            "start_col": 0,
+            "start_line": 9
+          },
+          "source": "decorator",
+          "text": "app.get(\"/carts/{cart_id}\")"
+        },
+        {
+          "handler": "py:src/shop/app.py:add_item:function",
+          "methods": [
+            "POST"
+          ],
+          "path": "/carts/{cart_id}/items",
+          "range": {
+            "end_col": 35,
+            "end_line": 15,
+            "start_col": 0,
+            "start_line": 15
+          },
+          "source": "decorator",
+          "text": "app.post(\"/carts/{cart_id}/items\")"
+        }
+      ],
+      "symbols": [
+        {
+          "decorators": [
+            "app.get(\"/carts/{cart_id}\")"
+          ],
+          "exported": true,
+          "key": "py:src/shop/app.py:get_cart:function",
+          "kind": "function",
+          "modifiers": [
+            "async"
+          ],
+          "name": "get_cart",
+          "name_range": {
+            "end_col": 18,
+            "end_line": 10,
+            "start_col": 10,
+            "start_line": 10
+          },
+          "parent": null,
+          "qualname": "get_cart",
+          "signature": "async def get_cart(cart_id: int) -> dict[str, str]",
+          "span": {
+            "end_col": 37,
+            "end_line": 12,
+            "start_col": 0,
+            "start_line": 9
+          }
+        },
+        {
+          "decorators": [
+            "app.post(\"/carts/{cart_id}/items\")"
+          ],
+          "exported": true,
+          "key": "py:src/shop/app.py:add_item:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "add_item",
+          "name_range": {
+            "end_col": 12,
+            "end_line": 16,
+            "start_col": 4,
+            "start_line": 16
+          },
+          "parent": null,
+          "qualname": "add_item",
+          "signature": "def add_item(cart_id: int, name: str, price: str) -> None",
+          "span": {
+            "end_col": 45,
+            "end_line": 19,
+            "start_col": 0,
+            "start_line": 15
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:src/shop/app.py:create_app:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "create_app",
+          "name_range": {
+            "end_col": 14,
+            "end_line": 22,
+            "start_col": 4,
+            "start_line": 22
+          },
+          "parent": null,
+          "qualname": "create_app",
+          "signature": "def create_app() -> FastAPI",
+          "span": {
+            "end_col": 14,
+            "end_line": 23,
+            "start_col": 0,
+            "start_line": 22
+          }
+        }
+      ],
+      "tests": []
+    },
+    {
+      "blob_oid": "7ab435457eedd2f028a2efb241fff6325fbd1814",
+      "calls": [
+        {
+          "callee": "self.items.append",
+          "enclosing": "py:src/shop/cart.py:Cart.add:method",
+          "kind": "call",
+          "name": "append",
+          "range": {
+            "end_col": 53,
+            "end_line": 15,
+            "start_col": 8,
+            "start_line": 15
+          },
+          "receiver": "self.items"
+        },
+        {
+          "callee": "round_money",
+          "enclosing": "py:src/shop/cart.py:Cart.add:method",
+          "kind": "call",
+          "name": "round_money",
+          "range": {
+            "end_col": 51,
+            "end_line": 15,
+            "start_col": 33,
+            "start_line": 15
+          },
+          "receiver": null
+        },
+        {
+          "callee": "sum",
+          "enclosing": "py:src/shop/cart.py:Cart.total:method",
+          "kind": "call",
+          "name": "sum",
+          "range": {
+            "end_col": 66,
+            "end_line": 19,
+            "start_col": 15,
+            "start_line": 19
+          },
+          "receiver": null
+        },
+        {
+          "callee": "Decimal",
+          "enclosing": "py:src/shop/cart.py:Cart.total:method",
+          "kind": "call",
+          "name": "Decimal",
+          "range": {
+            "end_col": 65,
+            "end_line": 19,
+            "start_col": 55,
+            "start_line": 19
+          },
+          "receiver": null
+        },
+        {
+          "callee": "Decimal",
+          "enclosing": "py:src/shop/cart.py:Cart._discount:method",
+          "kind": "call",
+          "name": "Decimal",
+          "range": {
+            "end_col": 25,
+            "end_line": 22,
+            "start_col": 15,
+            "start_line": 22
+          },
+          "receiver": null
+        },
+        {
+          "callee": "format_price",
+          "enclosing": "py:src/shop/cart.py:Cart.describe:method",
+          "kind": "call",
+          "name": "format_price",
+          "range": {
+            "end_col": 58,
+            "end_line": 25,
+            "start_col": 15,
+            "start_line": 25
+          },
+          "receiver": null
+        },
+        {
+          "callee": "self._discount",
+          "enclosing": "py:src/shop/cart.py:Cart.describe:method",
+          "kind": "call",
+          "name": "_discount",
+          "range": {
+            "end_col": 57,
+            "end_line": 25,
+            "start_col": 41,
+            "start_line": 25
+          },
+          "receiver": "self"
+        },
+        {
+          "callee": "super().add",
+          "enclosing": "py:src/shop/cart.py:GiftCart.add:method",
+          "kind": "call",
+          "name": "add",
+          "range": {
+            "end_col": 37,
+            "end_line": 30,
+            "start_col": 8,
+            "start_line": 30
+          },
+          "receiver": "super()"
+        },
+        {
+          "callee": "super",
+          "enclosing": "py:src/shop/cart.py:GiftCart.add:method",
+          "kind": "call",
+          "name": "super",
+          "range": {
+            "end_col": 15,
+            "end_line": 30,
+            "start_col": 8,
+            "start_line": 30
+          },
+          "receiver": null
+        },
+        {
+          "callee": "Decimal",
+          "enclosing": "py:src/shop/cart.py:GiftCart.add:method",
+          "kind": "call",
+          "name": "Decimal",
+          "range": {
+            "end_col": 36,
+            "end_line": 30,
+            "start_col": 26,
+            "start_line": 30
+          },
+          "receiver": null
+        }
+      ],
+      "class_bases": [
+        {
+          "class_key": "py:src/shop/cart.py:GiftCart:class",
+          "range": {
+            "end_col": 19,
+            "end_line": 28,
+            "start_col": 15,
+            "start_line": 28
+          },
+          "relation": "extends",
+          "text": "Cart"
+        }
+      ],
+      "exports": [],
+      "imports": [
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "Decimal",
+              "name": "Decimal"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "decimal",
+          "range": {
+            "end_col": 27,
+            "end_line": 3,
+            "start_col": 0,
+            "start_line": 3
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "format_price",
+              "name": "format_price"
+            },
+            {
+              "kind": "named",
+              "local": "round_money",
+              "name": "round_money"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "shop.utils.helpers",
+          "range": {
+            "end_col": 56,
+            "end_line": 5,
+            "start_col": 0,
+            "start_line": 5
+          },
+          "scope": null,
+          "type_only": false
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "language": "py",
+      "path": "src/shop/cart.py",
+      "routes": [],
+      "symbols": [
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:src/shop/cart.py:Cart:class",
+          "kind": "class",
+          "modifiers": [],
+          "name": "Cart",
+          "name_range": {
+            "end_col": 10,
+            "end_line": 8,
+            "start_col": 6,
+            "start_line": 8
+          },
+          "parent": null,
+          "qualname": "Cart",
+          "signature": "class Cart",
+          "span": {
+            "end_col": 58,
+            "end_line": 25,
+            "start_col": 0,
+            "start_line": 8
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:src/shop/cart.py:Cart.__init__:method",
+          "kind": "method",
+          "modifiers": [],
+          "name": "__init__",
+          "name_range": {
+            "end_col": 16,
+            "end_line": 11,
+            "start_col": 8,
+            "start_line": 11
+          },
+          "parent": "py:src/shop/cart.py:Cart:class",
+          "qualname": "Cart.__init__",
+          "signature": "def __init__(self) -> None",
+          "span": {
+            "end_col": 50,
+            "end_line": 12,
+            "start_col": 4,
+            "start_line": 11
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:src/shop/cart.py:Cart.add:method",
+          "kind": "method",
+          "modifiers": [],
+          "name": "add",
+          "name_range": {
+            "end_col": 11,
+            "end_line": 14,
+            "start_col": 8,
+            "start_line": 14
+          },
+          "parent": "py:src/shop/cart.py:Cart:class",
+          "qualname": "Cart.add",
+          "signature": "def add(self, name: str, price: Decimal) -> None",
+          "span": {
+            "end_col": 53,
+            "end_line": 15,
+            "start_col": 4,
+            "start_line": 14
+          }
+        },
+        {
+          "decorators": [
+            "property"
+          ],
+          "exported": true,
+          "key": "py:src/shop/cart.py:Cart.total:method",
+          "kind": "method",
+          "modifiers": [
+            "property"
+          ],
+          "name": "total",
+          "name_range": {
+            "end_col": 13,
+            "end_line": 18,
+            "start_col": 8,
+            "start_line": 18
+          },
+          "parent": "py:src/shop/cart.py:Cart:class",
+          "qualname": "Cart.total",
+          "signature": "def total(self) -> Decimal",
+          "span": {
+            "end_col": 66,
+            "end_line": 19,
+            "start_col": 4,
+            "start_line": 17
+          }
+        },
+        {
+          "decorators": [],
+          "exported": false,
+          "key": "py:src/shop/cart.py:Cart._discount:method",
+          "kind": "method",
+          "modifiers": [],
+          "name": "_discount",
+          "name_range": {
+            "end_col": 17,
+            "end_line": 21,
+            "start_col": 8,
+            "start_line": 21
+          },
+          "parent": "py:src/shop/cart.py:Cart:class",
+          "qualname": "Cart._discount",
+          "signature": "def _discount(self) -> Decimal",
+          "span": {
+            "end_col": 25,
+            "end_line": 22,
+            "start_col": 4,
+            "start_line": 21
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:src/shop/cart.py:Cart.describe:method",
+          "kind": "method",
+          "modifiers": [],
+          "name": "describe",
+          "name_range": {
+            "end_col": 16,
+            "end_line": 24,
+            "start_col": 8,
+            "start_line": 24
+          },
+          "parent": "py:src/shop/cart.py:Cart:class",
+          "qualname": "Cart.describe",
+          "signature": "def describe(self) -> str",
+          "span": {
+            "end_col": 58,
+            "end_line": 25,
+            "start_col": 4,
+            "start_line": 24
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:src/shop/cart.py:GiftCart:class",
+          "kind": "class",
+          "modifiers": [],
+          "name": "GiftCart",
+          "name_range": {
+            "end_col": 14,
+            "end_line": 28,
+            "start_col": 6,
+            "start_line": 28
+          },
+          "parent": null,
+          "qualname": "GiftCart",
+          "signature": "class GiftCart(Cart)",
+          "span": {
+            "end_col": 37,
+            "end_line": 30,
+            "start_col": 0,
+            "start_line": 28
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:src/shop/cart.py:GiftCart.add:method",
+          "kind": "method",
+          "modifiers": [],
+          "name": "add",
+          "name_range": {
+            "end_col": 11,
+            "end_line": 29,
+            "start_col": 8,
+            "start_line": 29
+          },
+          "parent": "py:src/shop/cart.py:GiftCart:class",
+          "qualname": "GiftCart.add",
+          "signature": "def add(self, name: str, price: Decimal) -> None",
+          "span": {
+            "end_col": 37,
+            "end_line": 30,
+            "start_col": 4,
+            "start_line": 29
+          }
+        }
+      ],
+      "tests": []
+    },
+    {
+      "blob_oid": "aff9dd2279f2c756c6b79afe5963310e220318f7",
+      "calls": [],
+      "class_bases": [],
+      "exports": [],
+      "imports": [],
+      "issue_count": 0,
+      "issues": [],
+      "language": "py",
+      "path": "src/shop/utils/__init__.py",
+      "routes": [],
+      "symbols": [],
+      "tests": []
+    },
+    {
+      "blob_oid": "d04efafd2acb75b438d2a385b65e6dd7c26bfa02",
+      "calls": [
+        {
+          "callee": "value.quantize",
+          "enclosing": "py:src/shop/utils/helpers.py:round_money:function",
+          "kind": "call",
+          "name": "quantize",
+          "range": {
+            "end_col": 66,
+            "end_line": 5,
+            "start_col": 11,
+            "start_line": 5
+          },
+          "receiver": "value"
+        },
+        {
+          "callee": "Decimal",
+          "enclosing": "py:src/shop/utils/helpers.py:round_money:function",
+          "kind": "call",
+          "name": "Decimal",
+          "range": {
+            "end_col": 41,
+            "end_line": 5,
+            "start_col": 26,
+            "start_line": 5
+          },
+          "receiver": null
+        },
+        {
+          "callee": "with_symbol",
+          "enclosing": "py:src/shop/utils/helpers.py:format_price:function",
+          "kind": "call",
+          "name": "with_symbol",
+          "range": {
+            "end_col": 47,
+            "end_line": 12,
+            "start_col": 11,
+            "start_line": 12
+          },
+          "receiver": null
+        },
+        {
+          "callee": "str",
+          "enclosing": "py:src/shop/utils/helpers.py:format_price:function",
+          "kind": "call",
+          "name": "str",
+          "range": {
+            "end_col": 46,
+            "end_line": 12,
+            "start_col": 23,
+            "start_line": 12
+          },
+          "receiver": null
+        },
+        {
+          "callee": "round_money",
+          "enclosing": "py:src/shop/utils/helpers.py:format_price:function",
+          "kind": "call",
+          "name": "round_money",
+          "range": {
+            "end_col": 45,
+            "end_line": 12,
+            "start_col": 27,
+            "start_line": 12
+          },
+          "receiver": null
+        },
+        {
+          "callee": "range",
+          "enclosing": "py:src/shop/utils/helpers.py:chunks:function",
+          "kind": "call",
+          "name": "range",
+          "range": {
+            "end_col": 43,
+            "end_line": 16,
+            "start_col": 17,
+            "start_line": 16
+          },
+          "receiver": null
+        },
+        {
+          "callee": "len",
+          "enclosing": "py:src/shop/utils/helpers.py:chunks:function",
+          "kind": "call",
+          "name": "len",
+          "range": {
+            "end_col": 36,
+            "end_line": 16,
+            "start_col": 26,
+            "start_line": 16
+          },
+          "receiver": null
+        },
+        {
+          "callee": "json.dumps(obj).encode",
+          "enclosing": "py:src/shop/utils/helpers.py:dumps:function",
+          "kind": "call",
+          "name": "encode",
+          "range": {
+            "end_col": 39,
+            "end_line": 27,
+            "start_col": 15,
+            "start_line": 27
+          },
+          "receiver": "json.dumps(obj)"
+        },
+        {
+          "callee": "json.dumps",
+          "enclosing": "py:src/shop/utils/helpers.py:dumps:function",
+          "kind": "call",
+          "name": "dumps",
+          "range": {
+            "end_col": 30,
+            "end_line": 27,
+            "start_col": 15,
+            "start_line": 27
+          },
+          "receiver": "json"
+        }
+      ],
+      "class_bases": [],
+      "exports": [],
+      "imports": [
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "ROUND_HALF_UP",
+              "name": "ROUND_HALF_UP"
+            },
+            {
+              "kind": "named",
+              "local": "Decimal",
+              "name": "Decimal"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "decimal",
+          "range": {
+            "end_col": 42,
+            "end_line": 1,
+            "start_col": 0,
+            "start_line": 1
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "dumps",
+              "name": "dumps"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "orjson",
+          "range": {
+            "end_col": 28,
+            "end_line": 21,
+            "start_col": 4,
+            "start_line": 21
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "module",
+              "local": "json",
+              "name": "json"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "json",
+          "range": {
+            "end_col": 19,
+            "end_line": 25,
+            "start_col": 8,
+            "start_line": 25
+          },
+          "scope": "py:src/shop/utils/helpers.py:dumps:function",
+          "type_only": false
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "language": "py",
+      "path": "src/shop/utils/helpers.py",
+      "routes": [],
+      "symbols": [
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:src/shop/utils/helpers.py:round_money:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "round_money",
+          "name_range": {
+            "end_col": 15,
+            "end_line": 4,
+            "start_col": 4,
+            "start_line": 4
+          },
+          "parent": null,
+          "qualname": "round_money",
+          "signature": "def round_money(value: Decimal) -> Decimal",
+          "span": {
+            "end_col": 66,
+            "end_line": 5,
+            "start_col": 0,
+            "start_line": 4
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:src/shop/utils/helpers.py:format_price:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "format_price",
+          "name_range": {
+            "end_col": 16,
+            "end_line": 8,
+            "start_col": 4,
+            "start_line": 8
+          },
+          "parent": null,
+          "qualname": "format_price",
+          "signature": "def format_price(value: Decimal) -> str",
+          "span": {
+            "end_col": 47,
+            "end_line": 12,
+            "start_col": 0,
+            "start_line": 8
+          }
+        },
+        {
+          "decorators": [],
+          "exported": false,
+          "key": "py:src/shop/utils/helpers.py:format_price.with_symbol:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "with_symbol",
+          "name_range": {
+            "end_col": 19,
+            "end_line": 9,
+            "start_col": 8,
+            "start_line": 9
+          },
+          "parent": "py:src/shop/utils/helpers.py:format_price:function",
+          "qualname": "format_price.with_symbol",
+          "signature": "def with_symbol(text: str) -> str",
+          "span": {
+            "end_col": 25,
+            "end_line": 10,
+            "start_col": 4,
+            "start_line": 9
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:src/shop/utils/helpers.py:chunks:function",
+          "kind": "function",
+          "modifiers": [
+            "generator"
+          ],
+          "name": "chunks",
+          "name_range": {
+            "end_col": 10,
+            "end_line": 15,
+            "start_col": 4,
+            "start_line": 15
+          },
+          "parent": null,
+          "qualname": "chunks",
+          "signature": "def chunks(items: list[int], size: int)",
+          "span": {
+            "end_col": 41,
+            "end_line": 17,
+            "start_col": 0,
+            "start_line": 15
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:src/shop/utils/helpers.py:dumps:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "dumps",
+          "name_range": {
+            "end_col": 13,
+            "end_line": 24,
+            "start_col": 8,
+            "start_line": 24
+          },
+          "parent": null,
+          "qualname": "dumps",
+          "signature": "def dumps(obj: object) -> bytes",
+          "span": {
+            "end_col": 39,
+            "end_line": 27,
+            "start_col": 4,
+            "start_line": 24
+          }
+        }
+      ],
+      "tests": []
+    },
+    {
+      "blob_oid": "ebb0f09ad6d54da0865499a126dccac15581b041",
+      "calls": [
+        {
+          "callee": "Cart",
+          "enclosing": "py:tests/conftest.py:cart:function",
+          "kind": "call",
+          "name": "Cart",
+          "range": {
+            "end_col": 17,
+            "end_line": 8,
+            "start_col": 11,
+            "start_line": 8
+          },
+          "receiver": null
+        }
+      ],
+      "class_bases": [],
+      "exports": [],
+      "imports": [
+        {
+          "bindings": [
+            {
+              "kind": "module",
+              "local": "pytest",
+              "name": "pytest"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "pytest",
+          "range": {
+            "end_col": 13,
+            "end_line": 1,
+            "start_col": 0,
+            "start_line": 1
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "Cart",
+              "name": "Cart"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "shop.cart",
+          "range": {
+            "end_col": 26,
+            "end_line": 3,
+            "start_col": 0,
+            "start_line": 3
+          },
+          "scope": null,
+          "type_only": false
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "language": "py",
+      "path": "tests/conftest.py",
+      "routes": [],
+      "symbols": [
+        {
+          "decorators": [
+            "pytest.fixture"
+          ],
+          "exported": true,
+          "key": "py:tests/conftest.py:cart:function",
+          "kind": "function",
+          "modifiers": [],
+          "name": "cart",
+          "name_range": {
+            "end_col": 8,
+            "end_line": 7,
+            "start_col": 4,
+            "start_line": 7
+          },
+          "parent": null,
+          "qualname": "cart",
+          "signature": "def cart() -> Cart",
+          "span": {
+            "end_col": 17,
+            "end_line": 8,
+            "start_col": 0,
+            "start_line": 6
+          }
+        }
+      ],
+      "tests": []
+    },
+    {
+      "blob_oid": "1aa356dce50c24768cc34dc68200f881b82e61e5",
+      "calls": [
+        {
+          "callee": "cart.add",
+          "enclosing": "py:tests/test_cart.py:test_add_rounds_prices:test",
+          "kind": "call",
+          "name": "add",
+          "range": {
+            "end_col": 37,
+            "end_line": 7,
+            "start_col": 4,
+            "start_line": 7
+          },
+          "receiver": "cart"
+        },
+        {
+          "callee": "Decimal",
+          "enclosing": "py:tests/test_cart.py:test_add_rounds_prices:test",
+          "kind": "call",
+          "name": "Decimal",
+          "range": {
+            "end_col": 36,
+            "end_line": 7,
+            "start_col": 20,
+            "start_line": 7
+          },
+          "receiver": null
+        },
+        {
+          "callee": "Decimal",
+          "enclosing": "py:tests/test_cart.py:test_add_rounds_prices:test",
+          "kind": "call",
+          "name": "Decimal",
+          "range": {
+            "end_col": 40,
+            "end_line": 8,
+            "start_col": 25,
+            "start_line": 8
+          },
+          "receiver": null
+        },
+        {
+          "callee": "GiftCart",
+          "enclosing": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test",
+          "kind": "call",
+          "name": "GiftCart",
+          "range": {
+            "end_col": 25,
+            "end_line": 13,
+            "start_col": 15,
+            "start_line": 13
+          },
+          "receiver": null
+        },
+        {
+          "callee": "cart.add",
+          "enclosing": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test",
+          "kind": "call",
+          "name": "add",
+          "range": {
+            "end_col": 38,
+            "end_line": 14,
+            "start_col": 8,
+            "start_line": 14
+          },
+          "receiver": "cart"
+        },
+        {
+          "callee": "Decimal",
+          "enclosing": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test",
+          "kind": "call",
+          "name": "Decimal",
+          "range": {
+            "end_col": 37,
+            "end_line": 14,
+            "start_col": 25,
+            "start_line": 14
+          },
+          "receiver": null
+        }
+      ],
+      "class_bases": [],
+      "exports": [],
+      "imports": [
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "Decimal",
+              "name": "Decimal"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "decimal",
+          "range": {
+            "end_col": 27,
+            "end_line": 1,
+            "start_col": 0,
+            "start_line": 1
+          },
+          "scope": null,
+          "type_only": false
+        },
+        {
+          "bindings": [
+            {
+              "kind": "named",
+              "local": "Cart",
+              "name": "Cart"
+            },
+            {
+              "kind": "named",
+              "local": "GiftCart",
+              "name": "GiftCart"
+            }
+          ],
+          "kind": "static",
+          "level": 0,
+          "module": "shop.cart",
+          "range": {
+            "end_col": 36,
+            "end_line": 3,
+            "start_col": 0,
+            "start_line": 3
+          },
+          "scope": null,
+          "type_only": false
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "language": "py",
+      "path": "tests/test_cart.py",
+      "routes": [],
+      "symbols": [
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:tests/test_cart.py:test_add_rounds_prices:test",
+          "kind": "test",
+          "modifiers": [],
+          "name": "test_add_rounds_prices",
+          "name_range": {
+            "end_col": 26,
+            "end_line": 6,
+            "start_col": 4,
+            "start_line": 6
+          },
+          "parent": null,
+          "qualname": "test_add_rounds_prices",
+          "signature": "def test_add_rounds_prices(cart: Cart) -> None",
+          "span": {
+            "end_col": 40,
+            "end_line": 8,
+            "start_col": 0,
+            "start_line": 6
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:tests/test_cart.py:TestGiftCart:class",
+          "kind": "class",
+          "modifiers": [],
+          "name": "TestGiftCart",
+          "name_range": {
+            "end_col": 18,
+            "end_line": 11,
+            "start_col": 6,
+            "start_line": 11
+          },
+          "parent": null,
+          "qualname": "TestGiftCart",
+          "signature": "class TestGiftCart",
+          "span": {
+            "end_col": 30,
+            "end_line": 15,
+            "start_col": 0,
+            "start_line": 11
+          }
+        },
+        {
+          "decorators": [],
+          "exported": true,
+          "key": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test",
+          "kind": "test",
+          "modifiers": [],
+          "name": "test_gifts_are_free",
+          "name_range": {
+            "end_col": 27,
+            "end_line": 12,
+            "start_col": 8,
+            "start_line": 12
+          },
+          "parent": "py:tests/test_cart.py:TestGiftCart:class",
+          "qualname": "TestGiftCart.test_gifts_are_free",
+          "signature": "def test_gifts_are_free(self) -> None",
+          "span": {
+            "end_col": 30,
+            "end_line": 15,
+            "start_col": 4,
+            "start_line": 12
+          }
+        }
+      ],
+      "tests": [
+        {
+          "framework": "pytest",
+          "key": "py:tests/test_cart.py:test_add_rounds_prices:test",
+          "range": {
+            "end_col": 40,
+            "end_line": 8,
+            "start_col": 0,
+            "start_line": 6
+          },
+          "runner_id": "tests/test_cart.py::test_add_rounds_prices",
+          "title_path": [
+            "test_add_rounds_prices"
+          ]
+        },
+        {
+          "framework": "pytest",
+          "key": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test",
+          "range": {
+            "end_col": 30,
+            "end_line": 15,
+            "start_col": 4,
+            "start_line": 12
+          },
+          "runner_id": "tests/test_cart.py::TestGiftCart::test_gifts_are_free",
+          "title_path": [
+            "TestGiftCart",
+            "test_gifts_are_free"
+          ]
+        }
+      ]
+    }
+  ],
+  "inventory": {
+    "files": [
+      {
+        "blob_oid": "22b418418915b08021384f01e48c874dfc139287",
+        "is_test": false,
+        "language": "py",
+        "loc": null,
+        "mode": "100644",
+        "path": "scripts/api_pb2.py",
+        "size": 101,
+        "skip_reason": "generated"
+      },
+      {
+        "blob_oid": "6def3e88c00aaf4caa3803ff452b07a11599a28a",
+        "is_test": false,
+        "language": "py",
+        "loc": 4,
+        "mode": "100644",
+        "path": "src/shop/__init__.py",
+        "size": 146,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "0943e8fe35d9e601ed2804fec248a7f9b794e67f",
+        "is_test": false,
+        "language": "py",
+        "loc": 14,
+        "mode": "100644",
+        "path": "src/shop/app.py",
+        "size": 487,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "7ab435457eedd2f028a2efb241fff6325fbd1814",
+        "is_test": false,
+        "language": "py",
+        "loc": 19,
+        "mode": "100644",
+        "path": "src/shop/cart.py",
+        "size": 740,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "aff9dd2279f2c756c6b79afe5963310e220318f7",
+        "is_test": false,
+        "language": "py",
+        "loc": 1,
+        "mode": "100644",
+        "path": "src/shop/utils/__init__.py",
+        "size": 22,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "d04efafd2acb75b438d2a385b65e6dd7c26bfa02",
+        "is_test": false,
+        "language": "py",
+        "loc": 16,
+        "mode": "100644",
+        "path": "src/shop/utils/helpers.py",
+        "size": 598,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "23b5501faccc7446ec7ad8e592b4d0f50affa583",
+        "is_test": false,
+        "language": "py",
+        "loc": null,
+        "mode": "100644",
+        "path": "stubs/shop.pyi",
+        "size": 32,
+        "skip_reason": "declaration"
+      },
+      {
+        "blob_oid": "ebb0f09ad6d54da0865499a126dccac15581b041",
+        "is_test": true,
+        "language": "py",
+        "loc": 5,
+        "mode": "100644",
+        "path": "tests/conftest.py",
+        "size": 98,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "1aa356dce50c24768cc34dc68200f881b82e61e5",
+        "is_test": true,
+        "language": "py",
+        "loc": 10,
+        "mode": "100644",
+        "path": "tests/test_cart.py",
+        "size": 356,
+        "skip_reason": null
+      },
+      {
+        "blob_oid": "18b1c7e430645e1ee0e43807cc78acd7a99065d2",
+        "is_test": false,
+        "language": "py",
+        "loc": null,
+        "mode": "100644",
+        "path": "vendor/lib.py",
+        "size": 49,
+        "skip_reason": "vendored"
+      }
+    ],
+    "stats": {
+      "indexed": 7,
+      "indexed_by_language": {
+        "py": 7
+      },
+      "skipped": {
+        "declaration": 1,
+        "generated": 1,
+        "vendored": 1
+      },
+      "source_files": 10,
+      "tree_entries": 12
+    }
+  },
+  "source": "dir:py_small",
+  "stats": {
+    "calls": 34,
+    "files_parsed": 7,
+    "files_with_issues": 0,
+    "imports": 14,
+    "routes": 2,
+    "symbols": 20,
+    "tests": 2
+  }
+}
