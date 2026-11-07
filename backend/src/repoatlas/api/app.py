@@ -27,7 +27,7 @@ from repoatlas.api.middleware import (
     RequestContextMiddleware,
     UnhandledErrorMiddleware,
 )
-from repoatlas.api.routes import health
+from repoatlas.api.routes import health, jobs, repos
 from repoatlas.config import Settings, get_settings
 from repoatlas.db.engine import create_db_engine
 from repoatlas.logging import configure
@@ -82,5 +82,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.engine = engine
     app.state.store = GraphStore.from_settings(settings, engine)
     errors.install(app)
-    app.include_router(health.router, prefix=API_PREFIX)
+    for router in (repos.router, jobs.router, health.router):
+        app.include_router(router, prefix=API_PREFIX)
     return app

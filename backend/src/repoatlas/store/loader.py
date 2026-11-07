@@ -116,34 +116,8 @@ def begin_snapshot(
     is not ``ready`` is (re)marked ``building`` with its error cleared; a ``ready`` one is left
     untouched."""
     engine = engine or get_engine()
-    repo = {
-        "host": DEFAULT_HOST,
-        "owner": repo_meta.ref.owner,
-        "name": repo_meta.ref.name,
-        "branch": repo_meta.default_branch,
-    }
     with engine.begin() as connection:
-        repo_id = connection.execute(
-            text(
-                "INSERT INTO repos (host, owner, name, default_branch) "
-                "VALUES (:host, :owner, :name, :branch) "
-                "ON CONFLICT (host, lower(owner), lower(name)) DO UPDATE SET "
-                "owner = EXCLUDED.owner, name = EXCLUDED.name, "
-                "default_branch = EXCLUDED.default_branch "
-                "WHERE (repos.owner, repos.name, repos.default_branch) "
-                "IS DISTINCT FROM (EXCLUDED.owner, EXCLUDED.name, EXCLUDED.default_branch) "
-                "RETURNING id"
-            ),
-            repo,
-        ).scalar_one_or_none()
-        if repo_id is None:  # already there, unchanged
-            repo_id = connection.execute(
-                text(
-                    "SELECT id FROM repos WHERE host = :host AND lower(owner) = lower(:owner) "
-                    "AND lower(name) = lower(:name)"
-                ),
-                repo,
-            ).scalar_one()
+        repo_id = _upsert_repo(connection, repo_meta)
         identity = {"repo": repo_id, "sha": sha, "fp": fingerprint}
         select = text(
             "SELECT id, status FROM snapshots "
@@ -176,6 +150,45 @@ def begin_snapshot(
                 or connection.execute(select, identity).one()
             )
     return SnapshotRef(id=SnapshotId(row.id), status=cast(SnapshotStatus, row.status))
+
+
+def request_snapshot(
+    repo_meta: RepoMeta, sha: str, fingerprint: str, *, connection: Connection
+) -> SnapshotRef:
+    """Get or create the snapshot of (repo, commit, fingerprint) inside the caller's
+    transaction, and lock its row until that transaction ends (so concurrent requests for one
+    snapshot take turns). A new snapshot is ``pending``; an existing one keeps its status."""
+    repo_id = _upsert_repo(connection, repo_meta)
+    identity = {"repo": repo_id, "sha": sha, "fp": fingerprint}
+    row = connection.execute(
+        text(
+            "INSERT INTO snapshots (repo_id, commit_sha, config_fingerprint, status) "
+            "VALUES (:repo, :sha, :fp, 'pending') "
+            "ON CONFLICT (repo_id, commit_sha, config_fingerprint) DO NOTHING "
+            "RETURNING id, status"
+        ),
+        identity,
+    ).first()
+    if row is None:  # it exists: wait for (and take) its lock
+        row = connection.execute(
+            text(
+                "SELECT id, status FROM snapshots WHERE repo_id = :repo AND commit_sha = :sha "
+                "AND config_fingerprint = :fp FOR UPDATE"
+            ),
+            identity,
+        ).one()
+    return SnapshotRef(id=SnapshotId(row.id), status=cast(SnapshotStatus, row.status))
+
+
+def mark_pending(snapshot_id: int, *, connection: Connection) -> None:
+    """Queue a snapshot that is not ready (for example a failed one) for another build."""
+    connection.execute(
+        text(
+            "UPDATE snapshots SET status = 'pending', error = NULL, updated_at = now() "
+            "WHERE id = :id AND status <> 'ready'"
+        ),
+        {"id": snapshot_id},
+    )
 
 
 def find_snapshot(
@@ -217,6 +230,38 @@ def mark_failed(
             )
     except Exception:  # the caller re-raises the original error; don't hide it behind this one
         log.exception("could not mark the snapshot failed", snapshot_id=snapshot_id)
+
+
+def _upsert_repo(connection: Connection, repo_meta: RepoMeta) -> int:
+    """The repo's row ID, created or brought up to date (GitHub's spelling, default branch)."""
+    repo = {
+        "host": DEFAULT_HOST,
+        "owner": repo_meta.ref.owner,
+        "name": repo_meta.ref.name,
+        "branch": repo_meta.default_branch,
+    }
+    repo_id = connection.execute(
+        text(
+            "INSERT INTO repos (host, owner, name, default_branch) "
+            "VALUES (:host, :owner, :name, :branch) "
+            "ON CONFLICT (host, lower(owner), lower(name)) DO UPDATE SET "
+            "owner = EXCLUDED.owner, name = EXCLUDED.name, "
+            "default_branch = EXCLUDED.default_branch "
+            "WHERE (repos.owner, repos.name, repos.default_branch) "
+            "IS DISTINCT FROM (EXCLUDED.owner, EXCLUDED.name, EXCLUDED.default_branch) "
+            "RETURNING id"
+        ),
+        repo,
+    ).scalar_one_or_none()
+    if repo_id is None:  # already there, unchanged
+        repo_id = connection.execute(
+            text(
+                "SELECT id FROM repos WHERE host = :host AND lower(owner) = lower(:owner) "
+                "AND lower(name) = lower(:name)"
+            ),
+            repo,
+        ).scalar_one()
+    return int(repo_id)
 
 
 def load_graph(snapshot_id: int, *, engine: Engine | None = None) -> CodeGraph:

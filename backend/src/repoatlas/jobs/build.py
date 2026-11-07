@@ -14,6 +14,8 @@ that fails for good marks its snapshot ``failed`` with the job's error.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from pydantic import BaseModel, ConfigDict, ValidationError
 from sqlalchemy import Connection, Engine, text
 
@@ -26,12 +28,12 @@ from repoatlas.ingest.errors import (
     RepoTooLarge,
 )
 from repoatlas.ingest.fetch import remove_tree
-from repoatlas.ingest.github import RepoMeta, RepoRef
+from repoatlas.ingest.github import GitHubClient, RepoMeta, RepoRef
 from repoatlas.jobs import queue
 from repoatlas.jobs.queue import Job
 from repoatlas.jobs.worker import JobContext, JobHandler, register_job_handler
 from repoatlas.logging import get_logger
-from repoatlas.pipeline.build import Target, build_dir, open_build_dir
+from repoatlas.pipeline.build import Target, build_dir, open_build_dir, resolve_target
 from repoatlas.pipeline.context import BuildContext
 from repoatlas.pipeline.stages import (
     config_fingerprint,
@@ -39,8 +41,8 @@ from repoatlas.pipeline.stages import (
     registered_stages,
     run_stages,
 )
-from repoatlas.store.loader import begin_snapshot, mark_failed
-from repoatlas.store.models import SnapshotId
+from repoatlas.store.loader import begin_snapshot, mark_failed, mark_pending, request_snapshot
+from repoatlas.store.models import SnapshotId, SnapshotStatus
 
 BUILD_JOB = "build"
 
@@ -118,6 +120,43 @@ def enqueue_build(payload: BuildPayload, settings: Settings, *, connection: Conn
         max_attempts=settings.job_max_attempts,
         connection=connection,
     )
+
+
+@dataclass(frozen=True)
+class BuildRequest:
+    """The answer to a build request. ``reused``: no new build started, because the snapshot
+    was ready or its build was already queued or running. ``job_id`` is that build (for a
+    ready snapshot, the job that built it, or ``None`` if it was built outside the queue)."""
+
+    snapshot_id: int
+    job_id: int | None
+    reused: bool
+    status: SnapshotStatus
+
+
+def request_build(
+    url: str, settings: Settings, *, engine: Engine, github: GitHubClient | None = None
+) -> BuildRequest:
+    """Resolve ``url`` (GitHub checks, pinned head, fingerprint), then reuse the snapshot of
+    (repo, commit, fingerprint) or queue its build. The snapshot row is locked while deciding,
+    so concurrent requests for one snapshot queue one build between them."""
+    target = resolve_target(url, settings, github=github)
+    canonical = f"https://github.com/{target.repo.ref.full_name}"
+    with engine.begin() as connection:
+        ref = request_snapshot(
+            target.repo, target.commit, target.fingerprint, connection=connection
+        )
+        if ref.status == "ready":
+            built_by = queue.latest_job(ref.id, kind=BUILD_JOB, connection=connection)
+            return BuildRequest(ref.id, built_by.id if built_by else None, True, "ready")
+        active = queue.active_job(dedupe_key(ref.id), connection=connection)
+        if active is not None:
+            return BuildRequest(ref.id, active.id, True, ref.status)
+        mark_pending(ref.id, connection=connection)
+        payload = BuildPayload.for_target(ref.id, canonical, target)
+        job = enqueue_build(payload, settings, connection=connection)
+    log.info("build queued", snapshot_id=ref.id, job_id=job.id, repo=target.repo.ref.full_name)
+    return BuildRequest(ref.id, job.id, False, "pending")
 
 
 def run_build_job(ctx: JobContext) -> None:

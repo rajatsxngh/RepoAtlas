@@ -314,6 +314,21 @@ def get_job(job_id: int, *, engine: Engine | None = None) -> Job | None:
     return None if row is None else _job(row)
 
 
+def active_job(
+    dedupe_key: str, *, connection: Connection | None = None, engine: Engine | None = None
+) -> Job | None:
+    """The queued or running job that holds ``dedupe_key``, if any."""
+    statement = text(
+        "SELECT * FROM jobs WHERE dedupe_key = :key AND status IN ('queued', 'running')"
+    )
+    if connection is not None:
+        row = connection.execute(statement, {"key": dedupe_key}).first()
+    else:
+        with (engine or get_engine()).connect() as conn:
+            row = conn.execute(statement, {"key": dedupe_key}).first()
+    return None if row is None else _job(row)
+
+
 def latest_job(
     snapshot_id: int,
     *,
