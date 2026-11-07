@@ -1,6 +1,6 @@
 # M00 — Foundations
 
-**Type of work:** Setup and infrastructure · **Size:** M (8 tasks) · **Status:** In progress
+**Type of work:** Setup and infrastructure · **Size:** M (8 tasks) · **Status:** Done
 
 ## Goal
 
@@ -74,7 +74,7 @@ FND-1, FND-2, FND-3, FND-4, FND-5, FND-6, FND-7, FND-8
 - [x] `docker compose -f infra/docker-compose.yml up -d` then `uv run repoatlas db upgrade` succeeds, and `uv run repoatlas db current` shows `0001_baseline`.
 - [x] `uv run poe check` passes locally on Windows.
 - [x] `python scripts/check_milestones.py` passes.
-- [ ] CI passes on Linux and Windows after the first push. (Creating the GitHub repo and pushing happen only after the owner approves.)
+- [x] CI passes on Linux and Windows after the first push. (Creating the GitHub repo and pushing happen only after the owner approves.)
 
 ## Verification
 
@@ -94,7 +94,7 @@ Manual: open the CI run and confirm all three jobs are green.
 
 ## Results
 
-_Local checks recorded 2026-11-07. The gate closes once CI passes on the first push._
+_Gate passed 2026-11-07. Repository: https://github.com/rajatsxngh/RepoAtlas (public)._
 
 | Check | Evidence |
 |---|---|
@@ -104,4 +104,5 @@ _Local checks recorded 2026-11-07. The gate closes once CI passes on the first p
 | Test isolation | No `repoatlas_test_*` databases remain after the run |
 | Packaging | The built wheel contains `repoatlas/db/migrations/` (env, template, versions) and `py.typed` |
 | Toolchain | Python 3.12.13 via uv 0.12.3; Docker 29.9.2, Compose v5.6.1, Docker Desktop 4.98 on WSL 2 |
-| CI on Linux and Windows | Pending: the first push needs the owner's OK |
+| CI on Linux and Windows | [Run 42327261515](https://github.com/rajatsxngh/RepoAtlas/actions/runs/42327261515) green on the first try: Linux full checks in 30 s (36 tests including 8 integration; migrations applied to the service database), Windows unit tests in 20 s (28 tests), docs lint in 4 s |
+| Notes | Git for Windows on this machine uses the `helper-selector` credential helper, which waits on a GUI window; pushes use `gh` as the credential helper instead (`gh auth setup-git` makes that permanent) |

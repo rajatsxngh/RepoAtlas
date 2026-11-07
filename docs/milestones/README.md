@@ -51,7 +51,7 @@ The arrows show build order. The exact dependencies of each milestone are in the
 
 | Milestone | Name | Type of work | Size | Depends on | Status |
 |---|---|---|---|---|---|
-| M00 | [Foundations](M00-foundations.md) | Setup and infrastructure | M | — | In progress |
+| M00 | [Foundations](M00-foundations.md) | Setup and infrastructure | M | — | Done |
 | M01 | [Ingestion & parsing](M01-ingestion-parsing.md) | Static analysis | L | M00 | Not started |
 | M02 | [Graph building](M02-graph-building.md) | Static analysis | L | M01 | Not started |
 | M03 | [Graph store & queries](M03-graph-store.md) | Data and persistence | M | M00, M01, M02 | Not started |
