@@ -197,9 +197,14 @@ def test_fetch_errors_are_recorded(origin: Origin, settings: Settings, pg_engine
     assert workdir_is_empty(settings)
 
 
-def test_invalid_urls_never_create_a_snapshot(settings: Settings, pg_engine: Engine) -> None:
+def test_invalid_urls_and_commits_never_create_a_snapshot(
+    origin: Origin, settings: Settings, pg_engine: Engine
+) -> None:
     with pytest.raises(InvalidRepoUrl):
         build_snapshot("https://gitlab.com/a/b", settings, engine=pg_engine)
+    for commit in ("abc123", origin.head.upper(), origin.head + "0"):
+        with pytest.raises(FetchError, match="40-character"):
+            build_snapshot(URL, settings, engine=pg_engine, commit=commit)
     with pg_engine.connect() as connection:
         assert connection.execute(text("SELECT count(*) FROM snapshots")).scalar_one() == 0
 

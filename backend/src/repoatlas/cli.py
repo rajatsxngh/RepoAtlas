@@ -274,16 +274,17 @@ def _build_summary(result: BuildResult, info: SnapshotInfo, elapsed: float) -> l
     nodes = sum(graph.get("nodes_by_kind", {}).values())
     edges = sum(graph.get("edges_by_kind", {}).values())
     how = "reused: already built with this configuration" if result.reused else "built"
-    steps = " · ".join(f"{name} {seconds:.1f} s" for name, seconds in result.timings.items())
+    steps = ", ".join(f"{name} {seconds:.1f} s" for name, seconds in result.timings.items())
+    files = stats.get("inventory", {}).get("indexed", 0)
     return [
         f"Snapshot: {result.snapshot_id} ({info.status}, {how})",
         f"Repo:     github.com/{result.repo} @ {result.commit}",
         f"Graph:    {nodes:,} nodes, {edges:,} edges; "
         f"{graph.get('unresolved_calls', 0):,} unresolved calls",
-        f"Blobs:    {blobs.get('needed', 0):,} files with text; "
-        f"{blobs.get('stored', 0):,} stored, {blobs.get('shared', 0):,} already in the store",
+        f"Text:     {files:,} files, {blobs.get('needed', 0):,} distinct blobs: "
+        f"{blobs.get('stored', 0):,} new, {blobs.get('shared', 0):,} already stored",
         f"Digest:   {stats.get('graph_digest', '')}",
-        f"Config:   {result.fingerprint[:16]}…",
+        f"Config:   {result.fingerprint}",
         f"Steps:    {steps}",
         f"Time:     {elapsed:.1f} s",
     ]

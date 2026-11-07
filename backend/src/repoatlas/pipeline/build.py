@@ -9,6 +9,7 @@ error, and the fetched git data is always removed (unless kept for debugging).
 
 from __future__ import annotations
 
+import re
 import time
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import ExitStack
@@ -23,6 +24,7 @@ from repoatlas.graph.build import GraphSettings, build_graph, component_versions
 from repoatlas.graph.model import CodeGraph
 from repoatlas.graph.owners import CommitLog, read_commit_log
 from repoatlas.graph.project import ProjectFiles
+from repoatlas.ingest.errors import FetchError
 from repoatlas.ingest.fetch import Workspace, fetch_history, fetch_source
 from repoatlas.ingest.github import GitHubClient, RepoMeta, check_repo_size, parse_repo_url
 from repoatlas.ingest.inventory import FileEntry, Inventory, build_inventory
@@ -35,6 +37,8 @@ from repoatlas.pipeline.graph import read_project_files
 from repoatlas.pipeline.parse import parse_files
 from repoatlas.store.loader import begin_snapshot, mark_failed, save_snapshot
 from repoatlas.store.models import SnapshotId
+
+_FULL_SHA = re.compile(r"[0-9a-f]{40}")
 
 
 class TreeBlobs(Mapping[str, bytes]):
@@ -112,6 +116,8 @@ def resolve(ctx: BuildContext) -> None:
     """Validate the URL, check the repo on GitHub, pin the commit, and get or create the
     snapshot for (repo, commit, fingerprint)."""
     ref = parse_repo_url(ctx.url)
+    if ctx.commit is not None and not _FULL_SHA.fullmatch(ctx.commit):
+        raise FetchError("A full 40-character commit SHA is required.")
     with GitHubClient.from_settings(ctx.settings) as github:
         meta = github.get_repo(ref)
         check_repo_size(meta, ctx.settings.max_repo_size_kb)
