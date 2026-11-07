@@ -244,3 +244,107 @@
 @utility shadow-pop {
   box-shadow: var(--ra-shadow-lg);
 }
+
+/* ---------------------------------------------------------------------------------------------
+ * The map: React Flow themed by the tokens above, plus node and container surfaces.
+ * ------------------------------------------------------------------------------------------- */
+
+.react-flow {
+  --xy-background-color: var(--ra-canvas);
+  --xy-background-pattern-dots-color-default: var(--ra-line-strong);
+  --xy-edge-stroke-default: var(--ra-edge-imports);
+  --xy-controls-button-background-color-default: var(--ra-surface);
+  --xy-controls-button-background-color-hover-default: var(--ra-surface-2);
+  --xy-controls-button-color-default: var(--ra-fg-muted);
+  --xy-controls-button-color-hover-default: var(--ra-fg);
+  --xy-controls-button-border-color-default: var(--ra-line);
+  --xy-controls-box-shadow-default: var(--ra-shadow);
+  --xy-minimap-background-color-default: var(--ra-surface);
+  --xy-minimap-mask-background-color-default: color-mix(in srgb, var(--ra-canvas) 70%, transparent);
+  --xy-minimap-mask-stroke-color-default: var(--ra-line-strong);
+  --xy-minimap-node-background-color-default: var(--ra-surface-3);
+  --xy-attribution-background-color-default: transparent;
+  color: var(--ra-fg);
+}
+
+.react-flow__attribution a {
+  color: var(--ra-fg-faint);
+}
+
+.react-flow__controls {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--ra-line);
+}
+
+.react-flow__controls-button {
+  border-bottom-color: var(--ra-line);
+}
+
+.react-flow__node:focus-visible {
+  outline: none;
+}
+
+.react-flow__node:focus-visible > .ra-node,
+.react-flow__node:focus-visible > .ra-container {
+  outline: 2px solid var(--ra-focus);
+  outline-offset: 2px;
+}
+
+.ra-anchor.react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+}
+
+.ra-kind-tile {
+  background: color-mix(in srgb, var(--ra-kind-file) 14%, transparent);
+}
+.ra-kind-tile[data-kind="dir"] {
+  background: color-mix(in srgb, var(--ra-kind-dir) 16%, transparent);
+}
+.ra-kind-tile[data-kind="class"] {
+  background: color-mix(in srgb, var(--ra-kind-class) 14%, transparent);
+}
+.ra-kind-tile[data-kind="function"] {
+  background: color-mix(in srgb, var(--ra-kind-function) 14%, transparent);
+}
+.ra-kind-tile[data-kind="method"] {
+  background: color-mix(in srgb, var(--ra-kind-method) 14%, transparent);
+}
+.ra-kind-tile[data-kind="route"] {
+  background: color-mix(in srgb, var(--ra-kind-route) 14%, transparent);
+}
+.ra-kind-tile[data-kind="test"] {
+  background: color-mix(in srgb, var(--ra-kind-test) 16%, transparent);
+}
+
+/* Test nodes keep a distinct accent along their left edge. */
+.ra-node-test {
+  box-shadow:
+    inset 3px 0 0 var(--ra-kind-test),
+    var(--ra-shadow);
+}
+
+.ra-container {
+  --ra-tint: var(--ra-kind-file);
+  background: color-mix(in srgb, var(--ra-tint) 5%, transparent);
+}
+.ra-container[data-kind="dir"] {
+  --ra-tint: var(--ra-kind-dir);
+}
+.ra-container[data-kind="class"] {
+  --ra-tint: var(--ra-kind-class);
+}
+.ra-container[data-kind="function"],
+.ra-container[data-kind="method"] {
+  --ra-tint: var(--ra-kind-function);
+}
+
+.ra-container-header {
+  background: color-mix(in srgb, var(--ra-surface) 88%, var(--ra-tint));
+}
