@@ -95,3 +95,15 @@ class Subgraph(_Result):
     level: Level
     nodes: list[Node]
     edges: list[AggregatedEdge]
+
+
+class CodeSlice(_Result):
+    """Lines ``start`` to ``end`` (1-based, inclusive, after clamping) of a file's stored text,
+    joined by ``\\n``; ``line_count`` is the number of lines in the whole file."""
+
+    path: str
+    blob_oid: str
+    start: int
+    end: int
+    text: str
+    line_count: int

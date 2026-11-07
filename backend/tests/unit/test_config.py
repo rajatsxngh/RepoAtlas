@@ -33,7 +33,7 @@ def test_defaults() -> None:
     assert settings.github_token is None
     assert settings.anthropic_api_key is None
     assert settings.data_dir == Path(".repoatlas")
-    assert settings.graph_cache_mb == 512
+    assert (settings.graph_cache_mb, settings.max_read_lines) == (512, 400)
 
 
 def test_environment_overrides_defaults(monkeypatch: pytest.MonkeyPatch) -> None:

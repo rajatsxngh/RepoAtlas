@@ -64,6 +64,7 @@ class Settings(BaseSettings):
 
     # Graph store
     graph_cache_mb: int = 512  # estimated memory for cached snapshot adjacency
+    max_read_lines: int = 400  # lines one code read returns at most
 
     @field_validator("log_level", mode="before")
     @classmethod

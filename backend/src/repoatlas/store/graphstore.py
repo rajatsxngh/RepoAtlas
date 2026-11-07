@@ -44,9 +44,11 @@ from repoatlas.store.errors import (
     PathNotInSnapshot,
     SnapshotNotFound,
     SnapshotNotReady,
+    TextNotStored,
 )
 from repoatlas.store.results import (
     AggregatedEdge,
+    CodeSlice,
     GraphPath,
     Hop,
     MatchKind,
@@ -59,6 +61,8 @@ from repoatlas.store.results import (
 
 DEFAULT_PATH_KINDS = (EdgeKind.CALLS, EdgeKind.IMPORTS)
 DEFAULT_MAX_NODES = 1_000  # nodes one traversal returns at most
+DEFAULT_MAX_READ_LINES = 400  # lines one code read returns at most
+LOCATABLE_KINDS = ("class", "function", "method", "test")  # routes span only their registration
 MAX_DEPTH = 20
 MAX_SEARCH_LIMIT = 100
 _MATCHES: tuple[MatchKind, ...] = ("exact", "exact", "prefix", "fuzzy")
@@ -74,15 +78,23 @@ class GraphStore:
         cache: SnapshotGraphCache | None = None,
         *,
         max_nodes: int = DEFAULT_MAX_NODES,
+        max_read_lines: int = DEFAULT_MAX_READ_LINES,
     ) -> None:
+        if max_nodes < 1 or max_read_lines < 1:
+            raise ValueError("The node and line caps must be positive.")
         self.engine = engine or get_engine()
         self.cache = cache or SnapshotGraphCache()
         self.max_nodes = max_nodes
+        self.max_read_lines = max_read_lines
         self._ready: set[int] = set()
 
     @classmethod
     def from_settings(cls, settings: Settings, engine: Engine | None = None) -> GraphStore:
-        return cls(engine, SnapshotGraphCache.from_settings(settings))
+        return cls(
+            engine,
+            SnapshotGraphCache.from_settings(settings),
+            max_read_lines=settings.max_read_lines,
+        )
 
     # --- snapshots ------------------------------------------------------------------------
 
@@ -294,6 +306,83 @@ class GraphStore:
             ],
         )
 
+    # --- positions and code ---------------------------------------------------------------
+
+    def locate(self, snapshot_id: int, path: str, line: int) -> Node:
+        """The innermost class, function, method, or test whose span contains ``line``
+        (1-based), else the file itself. Among equal spans a method wins over a function, a
+        test, or a class. Files without stored text (skipped ones) have no symbols, so any line
+        gives the file."""
+        if line < 1:
+            raise InvalidQuery("Lines start at 1.")
+        with self.engine.connect() as connection:
+            self._require_ready(snapshot_id, connection)
+            file = _file_row(connection, snapshot_id, path)
+            if file.line_count is not None and line > max(file.line_count, 1):
+                raise InvalidQuery(
+                    f"Line {line} is past the end of {path} ({file.line_count} lines)."
+                )
+            row = connection.execute(
+                text(
+                    f"SELECT {rows.NODE_SELECT} FROM {rows.NODE_FROM} "
+                    "WHERE n.file_id = :f AND n.kind = ANY(:kinds) "
+                    "AND n.span_start_line <= :line AND n.span_end_line >= :line "
+                    "ORDER BY n.span_start_line DESC, n.span_start_col DESC, "
+                    "n.span_end_line, n.span_end_col, "
+                    "CASE n.kind WHEN 'method' THEN 0 WHEN 'function' THEN 1 "
+                    "WHEN 'test' THEN 2 ELSE 3 END, n.symbol_key LIMIT 1"
+                ),
+                {"f": file.id, "kinds": list(LOCATABLE_KINDS), "line": line},
+            ).first()
+            if row is None:
+                row = connection.execute(
+                    text(
+                        f"SELECT {rows.NODE_SELECT} FROM {rows.NODE_FROM} "
+                        "WHERE n.file_id = :f AND n.kind = 'file'"
+                    ),
+                    {"f": file.id},
+                ).one()
+        return rows.node_from_row(row)
+
+    def read_code(self, snapshot_id: int, path: str, start: int, end: int) -> CodeSlice:
+        """Lines ``start``..``end`` of a file in the snapshot, read from the stored blob.
+
+        ``start`` below 1 becomes 1 and ``end`` past the file's end becomes its last line; at
+        most ``max_read_lines`` lines come back (``end`` moves up). A range that starts past
+        the end, or ends before it starts, is invalid. Only files of this snapshot can be read
+        (``PathNotInSnapshot``), and skipped files have no text (``TextNotStored``).
+        """
+        if start > end:
+            raise InvalidQuery(f"The range {start}-{end} ends before it starts.")
+        with self.engine.connect() as connection:
+            self._require_ready(snapshot_id, connection)
+            file = _file_row(connection, snapshot_id, path)
+            if file.line_count is None:
+                reason = file.skip_reason or "no text"
+                raise TextNotStored(f"{path} was skipped ({reason}); its text is not stored.")
+            first = max(start, 1)
+            last = min(end, file.line_count, first + self.max_read_lines - 1)
+            if first > last:
+                raise InvalidQuery(
+                    f"Line {first} is past the end of {path} ({file.line_count} lines)."
+                )
+            body = connection.execute(
+                text(
+                    "SELECT array_to_string((string_to_array(text, chr(10)))"
+                    "[CAST(:first AS integer) : CAST(:last AS integer)], chr(10)) "
+                    "FROM blobs WHERE oid = :oid"
+                ),
+                {"first": first, "last": last, "oid": file.blob_oid},
+            ).scalar_one()
+        return CodeSlice(
+            path=path,
+            blob_oid=file.blob_oid,
+            start=first,
+            end=last,
+            text=body,
+            line_count=file.line_count,
+        )
+
     # --- per-file and per-name data -------------------------------------------------------
 
     def owners(self, snapshot_id: int, path: str) -> list[Owner]:
@@ -409,6 +498,21 @@ def _file_id(connection: Connection, snapshot_id: int, path: str) -> int:
     if file_id is None:
         raise PathNotInSnapshot(f"Snapshot {snapshot_id} has no file {path!r}.")
     return int(file_id)
+
+
+def _file_row(connection: Connection, snapshot_id: int, path: str) -> Any:
+    """The file's row ID, blob, skip reason, and stored line count (``None`` without text)."""
+    row = connection.execute(
+        text(
+            "SELECT f.id, f.blob_oid, f.skip_reason, b.line_count FROM files f "
+            "LEFT JOIN blobs b ON b.oid = f.blob_oid AND f.skip_reason IS NULL "
+            "WHERE f.snapshot_id = :s AND f.path = :path"
+        ),
+        {"s": snapshot_id, "path": path},
+    ).first()
+    if row is None:
+        raise PathNotInSnapshot(f"Snapshot {snapshot_id} has no file {path!r}.")
+    return row
 
 
 def _nodes_by_id(connection: Connection, ids: Sequence[int]) -> dict[int, Node]:
