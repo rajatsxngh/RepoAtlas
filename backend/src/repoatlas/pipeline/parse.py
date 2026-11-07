@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
@@ -41,12 +42,22 @@ class ParseOutput(BaseModel):
     digest: str
 
 
-def parse_files(tree: SourceTree, inventory: Inventory) -> list[ParsedFile]:
-    """Parse every indexed file of ``inventory`` (read from ``tree``) in path order."""
-    return [
-        parse_file(entry, tree.read(TreeEntry(entry.path, entry.mode, entry.blob_oid, entry.size)))
-        for entry in inventory.indexed
-    ]
+def parse_files(
+    tree: SourceTree,
+    inventory: Inventory,
+    *,
+    progress: Callable[[int, int], None] | None = None,
+) -> list[ParsedFile]:
+    """Parse every indexed file of ``inventory`` (read from ``tree``) in path order;
+    ``progress(done, total)`` is called after each file."""
+    entries = inventory.indexed
+    parsed: list[ParsedFile] = []
+    for done, entry in enumerate(entries, start=1):
+        data = tree.read(TreeEntry(entry.path, entry.mode, entry.blob_oid, entry.size))
+        parsed.append(parse_file(entry, data))
+        if progress is not None:
+            progress(done, len(entries))
+    return parsed
 
 
 def parse_tree(tree: SourceTree, *, max_source_files: int, max_file_bytes: int) -> ParseOutput:

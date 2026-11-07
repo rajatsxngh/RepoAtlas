@@ -55,7 +55,7 @@ InterruptReason = Literal["stop", "timeout", "lease_lost"]
 REPORT_INTERVAL_S = 1.0  # progress writes per attempt, at most one per interval and stage
 IDLE_SLICE_S = 0.2  # an idle worker notices a stop request within this long
 # Modules whose import registers the built-in job handlers.
-BUILTIN_HANDLER_MODULES: tuple[str, ...] = ()
+BUILTIN_HANDLER_MODULES: tuple[str, ...] = ("repoatlas.jobs.build",)
 
 log = get_logger(__name__)
 
@@ -76,12 +76,12 @@ class JobInterrupted(Exception):
 
 @dataclass(frozen=True)
 class JobHandler:
-    """What a worker does with jobs of ``kind``. ``on_failed(job, engine)`` runs once when a
-    job fails for good; errors in ``permanent_errors`` are never retried."""
+    """What a worker does with jobs of ``kind``. ``on_failed(job, settings, engine)`` runs once
+    when a job fails for good; errors in ``permanent_errors`` are never retried."""
 
     kind: str
     run: Callable[[JobContext], None]
-    on_failed: Callable[[Job, Engine], None] | None = None
+    on_failed: Callable[[Job, Settings, Engine], None] | None = None
     permanent_errors: tuple[type[BaseException], ...] = ()
 
 
@@ -411,6 +411,6 @@ class Worker:
         if handler is None or handler.on_failed is None:
             return
         try:
-            handler.on_failed(job, self.engine)
+            handler.on_failed(job, self.settings, self.engine)
         except Exception:
             log.exception("on_failed hook failed", job_id=job.id, kind=job.kind)

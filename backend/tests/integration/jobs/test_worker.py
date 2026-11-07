@@ -132,7 +132,7 @@ def test_failures_are_retried_then_fail_for_good_once(
         raise RuntimeError(f"attempt {ctx.job.attempts} broke")
 
     handler = JobHandler(
-        "build", broken, on_failed=lambda job, _engine: failed_for_good.append(job)
+        "build", broken, on_failed=lambda job, _settings, _engine: failed_for_good.append(job)
     )
     job = queue.enqueue("build", engine=jobs_engine)
     worker = make_worker(jobs_engine, settings, {"build": handler})
@@ -223,7 +223,7 @@ def test_running_out_of_attempts_through_crashes_calls_on_failed(
 ) -> None:
     failed: list[int] = []
     handler = JobHandler(
-        "build", lambda _ctx: None, on_failed=lambda job, _engine: failed.append(job.id)
+        "build", lambda _ctx: None, on_failed=lambda job, _settings, _engine: failed.append(job.id)
     )
     job = queue.enqueue("build", max_attempts=1, engine=jobs_engine)
     claimed = queue.claim("gone", engine=jobs_engine)

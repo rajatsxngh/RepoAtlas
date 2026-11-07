@@ -1,7 +1,8 @@
-"""build_snapshot and the build/query CLI (T7), against a local origin served as GitHub."""
+"""build_snapshot and the build/query CLI, against a local origin served as GitHub."""
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 import re
@@ -9,90 +10,27 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-import httpx
 import pytest
 from sqlalchemy import Engine, text
 from typer.testing import CliRunner
 
-from repoatlas import pipeline
 from repoatlas.cli import app
 from repoatlas.config import Settings, get_settings
-from repoatlas.ingest import fetch as fetch_module
 from repoatlas.ingest.errors import FetchError, InvalidRepoUrl
-from repoatlas.ingest.github import GitHubClient
-from repoatlas.pipeline.build import BUILD_STEPS, BuildContext, Step, build_snapshot, run_build
+from repoatlas.pipeline.build import BuildContext, build_snapshot, run_build
 from repoatlas.pipeline.graph import run_graph
+from repoatlas.pipeline.stages import fingerprint_parts, registered_stages
 from repoatlas.store.graphstore import GraphStore
 from repoatlas.store.loader import load_graph
-from tests.unit.ingest.gitrepo import OriginRepo, Spec
+from tests.integration.origin import HELPER, URL, UTIL, Origin, serve_origin
+from tests.unit.ingest.gitrepo import Spec
 
 pytestmark = pytest.mark.usefixtures("clean_store")
-
-FIXTURES = Path(__file__).resolve().parents[2] / "fixtures"
-URL = "https://github.com/pallets/flask"
-CLONE_URL = "https://github.com/pallets/flask.git"
-APP = (
-    b"from shop.util import helper\n\n\n"
-    b"def main():\n    return run()\n\n\n"
-    b"def run():\n    return helper()\n"
-)
-UTIL = b"def helper():\n    return 1\n"
-TEST = b"from shop.app import main\n\n\ndef test_main():\n    assert main() == 1\n"
-HELPER = "py:src/shop/util.py:helper:function"
-FILES = [
-    Spec("pyproject.toml", b"[project]\nname = 'shop'\n"),
-    Spec("src/shop/__init__.py", b""),
-    Spec("src/shop/app.py", APP),
-    Spec("src/shop/util.py", UTIL),
-    Spec("tests/test_app.py", TEST),
-]
-
-
-class Origin:
-    """A local bare repository that the mocked GitHub API and the patched fetches point to."""
-
-    def __init__(self, path: Path) -> None:
-        self.repo = OriginRepo(path)
-        self.repo.commit([Spec("src/shop/app.py", b"def main():\n    pass\n")], "first")
-        self.head = self.repo.commit(FILES, "second")
-        self.fetches = 0
-
-    def commit(self, changes: list[Spec]) -> str:
-        changed = {spec.path for spec in changes}
-        self.head = self.repo.commit([s for s in FILES if s.path not in changed] + changes)
-        return self.head
 
 
 @pytest.fixture
 def origin(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Origin:
-    served = Origin(tmp_path / "origin.git")
-    repo_json = json.loads((FIXTURES / "github" / "repo_pallets_flask.json").read_text("utf-8"))
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/commits/main"):
-            return httpx.Response(200, text=served.head)
-        return httpx.Response(200, json=repo_json)
-
-    monkeypatch.setattr(
-        GitHubClient,
-        "from_settings",
-        classmethod(lambda cls, _s: cls(transport=httpx.MockTransport(handler))),
-    )
-    real_source, real_history = fetch_module.fetch_source, fetch_module.fetch_history
-
-    def source(clone_url: str, commit: str, dest: Path, **kwargs: Any) -> Any:
-        assert clone_url == CLONE_URL
-        served.fetches += 1
-        return real_source(served.repo.url, commit, dest, **kwargs)
-
-    def history(clone_url: str, commit: str, dest: Path, **kwargs: Any) -> Any:
-        assert clone_url == CLONE_URL
-        return real_history(served.repo.url, commit, dest, **kwargs)
-
-    for module in (pipeline.build, pipeline.graph):
-        monkeypatch.setattr(module, "fetch_source", source)
-        monkeypatch.setattr(module, "fetch_history", history)
-    return served
+    return serve_origin(tmp_path, monkeypatch)
 
 
 @pytest.fixture
@@ -109,8 +47,11 @@ def status(engine: Engine, snapshot_id: int) -> tuple[str, str | None]:
 
 
 def workdir_is_empty(settings: Settings) -> bool:
-    work = settings.data_dir / "work"
-    return not work.exists() or not any(work.iterdir())
+    """No fetched data or checkpoints are left behind."""
+    return all(
+        not folder.exists() or not any(folder.iterdir())
+        for folder in (settings.data_dir / "work", settings.data_dir / "builds")
+    )
 
 
 def test_build_stores_the_same_graph_as_run_graph(
@@ -118,7 +59,7 @@ def test_build_stores_the_same_graph_as_run_graph(
 ) -> None:
     result = run_build(URL, settings, engine=pg_engine)
     assert (result.repo, result.commit, result.reused) == ("pallets/flask", origin.head, False)
-    assert list(result.timings) == [step.name for step in BUILD_STEPS]
+    assert list(result.timings) == ["resolve", *(stage.name for stage in registered_stages())]
     expected = run_graph(URL, settings)
     loaded = load_graph(result.snapshot_id, engine=pg_engine)
     assert loaded.digest() == expected.digest
@@ -139,7 +80,8 @@ def test_build_stores_the_same_graph_as_run_graph(
         "parse",
         "graph",
     }
-    assert info.stats["fingerprint_parts"] == pipeline.build.fingerprint_parts(settings)
+    assert info.stats["fingerprint_parts"] == fingerprint_parts(settings)
+    assert info.stats["resumed"] == []
     assert workdir_is_empty(settings)
 
 
@@ -176,9 +118,12 @@ def test_a_failing_step_marks_the_snapshot_failed_and_a_retry_succeeds(
     def broken(ctx: BuildContext) -> None:
         raise RuntimeError("parser exploded")
 
-    steps = tuple(Step("parse", broken) if s.name == "parse" else s for s in BUILD_STEPS)
+    stages = tuple(
+        dataclasses.replace(stage, run=broken) if stage.name == "parse" else stage
+        for stage in registered_stages()
+    )
     with pytest.raises(RuntimeError, match="parser exploded"):
-        run_build(URL, settings, engine=pg_engine, steps=steps)
+        run_build(URL, settings, engine=pg_engine, stages=stages)
     assert workdir_is_empty(settings)
     with pg_engine.connect() as connection:
         snapshot_id = connection.execute(text("SELECT id FROM snapshots")).scalar_one()

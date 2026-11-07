@@ -1,8 +1,9 @@
-"""The configuration fingerprint (T7): what changes it, what doesn't, and version pins."""
+"""The configuration fingerprint: what changes it, what doesn't, and version pins."""
 
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -15,15 +16,18 @@ from repoatlas.graph.tiers import TIERS_VERSION
 from repoatlas.ingest.source import MemorySourceTree, TreeEntry
 from repoatlas.parsing import EXTRACTOR_VERSION
 from repoatlas.pipeline import build as pipeline_build
-from repoatlas.pipeline.build import (
-    BUILD_STEPS,
-    Step,
-    TreeBlobs,
-    config_fingerprint,
-    fingerprint_parts,
-)
+from repoatlas.pipeline.build import TreeBlobs
+from repoatlas.pipeline.context import BuildContext
 from repoatlas.pipeline.fingerprint import compute
 from repoatlas.pipeline.parse import parse_tree
+from repoatlas.pipeline.stages import (
+    Stage,
+    config_fingerprint,
+    fingerprint_parts,
+    register_stage,
+    registered_stages,
+    unregister_stage,
+)
 
 GOLDEN = Path(__file__).resolve().parents[1] / "fixtures" / "golden"
 
@@ -32,18 +36,44 @@ def settings(**overrides: Any) -> Settings:
     return Settings(_env_file=None, **overrides)
 
 
+def nothing(_ctx: BuildContext) -> None:
+    pass
+
+
+@pytest.fixture
+def dummy() -> Iterator[Stage]:
+    """A stage registered for the test, removed again afterwards."""
+    stage = Stage("dummy", 1, ("max_file_bytes",), nothing)
+    register_stage(stage)
+    yield stage
+    unregister_stage("dummy")
+
+
 def test_compute_is_a_digest_of_canonical_json() -> None:
     assert compute({"a": 1, "b": [1, 2]}) == compute({"b": [1, 2], "a": 1})
     assert compute({"a": 1}) != compute({"a": 2})
     assert len(compute({})) == 64
 
 
-def test_the_fingerprint_is_stable() -> None:
+def test_the_fingerprint_covers_the_registered_stages_in_order() -> None:
     assert config_fingerprint(settings()) == config_fingerprint(settings())
-    steps = fingerprint_parts(settings())["steps"]
-    assert isinstance(steps, list)
-    assert [step["name"] for step in steps if isinstance(step, dict)] == [
-        "resolve",
+    stages = fingerprint_parts(settings())["stages"]
+    assert isinstance(stages, list)
+    assert [stage["name"] for stage in stages if isinstance(stage, dict)] == [
+        "fetch",
+        "inventory",
+        "parse",
+        "graph",
+        "store",
+    ]
+    fetch = stages[0]
+    assert fetch == {
+        "name": "fetch",
+        "version": 1,
+        "components": {},
+        "settings": {"history_depth": 1000, "owner_commits": 1000},
+    }
+    assert [stage.name for stage in registered_stages()] == [
         "fetch",
         "inventory",
         "parse",
@@ -76,6 +106,9 @@ def test_settings_that_change_output_change_the_fingerprint(name: str, value: in
         ("max_repo_size_kb", 1),
         ("graph_cache_mb", 1),
         ("max_read_lines", 10),
+        ("job_lease_s", 5.0),
+        ("job_max_attempts", 1),
+        ("web_origins", "https://example.com"),
     ],
 )
 def test_settings_that_do_not_change_output_leave_it_alone(name: str, value: object) -> None:
@@ -93,11 +126,76 @@ def test_component_versions_change_the_fingerprint(monkeypatch: pytest.MonkeyPat
     assert len({before, after_graph, after_extractor, after_grammar}) == 4
 
 
-def test_adding_or_removing_a_step_changes_the_fingerprint() -> None:
+def test_registering_a_dummy_stage_changes_the_fingerprint() -> None:
     base = config_fingerprint(settings())
-    extra = (*BUILD_STEPS, Step("embed", lambda ctx: None, ("max_file_bytes",)))
-    assert config_fingerprint(settings(), extra) != base
-    assert config_fingerprint(settings(), BUILD_STEPS[:-1]) != base
+    register_stage(Stage("dummy", 1, (), nothing))
+    try:
+        with_dummy = config_fingerprint(settings())
+        assert with_dummy != base
+        assert [stage.name for stage in registered_stages()][-1] == "dummy"
+    finally:
+        unregister_stage("dummy")
+    assert config_fingerprint(settings()) == base
+
+
+def test_stage_versions_settings_order_and_removal_change_the_fingerprint(
+    dummy: Stage,
+) -> None:
+    stages = registered_stages()
+    base = config_fingerprint(settings(), stages)
+    bumped = tuple(
+        Stage(s.name, s.version + 1, s.settings_keys, s.run) if s is dummy else s for s in stages
+    )
+    no_settings = tuple(Stage(s.name, 1, (), s.run) if s is dummy else s for s in stages)
+    reordered = (stages[-1], *stages[:-1])
+    variants = [bumped, no_settings, reordered, stages[:-1]]
+    fingerprints = {config_fingerprint(settings(), variant) for variant in variants}
+    assert len(fingerprints | {base}) == len(variants) + 1
+    assert config_fingerprint(settings(max_file_bytes=1), stages) != base  # dummy's setting
+
+
+def test_stages_register_in_place(dummy: Stage) -> None:
+    after_parse = Stage("after-parse", 1, (), nothing)
+    register_stage(after_parse, after="parse")
+    try:
+        assert [stage.name for stage in registered_stages()] == [
+            "fetch",
+            "inventory",
+            "parse",
+            "after-parse",
+            "graph",
+            "store",
+            "dummy",
+        ]
+        with pytest.raises(ValueError, match="already registered"):
+            register_stage(Stage("parse", 2, (), nothing))
+        with pytest.raises(ValueError, match="No stage named"):
+            register_stage(Stage("orphan", 1, (), nothing), after="nowhere")
+    finally:
+        unregister_stage("after-parse")
+    assert "orphan" not in [stage.name for stage in registered_stages()]
+
+
+def test_stages_are_validated_and_secrets_never_enter_fingerprints() -> None:
+    with pytest.raises(ValueError, match="name"):
+        Stage("", 1, (), nothing)
+    with pytest.raises(ValueError, match="version"):
+        Stage("x", 0, (), nothing)
+    with pytest.raises(ValueError, match="weight"):
+        Stage("x", 1, (), nothing, weight=0)
+    leaky = Stage("leaky", 1, ("github_token",), nothing)
+    with pytest.raises(ValueError, match="Secret"):
+        fingerprint_parts(settings(github_token=SecretStr("t")), [leaky])
+    paths = Stage("paths", 1, ("data_dir", "job_retry_backoff_s"), nothing)
+    parts = fingerprint_parts(settings(data_dir=Path("a") / "b"), [paths])
+    assert parts["stages"] == [
+        {
+            "name": "paths",
+            "version": 1,
+            "components": {},
+            "settings": {"data_dir": "a/b", "job_retry_backoff_s": [10.0, 60.0, 300.0]},
+        }
+    ]
 
 
 @pytest.mark.parametrize(
