@@ -1,6 +1,11 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
+
+// findBy* and waitFor give up after 1 s by default. With the whole suite running in parallel
+// (and on CI runners) mock requests, debounces, and layouts can take longer; a real failure still
+// fails, just later.
+configure({ asyncUtilTimeout: 5000 });
 
 afterEach(() => {
   cleanup();

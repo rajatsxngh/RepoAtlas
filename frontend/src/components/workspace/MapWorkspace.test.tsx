@@ -23,13 +23,19 @@ describe("MapWorkspace", () => {
     const user = userEvent.setup();
     await renderWorkspace();
     await user.type(screen.getByRole("combobox", { name: "Search symbols" }), "round_mon");
-    await user.click(await screen.findByRole("option", { name: /round_money/ }));
+    await user.click(await screen.findByRole("option", { name: /round_money/ }, { timeout: 5000 }));
     const panel = await screen.findByRole("complementary", { name: "Node details" });
-    expect(await within(panel).findByRole("heading", { name: "round_money" })).toBeVisible();
-    await waitFor(() =>
-      expect(
-        document.querySelector('[data-id="py:src/shop/utils/helpers.py:round_money:function"]'),
-      ).not.toBeNull(),
+    expect(
+      await within(panel).findByRole("heading", { name: "round_money" }, { timeout: 5000 }),
+    ).toBeVisible();
+    // Revealing opens two folders and a file, each laid out in turn: slow when the suite runs in
+    // parallel.
+    await waitFor(
+      () =>
+        expect(
+          document.querySelector('[data-id="py:src/shop/utils/helpers.py:round_money:function"]'),
+        ).not.toBeNull(),
+      { timeout: 8000 },
     );
   });
 
@@ -40,9 +46,11 @@ describe("MapWorkspace", () => {
     // Pick the ends through the path finder's own search boxes.
     const user = userEvent.setup();
     await user.type(screen.getByRole("combobox", { name: "Path from" }), "test_add");
-    await user.click(await screen.findByRole("option", { name: /test_add_rounds_prices/ }));
+    await user.click(
+      await screen.findByRole("option", { name: /test_add_rounds_prices/ }, { timeout: 5000 }),
+    );
     await user.type(screen.getByRole("combobox", { name: "Path to" }), "round_money");
-    await user.click(await screen.findByRole("option", { name: /round_money/ }));
+    await user.click(await screen.findByRole("option", { name: /round_money/ }, { timeout: 5000 }));
     const steps = await screen.findByRole("list", { name: "Path steps" });
     const count = within(steps).getAllByRole("button").length;
     expect(count).toBeGreaterThan(1);
