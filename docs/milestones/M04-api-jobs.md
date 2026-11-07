@@ -1,6 +1,6 @@
 # M04 — API & background jobs
 
-**Type of work:** Backend service · **Size:** M (8 tasks) · **Status:** In progress
+**Type of work:** Backend service · **Size:** M (8 tasks) · **Status:** Done
 
 ## Goal
 
@@ -62,7 +62,7 @@ API-1, API-2, API-3, API-4, API-5, API-6, API-7, API-8
 - [x] API tests pass, including invalid/private/oversize URLs, 429 responses, and path traversal attempts.
 - [x] Killing a worker mid-build: after the lease expires, another worker resumes and the snapshot becomes `ready`.
 - [x] Registering a dummy stage changes the fingerprint, and a new build request creates a new snapshot.
-- [ ] `backend/openapi.json` and `frontend/src/lib/api/schema.d.ts` are generated and committed; CI fails if they are stale.
+- [x] `backend/openapi.json` and `frontend/src/lib/api/schema.d.ts` are generated and committed; CI fails if they are stale.
 
 ## Verification
 
@@ -117,4 +117,4 @@ Gate checked on 2026-11-07 on branch `m04-api-jobs`.
 
 **Open question.** No cancel endpoint: builds take seconds to a minute, and stopping a worker (Ctrl+C or the stop file) puts its job back in the queue. It went to the backlog, with rate limits shared across API instances and sweeping orphaned build directories.
 
-**CI.** Not run yet: the branch has not been pushed.
+**CI.** Run [42404306260](https://github.com/rajatsxngh/RepoAtlas/actions/runs/42404306260) on `0d27c88` passed all four jobs: the Linux full check (793 passed, with the symlink test, every Postgres suite, and the kill-and-resume test under a real `SIGKILL`; migrations reach `0003_jobs`, and `repoatlas api openapi --check` finds the spec up to date), the Windows unit tests (581 passed), the new API types job (the types regenerated with openapi-typescript 7.13.0 on Node 22 match the committed file byte for byte), and the docs lint. Both backend jobs printed the same fixture digests as this machine, unchanged since M02: graphs `py_small` `ec01fa4353017159…` and `ts_small` `c066ffa9b52dbd10…`, parses `py_small` `31cf59ec616dfb6a…` and `ts_small` `13b0ed333b8a253e…`.
