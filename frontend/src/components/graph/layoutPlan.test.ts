@@ -9,6 +9,7 @@ function node(key: string, parent: string | null, expanded = false, depth = 0): 
     kind: key.startsWith("dir:") ? "dir" : "file",
     name: key,
     path: key,
+    meta: {},
   } as ApiNode;
   return { type: "node", id: key, node: apiNode, parent, expanded, depth };
 }

@@ -10,6 +10,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // The floating dev badge sits on top of the map's legend.
+  devIndicators: false,
   // End-to-end runs build the app twice (mock mode and the real API) side by side.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   async headers() {

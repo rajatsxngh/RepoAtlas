@@ -5,7 +5,7 @@
  */
 
 import type { LayoutEdge } from "@/workers/layoutEngine";
-import { nodeLabel } from "./flow";
+import { nodeLabel, nodeMeta } from "./flow";
 import { ROOT, type VisibleEdge, type VisibleNode } from "./model";
 import { MORE_SIZE, leafSize, type Size } from "./sizes";
 
@@ -31,7 +31,12 @@ export interface PlannedContainer {
 function plannedChild(entry: VisibleNode): PlannedChild {
   if (entry.type === "more") return { id: entry.id, label: "", nested: false, leaf: MORE_SIZE };
   const label = nodeLabel(entry.node);
-  return { id: entry.id, label, nested: entry.expanded, leaf: leafSize(label) };
+  return {
+    id: entry.id,
+    label,
+    nested: entry.expanded,
+    leaf: leafSize(label, nodeMeta(entry.node)),
+  };
 }
 
 /** Containers in children-first order, each with what ELK needs. */

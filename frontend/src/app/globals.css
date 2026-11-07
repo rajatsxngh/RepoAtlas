@@ -250,20 +250,21 @@
  * ------------------------------------------------------------------------------------------- */
 
 .react-flow {
+  /* React Flow reads these before its own -default values, whatever the stylesheet order. */
   --xy-background-color: var(--ra-canvas);
-  --xy-background-pattern-dots-color-default: var(--ra-line-strong);
-  --xy-edge-stroke-default: var(--ra-edge-imports);
-  --xy-controls-button-background-color-default: var(--ra-surface);
-  --xy-controls-button-background-color-hover-default: var(--ra-surface-2);
-  --xy-controls-button-color-default: var(--ra-fg-muted);
-  --xy-controls-button-color-hover-default: var(--ra-fg);
-  --xy-controls-button-border-color-default: var(--ra-line);
-  --xy-controls-box-shadow-default: var(--ra-shadow);
-  --xy-minimap-background-color-default: var(--ra-surface);
-  --xy-minimap-mask-background-color-default: color-mix(in srgb, var(--ra-canvas) 70%, transparent);
-  --xy-minimap-mask-stroke-color-default: var(--ra-line-strong);
-  --xy-minimap-node-background-color-default: var(--ra-surface-3);
-  --xy-attribution-background-color-default: transparent;
+  --xy-background-pattern-color: var(--ra-line-strong);
+  --xy-edge-stroke: var(--ra-edge-imports);
+  --xy-controls-button-background-color: var(--ra-surface);
+  --xy-controls-button-background-color-hover: var(--ra-surface-2);
+  --xy-controls-button-color: var(--ra-fg-muted);
+  --xy-controls-button-color-hover: var(--ra-fg);
+  --xy-controls-button-border-color: var(--ra-line);
+  --xy-controls-box-shadow: var(--ra-shadow);
+  --xy-minimap-background-color: var(--ra-surface);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--ra-canvas) 72%, transparent);
+  --xy-minimap-mask-stroke-color: var(--ra-line-strong);
+  --xy-minimap-node-background-color: var(--ra-surface-3);
+  --xy-attribution-background-color: transparent;
   color: var(--ra-fg);
 }
 
@@ -347,4 +348,40 @@
 
 .ra-container-header {
   background: color-mix(in srgb, var(--ra-surface) 88%, var(--ra-tint));
+}
+
+.ra-edge {
+  transition: stroke-width 120ms ease;
+}
+
+.react-flow__edge:hover .ra-edge {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--ra-fg) 25%, transparent));
+}
+
+.ra-edge-count {
+  position: absolute;
+  pointer-events: all;
+  min-width: 18px;
+  padding: 0 5px;
+  border: 1px solid;
+  border-radius: 999px;
+  background: var(--ra-surface);
+  color: var(--ra-fg-muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 15px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Counts read well up close; zoomed out they pile up, and widths already show weight. */
+.ra-far .ra-edge-count,
+.ra-mid .ra-edge-count {
+  display: none;
+}
+
+.react-flow__minimap {
+  border: 1px solid var(--ra-line);
+  border-radius: 10px;
+  overflow: hidden;
 }

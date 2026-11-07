@@ -2,6 +2,7 @@
 
 import { Position, type Edge as FlowEdge, type Node as FlowNode } from "@xyflow/react";
 import type { ApiNode, EdgeKind } from "@/lib/api/types";
+import { bundle } from "./edgeStyle";
 import { ROOT, mayHaveChildren, type VisibleEdge, type VisibleNode } from "./model";
 import { CONTENT_OFFSET, MORE_SIZE, containerSize, leafSize, type Size } from "./sizes";
 
@@ -30,6 +31,10 @@ export type EdgeData = {
   count: number;
   minConfidence: number;
   maxConfidence: number;
+  /** Perpendicular offset that keeps parallel edges of one pair apart. */
+  offset: number;
+  /** This edge carries its pair's count label. */
+  showCount: boolean;
 };
 
 export type EntityFlowNode = FlowNode<EntityData, "entity">;
@@ -54,12 +59,12 @@ export function nodeMeta(node: ApiNode, fileCount?: number): string {
     case "file":
       return typeof node.meta.loc === "number" ? plural(node.meta.loc, "line") : "file";
     case "route":
-      return "route";
+      return node.span ? `route · line ${node.span.start_line}` : "route";
     default:
       return node.span
         ? node.span.start_line === node.span.end_line
-          ? `${node.kind} · line ${node.span.start_line}`
-          : `${node.kind} · lines ${node.span.start_line}–${node.span.end_line}`
+          ? `line ${node.span.start_line}`
+          : `lines ${node.span.start_line}–${node.span.end_line}`
         : node.kind;
   }
 }
@@ -93,7 +98,7 @@ export function boxSize(entry: VisibleNode, layouts: ReadonlyMap<string, PlacedC
   if (entry.type === "more") return MORE_SIZE;
   const label = nodeLabel(entry.node);
   const layout = entry.expanded ? layouts.get(entry.id) : undefined;
-  return layout ? containerSize(layout.content, label) : leafSize(label);
+  return layout ? containerSize(layout.content, label) : leafSize(label, nodeMeta(entry.node));
 }
 
 export function toFlow(input: FlowInput): FlowOutput {
@@ -190,21 +195,25 @@ export function toFlow(input: FlowInput): FlowOutput {
       });
     }
   }
-  const edges: MapFlowEdge[] = input.edges
-    .filter((edge) => rendered.has(edge.source) && rendered.has(edge.target))
-    .map((edge) => ({
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
-      type: "map",
-      selectable: false,
-      focusable: false,
-      data: {
-        kind: edge.kind,
-        count: edge.count,
-        minConfidence: edge.minConfidence,
-        maxConfidence: edge.maxConfidence,
-      },
-    }));
+  const drawn = input.edges.filter(
+    (edge) => rendered.has(edge.source) && rendered.has(edge.target),
+  );
+  const { offsets, labelled } = bundle(drawn);
+  const edges: MapFlowEdge[] = drawn.map((edge) => ({
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    type: "map",
+    selectable: false,
+    focusable: false,
+    data: {
+      kind: edge.kind,
+      count: edge.count,
+      minConfidence: edge.minConfidence,
+      maxConfidence: edge.maxConfidence,
+      offset: offsets.get(edge.id) ?? 0,
+      showCount: labelled.has(edge.id),
+    },
+  }));
   return { nodes, edges, sizes };
 }

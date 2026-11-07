@@ -31,8 +31,10 @@ export function textWidth(text: string): number {
   return Math.ceil(width);
 }
 
-export function leafSize(label: string): Size {
-  const width = Math.min(LEAF_MAX_WIDTH, Math.max(LEAF_MIN_WIDTH, LEAF_CHROME + textWidth(label)));
+/** A collapsed node's box: wide enough for its label (13px) and meta line (11px), within bounds. */
+export function leafSize(label: string, meta = ""): Size {
+  const text = Math.max(textWidth(label), Math.ceil(textWidth(meta) * 0.85));
+  const width = Math.min(LEAF_MAX_WIDTH, Math.max(LEAF_MIN_WIDTH, LEAF_CHROME + text));
   return { width, height: LEAF_HEIGHT };
 }
 

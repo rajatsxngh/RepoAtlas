@@ -6,7 +6,7 @@
  * kept after a container closes, so opening it again with the same children is instant.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ContainerInput, ContainerLayout } from "@/workers/layoutEngine";
 import { resizeChild, type Placement } from "./incremental";
 import type { LayoutClient } from "./layoutClient";
@@ -75,6 +75,8 @@ export interface MapLayout {
   pending: ReadonlySet<string>;
   /** Milliseconds the worker took for the last applied request. */
   lastMs: number | null;
+  /** Forgets every layout, so ELK lays out the whole visible map again. */
+  relayout: () => void;
 }
 
 export function useMapLayout(
@@ -124,5 +126,6 @@ export function useMapLayout(
     return () => clearTimeout(timer);
   }, [dirty, placed, client]);
 
-  return { placed, pending, lastMs };
+  const relayout = useCallback(() => setBase(new Map()), []);
+  return { placed, pending, lastMs, relayout };
 }

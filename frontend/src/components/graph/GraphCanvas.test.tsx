@@ -61,3 +61,21 @@ describe("GraphCanvas expansion", () => {
     expect(screen.getByText("Cart")).toBeInTheDocument();
   });
 });
+
+describe("GraphCanvas styling", () => {
+  it("dashes edges that are only guesses and labels names as text", async () => {
+    renderCanvas(3);
+    expect(await screen.findByText("<img src=x onerror=alert('dir')>")).toBeInTheDocument();
+    await waitFor(() => expect(document.querySelector('path[data-guess="true"]')).not.toBeNull());
+    const guess = document.querySelector('path[data-guess="true"]') as SVGPathElement;
+    expect(guess.style.strokeDasharray).not.toBe("");
+    expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("shows the legend and the map controls", async () => {
+    renderCanvas();
+    expect(await screen.findByRole("region", { name: "Legend" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close everything" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tidy the layout" })).toBeInTheDocument();
+  });
+});

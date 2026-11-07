@@ -5,12 +5,17 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Background,
   BackgroundVariant,
+  ControlButton,
   Controls,
+  MiniMap,
+  Panel,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useStore,
   type NodeMouseHandler,
 } from "@xyflow/react";
+import { ChevronsDownUp, LayoutGrid } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -20,6 +25,7 @@ import {
   useState,
   type Ref,
 } from "react";
+import { Legend } from "@/components/legend/Legend";
 import { Spinner } from "@/components/ui/Spinner";
 import { useApi } from "@/lib/api/context";
 import { describeError } from "@/lib/api/errors";
@@ -59,8 +65,17 @@ export interface GraphCanvasProps {
   ref?: Ref<GraphCanvasHandle>;
 }
 
+/** Minimap colors: kind accents for nodes, a faint fill for containers. */
+function minimapColor(node: { type?: string; data: unknown }): string {
+  if (node.type === "more") return "var(--ra-line-strong)";
+  const kind = (node.data as { node?: { kind?: string } }).node?.kind ?? "file";
+  if (node.type === "container") return "color-mix(in srgb, var(--ra-surface-3) 60%, transparent)";
+  return `var(--ra-kind-${kind})`;
+}
+
 function Canvas({
   snapshotId,
+  layers,
   onSelect,
   selectedKey = null,
   nodeCap = config.nodeCap,
@@ -76,6 +91,9 @@ function Canvas({
   const [fetching, setFetching] = useState<ReadonlySet<string>>(() => new Set());
   const [notice, setNotice] = useState<string | null>(null);
   const fitted = useRef(false);
+  const zoomBand = useStore((state) =>
+    state.transform[2] < 0.55 ? "ra-far" : state.transform[2] < 0.85 ? "ra-mid" : "ra-near",
+  );
   const filesReady = useRef<Promise<void>>(Promise.resolve());
   const revealAfterLayout = useRef<string | null>(null);
   const sync = useCallback(() => setVersion(model.version), [model]);
@@ -360,9 +378,43 @@ function Canvas({
         maxZoom={2.5}
         proOptions={{ hideAttribution: false }}
         aria-label="Code map"
+        className={zoomBand}
       >
         <Background variant={BackgroundVariant.Dots} gap={22} size={1} />
-        <Controls showInteractive={false} position="bottom-right" />
+        <Controls
+          showInteractive={false}
+          position="bottom-right"
+          fitViewOptions={{ padding: 0.12, maxZoom: 1.1 }}
+        >
+          <ControlButton
+            onClick={() => {
+              model.collapseAll();
+              sync();
+            }}
+            title="Close everything"
+            aria-label="Close everything"
+          >
+            <ChevronsDownUp aria-hidden="true" />
+          </ControlButton>
+          <ControlButton
+            onClick={layout.relayout}
+            title="Tidy the layout"
+            aria-label="Tidy the layout"
+          >
+            <LayoutGrid aria-hidden="true" />
+          </ControlButton>
+        </Controls>
+        <MiniMap
+          position="top-right"
+          pannable
+          zoomable
+          nodeColor={minimapColor}
+          nodeStrokeWidth={0}
+          ariaLabel="Overview of the map"
+        />
+        <Panel position="bottom-left">
+          <Legend layers={layers} />
+        </Panel>
       </ReactFlow>
       {!model.isLoaded(ROOT) ? (
         <div

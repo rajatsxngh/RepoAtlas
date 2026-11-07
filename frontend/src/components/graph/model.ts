@@ -426,6 +426,11 @@ export class GraphModel {
     this.touch();
   }
 
+  /** Collapses every container. */
+  collapseAll(): void {
+    for (const key of [...this.expanded]) if (key !== ROOT) this.collapse(key);
+  }
+
   /** Hidden children of an expanded container (the members of its "more" node). */
   hiddenIn(container: string): string[] {
     const shown = this.shown.get(container);
