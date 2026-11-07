@@ -3,12 +3,16 @@ name across the repository (the candidates of name-matched calls)."""
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Sequence
 
 from repoatlas.ingest.inventory import Language
 from repoatlas.parsing.models import ParsedFile, Symbol
 
 Family = str  # "py", or "js" for TypeScript and JavaScript, which call each other freely
+
+# The signature of a function assigned to a member: `res.json = function (…)`.
+_ASSIGNED_MEMBER = re.compile(r"[\w$]+(?:\.[\w$]+)+\s*=")
 
 
 def family(language: str) -> Family:
@@ -54,16 +58,18 @@ class SymbolIndex:
                         self._local_definers.add(definer)
 
     def _definer(self, parsed: ParsedFile, symbol: Symbol) -> str | None:
-        """The class or object that defines ``symbol`` as a member, or ``None``.
+        """The class or object that defines ``symbol`` as an instance member, or ``None``.
 
-        Members are methods of classes and the functions of object literals, namespaces, and
-        assigned members (``api.get``, ``Router.prototype.route``). Module-level functions are
-        not: modules are reached through imports, which resolve them by binding instead.
+        Members are methods of classes, and functions assigned onto objects or prototypes
+        (``res.json = function``, ``Router.prototype.route = function``), the JavaScript way of
+        adding methods to instances. Module-level functions, object-literal functions, and
+        namespace functions are not: they are reached through bindings (T1/T2), and as name-match
+        candidates they mostly catch builtin methods (``items.find()`` against ``util.find``).
         """
         if symbol.parent is not None:
             parent = self.symbols.get(symbol.parent)
             return symbol.parent if parent is not None and parent.kind == "class" else None
-        if symbol.qualname != symbol.name:
+        if symbol.qualname != symbol.name and _ASSIGNED_MEMBER.match(symbol.signature):
             return f"{parsed.path}:{symbol.qualname.rsplit('.', 1)[0]}"
         return None
 

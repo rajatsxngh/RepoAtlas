@@ -361,20 +361,52 @@ def test_calls_only_match_within_a_language_family() -> None:
     assert set(calls(graph)) == {("js:app.js:run:function", "ts:cart.ts:Cart.add:method")}
 
 
-def test_module_level_functions_are_not_name_matched() -> None:
-    # `items.map()` is almost always Array.prototype.map, not a module's exported `map`;
-    # modules are reached through imports, which T1 and T2 resolve by binding.
+def test_only_instance_members_are_name_matched() -> None:
+    # `items.map()` is almost always Array.prototype.map, not a module's exported `map`, and
+    # `items.find()` not a namespace's `find`: modules, namespaces, and object literals are
+    # reached through imports, which T1 and T2 resolve by binding. Functions assigned onto
+    # objects or prototypes are instance methods, the JavaScript way.
     graph = build(
         {
-            "a.ts": "export function map() {}\nexport const api = { list() {} };\n",
-            "b.ts": "export function run(x: any) { x.map(); x.list(); }\n",
+            "a.ts": (
+                "export function map() {}\n"
+                "export const api = { list() {} };\n"
+                "export namespace util { export const find = () => 1; }\n"
+            ),
+            "router.js": (
+                "function Router() {}\n"
+                "Router.prototype.route = function route(path) {};\n"
+                "res.json = function json(body) {};\n"
+            ),
+            "b.ts": "export function run(x) { x.map(); x.list(); x.find(); x.route(); x.json(); }",
             "util.py": "def helper():\n    pass\n",
             "app.py": "def run(x):\n    x.helper()\n",
         }
     )
-    assert set(calls(graph)) == {("ts:b.ts:run:function", "ts:a.ts:api.list:function")}
-    assert unresolved(graph, "x.map").reason == "not_found"
-    assert unresolved(graph, "x.helper").reason == "not_found"
+    assert set(calls(graph)) == {
+        ("ts:b.ts:run:function", "js:router.js:Router.route:function"),
+        ("ts:b.ts:run:function", "js:router.js:res.json:function"),
+    }
+    for callee in ("x.map", "x.list", "x.find", "x.helper"):
+        assert unresolved(graph, callee).reason == "not_found"
+
+
+def test_namespace_and_object_members_resolve_through_bindings() -> None:
+    graph = build(
+        {
+            "a.ts": (
+                "export const api = { list() {} };\n"
+                "export namespace util { export const find = () => 1; }\n"
+            ),
+            "b.ts": (
+                'import { api, util } from "./a";\n'
+                "export function run() { api.list(); util.find(); }\n"
+            ),
+        }
+    )
+    run = "ts:b.ts:run:function"
+    assert tier_of(graph, run, "ts:a.ts:api.list:function")[0] == "T2"
+    assert tier_of(graph, run, "ts:a.ts:util.find:function")[0] == "T2"
 
 
 def test_production_code_never_matches_members_defined_in_tests() -> None:
