@@ -1,15 +1,24 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithApi } from "@/test/render";
 import { GraphCanvas } from "./GraphCanvas";
 
-function renderCanvas(snapshotId = 1, onSelect = vi.fn()) {
+function renderCanvas(snapshotId = 1, onSelect = vi.fn(), onNodeAction = vi.fn()) {
   renderWithApi(
     <div style={{ width: 1200, height: 800 }}>
-      <GraphCanvas snapshotId={snapshotId} layers={[]} onSelect={onSelect} onNodeAction={vi.fn()} />
+      <GraphCanvas
+        snapshotId={snapshotId}
+        layers={[]}
+        onSelect={onSelect}
+        onNodeAction={onNodeAction}
+        nodeActions={[
+          { id: "focus", label: "Center on the map", appliesTo: ["dir", "file"] },
+          { id: "never", label: "Only for tests", appliesTo: ["test"] },
+        ]}
+      />
     </div>,
   );
-  return { onSelect };
+  return { onSelect, onNodeAction };
 }
 
 describe("GraphCanvas", () => {
@@ -77,5 +86,35 @@ describe("GraphCanvas styling", () => {
     expect(await screen.findByRole("region", { name: "Legend" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Close everything" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tidy the layout" })).toBeInTheDocument();
+  });
+});
+
+describe("GraphCanvas context menu", () => {
+  it("offers details, opening, and the actions registered for the node's kind", async () => {
+    const { onNodeAction, onSelect } = renderCanvas();
+    fireEvent.contextMenu(await screen.findByText("tests"));
+    const menu = await screen.findByRole("menu", { name: "Actions for tests" });
+    const items = within(menu)
+      .getAllByRole("menuitem")
+      .map((item) => item.textContent);
+    expect(items).toEqual(["Show details", "Open", "Center on the map"]);
+    fireEvent.click(within(menu).getByRole("menuitem", { name: "Center on the map" }));
+    expect(onNodeAction).toHaveBeenCalledWith("dir:tests", "focus");
+    expect(screen.queryByRole("menu")).toBeNull();
+    fireEvent.contextMenu(screen.getByText("src"));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Show details" }));
+    expect(onSelect).toHaveBeenCalledWith("dir:src");
+  });
+
+  it("moves with the arrow keys and closes on Escape", async () => {
+    renderCanvas();
+    fireEvent.contextMenu(await screen.findByText("tests"));
+    const menu = await screen.findByRole("menu");
+    const [first, second] = within(menu).getAllByRole("menuitem");
+    expect(first).toHaveFocus();
+    fireEvent.keyDown(menu, { key: "ArrowDown" });
+    expect(second).toHaveFocus();
+    fireEvent.keyDown(menu, { key: "Escape" });
+    expect(screen.queryByRole("menu")).toBeNull();
   });
 });

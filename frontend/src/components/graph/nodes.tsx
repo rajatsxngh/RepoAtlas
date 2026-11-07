@@ -34,11 +34,15 @@ export const EntityNode = memo(function EntityNode({
 }: NodeProps<EntityFlowNode>) {
   const actions = useCanvasActions();
   const { node, label, meta, expandable, loading } = data;
-  const onKeyDown = (event: KeyboardEvent) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter") actions.select(id);
     else if ((event.key === " " || event.key === "ArrowRight") && expandable) {
       event.preventDefault();
       actions.toggle(id);
+    } else if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
+      event.preventDefault();
+      const box = event.currentTarget.getBoundingClientRect();
+      actions.openMenu(id, { x: box.left + 12, y: box.bottom + 4 });
     }
   };
   return (

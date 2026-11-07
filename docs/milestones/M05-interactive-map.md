@@ -87,7 +87,7 @@ MAP-1, MAP-2, MAP-3, MAP-4, MAP-5, MAP-6, MAP-7, MAP-8, MAP-9, MAP-10, MAP-11
 - [x] **T5 — Layout worker.** elkjs in a worker, incremental layout within containers, stale-result handling.
 - [x] **T6 — Expansion and node cap.** Expand/collapse, "+N more" grouping.
 - [x] **T7 — Styling and legend.** Kinds, confidence dashes, counts, layer legend entries.
-- [ ] **T8 — Node panel and code viewer.** Including owners, counts, node actions, escaped highlighting.
+- [x] **T8 — Node panel and code viewer.** Including owners, counts, node actions, escaped highlighting.
 - [ ] **T9 — Search and reveal.** `SearchBox`, `revealNode`, `focusNode`.
 - [ ] **T10 — Highlight layers and path finder.** Layer composition and bubbling to visible ancestors (unit tests on the bubbling logic); path finder built on layers.
 - [ ] **T11 — End-to-end and stress tests.** Playwright against the real API with the fixture repos; stress test with the synthetic graph; XSS fixture (script and HTML in comments, docstrings, file names) renders as inert text.

@@ -1,21 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { GraphCanvas } from "@/components/graph/GraphCanvas";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { GraphCanvas, type GraphCanvasHandle } from "@/components/graph/GraphCanvas";
+import type { NodeAction } from "@/components/graph/layers";
+import { NodePanel } from "@/components/panel/NodePanel";
 import { SiteHeader } from "@/components/ui/SiteHeader";
-import type { SnapshotView } from "@/lib/api/types";
+import { NODE_KINDS, type SnapshotView } from "@/lib/api/types";
 
 export interface MapWorkspaceProps {
   snapshot: SnapshotView;
 }
 
-/** The map page: header with the repository, and the map below it. */
+/** Actions every node offers in its panel and context menu. */
+export const WORKSPACE_ACTIONS: NodeAction[] = [
+  { id: "focus", label: "Center on the map", appliesTo: [...NODE_KINDS] },
+];
+
+/** The map page: header with the repository, the map, and the selected node's details. */
 export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
   const repo = `${snapshot.repo.owner}/${snapshot.repo.name}`;
+  const canvas = useRef<GraphCanvasHandle>(null);
   const [selected, setSelected] = useState<string | null>(null);
   useEffect(() => {
     document.title = `${repo} · RepoAtlas`;
   }, [repo]);
+
+  const show = useCallback(async (key: string) => {
+    if (await canvas.current?.revealNode(key)) canvas.current?.focusNode(key);
+  }, []);
+
+  const onAction = useCallback(
+    (key: string, actionId: string) => {
+      if (actionId === "focus") void show(key);
+    },
+    [show],
+  );
+
   return (
     <div className="flex h-screen flex-col">
       <SiteHeader>
@@ -24,15 +44,35 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
           {snapshot.commit_sha.slice(0, 7)}
         </span>
       </SiteHeader>
-      <main className="relative min-h-0 flex-1 border-t border-line">
-        <GraphCanvas
-          snapshotId={snapshot.id}
-          layers={[]}
-          selectedKey={selected}
-          onSelect={setSelected}
-          onNodeAction={() => {}}
-        />
-      </main>
+      <div className="flex min-h-0 flex-1 border-t border-line">
+        <main className="relative min-w-0 flex-1">
+          <GraphCanvas
+            ref={canvas}
+            snapshotId={snapshot.id}
+            layers={[]}
+            selectedKey={selected}
+            onSelect={setSelected}
+            nodeActions={WORKSPACE_ACTIONS}
+            onNodeAction={onAction}
+          />
+        </main>
+        {selected ? (
+          <div className="w-[min(420px,40vw)] shrink-0">
+            <NodePanel
+              key={selected}
+              snapshotId={snapshot.id}
+              nodeKey={selected}
+              actions={WORKSPACE_ACTIONS}
+              onAction={onAction}
+              onNavigate={(key) => {
+                setSelected(key);
+                void show(key);
+              }}
+              onClose={() => setSelected(null)}
+            />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

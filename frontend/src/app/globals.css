@@ -385,3 +385,55 @@
   border-radius: 10px;
   overflow: hidden;
 }
+
+/* Code: token colors from the theme. Tokens are text; these only color them. */
+.ra-code .token.comment,
+.ra-code .token.prolog,
+.ra-code .token.doctype,
+.ra-code .token.cdata {
+  color: var(--ra-code-comment);
+  font-style: italic;
+}
+.ra-code .token.keyword,
+.ra-code .token.boolean,
+.ra-code .token.important,
+.ra-code .token.atrule {
+  color: var(--ra-code-keyword);
+}
+.ra-code .token.string,
+.ra-code .token.char,
+.ra-code .token.attr-value,
+.ra-code .token.template-string,
+.ra-code .token.triple-quoted-string,
+.ra-code .token.regex {
+  color: var(--ra-code-string);
+}
+.ra-code .token.number,
+.ra-code .token.constant,
+.ra-code .token.symbol {
+  color: var(--ra-code-number);
+}
+.ra-code .token.function,
+.ra-code .token.function-variable {
+  color: var(--ra-code-function);
+}
+.ra-code .token.class-name,
+.ra-code .token.builtin,
+.ra-code .token.tag {
+  color: var(--ra-code-class);
+}
+.ra-code .token.operator,
+.ra-code .token.entity {
+  color: var(--ra-code-operator);
+}
+.ra-code .token.punctuation {
+  color: var(--ra-code-punctuation);
+}
+.ra-code .token.decorator,
+.ra-code .token.annotation,
+.ra-code .token.attr-name {
+  color: var(--ra-code-decorator);
+}
+.ra-code-mark {
+  background: var(--ra-code-highlight);
+}

@@ -38,7 +38,8 @@ import { toFlow } from "./flow";
 import type { HighlightLayer, NodeAction } from "./layers";
 import { getLayoutClient } from "./layoutClient";
 import { planLayout } from "./layoutPlan";
-import { GraphModel, ROOT, childLevel } from "./model";
+import { GraphModel, ROOT, childLevel, mayHaveChildren } from "./model";
+import { NodeMenu } from "./NodeMenu";
 import { NODE_TYPES } from "./nodes";
 import { useMapLayout } from "./useMapLayout";
 
@@ -77,6 +78,8 @@ function Canvas({
   snapshotId,
   layers,
   onSelect,
+  onNodeAction,
+  nodeActions = [],
   selectedKey = null,
   nodeCap = config.nodeCap,
   ref,
@@ -90,6 +93,7 @@ function Canvas({
   const [attempt, setAttempt] = useState(0);
   const [fetching, setFetching] = useState<ReadonlySet<string>>(() => new Set());
   const [notice, setNotice] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ key: string; x: number; y: number } | null>(null);
   const fitted = useRef(false);
   const zoomBand = useStore((state) =>
     state.transform[2] < 0.55 ? "ra-far" : state.transform[2] < 0.85 ? "ra-mid" : "ra-near",
@@ -263,10 +267,29 @@ function Canvas({
         if (!shown)
           setNotice(`The map shows ${model.cap} nodes at most. Close a container to see more.`);
       },
-      openMenu: () => {},
+      openMenu: (key, at) => setMenu({ key, ...at }),
     }),
-    [collapse, expand, model, onSelect, sync],
+    [collapse, expand, model, onSelect, sync, setMenu],
   );
+
+  const menuNode = menu ? model.nodes.get(menu.key) : undefined;
+  const menuItems = menuNode
+    ? [
+        { id: "ra:details", label: "Show details" },
+        ...(mayHaveChildren(menuNode)
+          ? [{ id: "ra:toggle", label: model.expanded.has(menuNode.key) ? "Close" : "Open" }]
+          : []),
+        ...nodeActions
+          .filter((action) => action.appliesTo.includes(menuNode.kind))
+          .map((action) => ({ id: action.id, label: action.label })),
+      ]
+    : [];
+  const pickMenu = (id: string) => {
+    if (!menuNode) return;
+    if (id === "ra:details") onSelect(menuNode.key);
+    else if (id === "ra:toggle") actions.toggle(menuNode.key);
+    else onNodeAction(menuNode.key, id);
+  };
 
   // After a container opens and is laid out, bring it into view if it spills out of the screen.
   useEffect(() => {
@@ -432,6 +455,15 @@ function Canvas({
             This snapshot has no source files to map.
           </p>
         </div>
+      ) : null}
+      {menu && menuNode ? (
+        <NodeMenu
+          title={`Actions for ${menuNode.name}`}
+          items={menuItems}
+          at={menu}
+          onPick={pickMenu}
+          onClose={() => setMenu(null)}
+        />
       ) : null}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center px-4"
