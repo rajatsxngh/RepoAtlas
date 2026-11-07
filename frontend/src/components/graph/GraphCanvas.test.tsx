@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithApi } from "@/test/render";
-import { GraphCanvas } from "./GraphCanvas";
+import { GraphCanvas, type GraphCanvasHandle } from "./GraphCanvas";
 
 function renderCanvas(snapshotId = 1, onSelect = vi.fn(), onNodeAction = vi.fn()) {
   renderWithApi(
@@ -116,5 +116,51 @@ describe("GraphCanvas context menu", () => {
     expect(second).toHaveFocus();
     fireEvent.keyDown(menu, { key: "Escape" });
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+});
+
+describe("GraphCanvas reveal", () => {
+  async function renderWithHandle(nodeCap?: number) {
+    const handle: { current: GraphCanvasHandle | null } = { current: null };
+    renderWithApi(
+      <div style={{ width: 1200, height: 800 }}>
+        <GraphCanvas
+          ref={handle}
+          snapshotId={1}
+          layers={[]}
+          onSelect={vi.fn()}
+          onNodeAction={vi.fn()}
+          nodeCap={nodeCap}
+        />
+      </div>,
+    );
+    await screen.findByText("src");
+    return handle;
+  }
+
+  it("opens every ancestor of a nested symbol, root first", async () => {
+    const handle = await renderWithHandle();
+    const key = "py:src/shop/utils/helpers.py:format_price.with_symbol:function";
+    await expect(handle.current!.revealNode(key)).resolves.toBe(true);
+    expect(await screen.findByText("with_symbol")).toBeInTheDocument();
+    for (const container of ["src", "shop", "utils", "helpers.py", "format_price"]) {
+      expect(screen.getByRole("button", { name: `Close ${container}` })).toBeInTheDocument();
+    }
+    expect(document.querySelector(`[data-id="${key}"]`)).not.toBeNull();
+  });
+
+  it("brings a node out of a +N more group", async () => {
+    const handle = await renderWithHandle(8);
+    await expect(handle.current!.revealNode("dir:vendor")).resolves.toBe(true);
+    await expect(handle.current!.revealNode("file:src/shop/utils/helpers.py")).resolves.toBe(true);
+    expect(await screen.findByText("helpers.py")).toBeInTheDocument();
+    const state = screen.getByTestId("map-state");
+    expect(Number(state.dataset.visibleNodes)).toBeLessThanOrEqual(8);
+  });
+
+  it("says so when a node doesn't exist", async () => {
+    const handle = await renderWithHandle();
+    await expect(handle.current!.revealNode("py:nope.py:ghost:function")).resolves.toBe(false);
+    expect(await screen.findByText(/Couldn't find py:nope.py:ghost:function/)).toBeInTheDocument();
   });
 });

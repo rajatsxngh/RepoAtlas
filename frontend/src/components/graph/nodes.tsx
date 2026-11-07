@@ -33,7 +33,7 @@ export const EntityNode = memo(function EntityNode({
   selected,
 }: NodeProps<EntityFlowNode>) {
   const actions = useCanvasActions();
-  const { node, label, meta, expandable, loading } = data;
+  const { node, label, meta, expandable, loading, pulse } = data;
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter") actions.select(id);
     else if ((event.key === " " || event.key === "ArrowRight") && expandable) {
@@ -49,7 +49,7 @@ export const EntityNode = memo(function EntityNode({
     <div
       className={`ra-node group flex h-full w-full items-center gap-2.5 rounded-lg border bg-surface pr-1.5 pl-2.5 shadow-card transition-[border-color,box-shadow] ${
         selected ? "border-focus ring-2 ring-focus/30" : "border-line hover:border-line-strong"
-      } ${node.kind === "test" ? "ra-node-test" : ""}`}
+      } ${node.kind === "test" ? "ra-node-test" : ""} ${pulse ? "ra-pulse" : ""}`}
       title={node.kind === "dir" || node.kind === "file" ? node.path : node.qualified_name}
       onKeyDown={onKeyDown}
       onDoubleClick={() => expandable && actions.toggle(id)}
@@ -101,10 +101,10 @@ export const ContainerNode = memo(function ContainerNode({
   selected,
 }: NodeProps<ContainerFlowNode>) {
   const actions = useCanvasActions();
-  const { node, label, shown, total, loading } = data;
+  const { node, label, shown, total, loading, pulse } = data;
   return (
     <div
-      className={`ra-container h-full w-full rounded-xl border ${selected ? "border-focus ring-2 ring-focus/25" : "border-line-strong"}`}
+      className={`ra-container h-full w-full rounded-xl border ${selected ? "border-focus ring-2 ring-focus/25" : "border-line-strong"} ${pulse ? "ra-pulse" : ""}`}
       data-kind={node.kind}
       onContextMenu={(event) => {
         event.preventDefault();

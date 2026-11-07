@@ -13,6 +13,8 @@ export type EntityData = {
   expandable: boolean;
   loading: boolean;
   dimmed: boolean;
+  /** Briefly ringed after a search or reveal brings it into view. */
+  pulse: boolean;
 };
 
 export type ContainerData = {
@@ -22,6 +24,7 @@ export type ContainerData = {
   shown: number;
   total: number;
   loading: boolean;
+  pulse: boolean;
 };
 
 export type MoreData = { container: string; hidden: number };
@@ -82,6 +85,8 @@ export interface FlowInput {
   /** Containers whose children are being fetched or laid out. */
   loading: ReadonlySet<string>;
   selected: string | null;
+  /** A node to ring briefly (after focusNode). */
+  pulse?: string | null;
   childCount: (key: string) => number | undefined;
   fileCount: (key: string) => number | undefined;
 }
@@ -176,6 +181,7 @@ export function toFlow(input: FlowInput): FlowOutput {
           shown: total - (hiddenIn.get(entry.id) ?? 0),
           total,
           loading: input.loading.has(entry.id),
+          pulse: input.pulse === entry.id,
         },
       });
     } else {
@@ -191,6 +197,7 @@ export function toFlow(input: FlowInput): FlowOutput {
           expandable: mayHaveChildren(entry.node),
           loading: input.loading.has(entry.id),
           dimmed: false,
+          pulse: input.pulse === entry.id,
         },
       });
     }

@@ -383,13 +383,37 @@ export class GraphModel {
   }
 
   /**
+   * Hides the smallest shown children that are not in `protect` (into their containers' "more"
+   * nodes) until `room` more nodes fit under the cap. For revealing a node when closing other
+   * containers is not enough. Returns the hidden children.
+   */
+  hideOthers(room: number, protect: ReadonlySet<string>): string[] {
+    const candidates: { container: string; child: string; size: number }[] = [];
+    for (const container of this.expanded) {
+      for (const child of this.shown.get(container) ?? []) {
+        if (protect.has(child) || this.expanded.has(child)) continue;
+        candidates.push({ container, child, size: this.sizeOf(child) });
+      }
+    }
+    candidates.sort((a, b) => a.size - b.size);
+    const hidden: string[] = [];
+    for (const { container, child } of candidates) {
+      if (this.cap - this.visibleCount() >= room) break;
+      this.shown.get(container)?.delete(child);
+      hidden.push(child);
+    }
+    if (hidden.length) this.touch();
+    return hidden;
+  }
+
+  /**
    * Expands a loaded, visible container. Shows all its children if they fit under the cap, else
    * the largest ones and a "more" node. With `makeRoom`, closes the least recently opened other
    * containers first when the cap leaves too little room.
    */
   expand(
     key: string,
-    options: { keep?: readonly string[]; makeRoom?: boolean } = {},
+    options: { keep?: readonly string[]; makeRoom?: boolean; hideOthers?: boolean } = {},
   ): ExpandOutcome {
     if (key === ROOT) return { ok: true, closed: [] };
     const children = this.childrenOf(key);
@@ -402,8 +426,12 @@ export class GraphModel {
     // When closing others to make room, aim for enough room to be useful.
     const useful = Math.min(children.length, Math.max(minimum, USEFUL_ROOM));
     let closed: string[] = [];
+    const protect = new Set([key, ...this.ancestorsOf(key), ...(options.keep ?? [])]);
     if (options.makeRoom && this.cap - this.visibleCount() < useful) {
-      closed = this.makeRoom(useful, new Set([key, ...this.ancestorsOf(key)]));
+      closed = this.makeRoom(useful, protect);
+    }
+    if (options.hideOthers && this.cap - this.visibleCount() < minimum) {
+      this.hideOthers(minimum, protect);
     }
     const room = this.cap - this.visibleCount();
     if (room < minimum) return { ok: false, reason: "cap", closed };
@@ -465,11 +493,12 @@ export class GraphModel {
     const shown = this.shown.get(container);
     if (!shown) return false;
     if (shown.has(child)) return true;
-    const count = this.visibleCount();
-    const hidden = this.hiddenIn(container).length;
     // Showing the last hidden child removes the "more" node, so it costs nothing.
-    if (hidden > 1 && count >= this.cap) {
-      this.makeRoom(1, new Set([container, ...this.ancestorsOf(container)]));
+    const costs = this.hiddenIn(container).length > 1;
+    if (costs && this.visibleCount() >= this.cap) {
+      const protect = new Set([child, container, ...this.ancestorsOf(container)]);
+      this.makeRoom(1, protect);
+      if (this.visibleCount() >= this.cap) this.hideOthers(1, protect);
       if (this.visibleCount() >= this.cap) return false;
     }
     shown.add(child);

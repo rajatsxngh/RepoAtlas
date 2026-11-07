@@ -99,6 +99,13 @@ function Canvas({
     state.transform[2] < 0.55 ? "ra-far" : state.transform[2] < 0.85 ? "ra-mid" : "ra-near",
   );
   const filesReady = useRef<Promise<void>>(Promise.resolve());
+  const rootReady = useRef<Promise<boolean>>(Promise.resolve(false));
+  const waiters = useRef(new Map<string, ((ok: boolean) => void)[]>());
+  const latest = useRef<{ sizes: ReadonlyMap<string, unknown>; pending: number }>({
+    sizes: new Map(),
+    pending: 0,
+  });
+  const [pulse, setPulse] = useState<string | null>(null);
   const revealAfterLayout = useRef<string | null>(null);
   const sync = useCallback(() => setVersion(model.version), [model]);
 
@@ -113,13 +120,17 @@ function Canvas({
 
   useEffect(() => {
     let alive = true;
-    loadSubgraph(ROOT, "dir")
+    rootReady.current = loadSubgraph(ROOT, "dir")
       .then((root) => {
-        if (!alive) return;
+        if (!alive) return false;
         model.addSubgraph(root);
         sync();
+        return true;
       })
-      .catch((error: unknown) => alive && setLoadError(error));
+      .catch((error: unknown) => {
+        if (alive) setLoadError(error);
+        return false;
+      });
     filesReady.current = loadSubgraph(ROOT, "file")
       .then((files) => {
         if (!alive) return;
@@ -149,6 +160,7 @@ function Canvas({
         layouts,
         loading: fetching.size ? new Set([...layout.pending, ...fetching]) : layout.pending,
         selected: selectedKey,
+        pulse,
         childCount: (key) => model.childrenOf(key)?.length,
         fileCount: (key) => {
           const node = model.nodes.get(key);
@@ -160,8 +172,38 @@ function Canvas({
           return count;
         },
       }),
-    [visible, edges, layouts, layout.pending, fetching, selectedKey, model],
+    [visible, edges, layouts, layout.pending, fetching, selectedKey, pulse, model],
   );
+
+  // Resolve reveals once their node is drawn and nothing waits for layout.
+  useEffect(() => {
+    latest.current = { sizes: graph.sizes, pending: layout.pending.size };
+    if (layout.pending.size) return;
+    for (const [key, resolvers] of waiters.current) {
+      if (!graph.sizes.has(key)) continue;
+      waiters.current.delete(key);
+      resolvers.forEach((resolve) => resolve(true));
+    }
+  }, [graph, layout.pending]);
+
+  const whenDrawn = useCallback((key: string, timeoutMs = 8000) => {
+    if (latest.current.sizes.has(key) && latest.current.pending === 0) {
+      return Promise.resolve(true);
+    }
+    return new Promise<boolean>((resolve) => {
+      const done = (ok: boolean) => {
+        clearTimeout(timer);
+        resolve(ok);
+      };
+      const timer = setTimeout(() => {
+        const remaining = (waiters.current.get(key) ?? []).filter((item) => item !== done);
+        if (remaining.length) waiters.current.set(key, remaining);
+        else waiters.current.delete(key);
+        resolve(false);
+      }, timeoutMs);
+      waiters.current.set(key, [...(waiters.current.get(key) ?? []), done]);
+    });
+  }, []);
 
   useEffect(() => {
     if (fitted.current || graph.nodes.length === 0) return;
@@ -197,7 +239,7 @@ function Canvas({
       const rest = closed.length > 1 ? ` and ${closed.length - 1} more` : "";
       setNotice(`Closed ${first}${rest} to stay under ${model.cap} nodes.`);
     },
-    [labelOf, model],
+    [labelOf, model, setNotice],
   );
 
   /** Loads a container's children if needed (and, for folders, the file-level edges). */
@@ -225,7 +267,7 @@ function Canvas({
         });
       }
     },
-    [labelOf, loadSubgraph, model],
+    [labelOf, loadSubgraph, model, setNotice, setFetching],
   );
 
   const expand = useCallback(
@@ -243,7 +285,7 @@ function Canvas({
       revealAfterLayout.current = key;
       return true;
     },
-    [labelOf, load, model, reportClosed, sync],
+    [labelOf, load, model, reportClosed, sync, setNotice],
   );
 
   const collapse = useCallback(
@@ -269,7 +311,7 @@ function Canvas({
       },
       openMenu: (key, at) => setMenu({ key, ...at }),
     }),
-    [collapse, expand, model, onSelect, sync, setMenu],
+    [collapse, expand, model, onSelect, sync, setMenu, setNotice],
   );
 
   const menuNode = menu ? model.nodes.get(menu.key) : undefined;
@@ -321,26 +363,98 @@ function Canvas({
     }
   }, [graph, layout.pending, flow]);
 
+  /** Opens the node's ancestors, root first, so the node itself is drawn. */
+  const reveal = useCallback(
+    async (key: string): Promise<boolean> => {
+      if (!(await rootReady.current)) return false;
+      // Learn the parents the model doesn't know yet (symbols inside classes or functions).
+      let current: string | null = key;
+      for (let guard = 0; current && guard < 32; guard += 1) {
+        let node = model.nodes.get(current);
+        if (!node) {
+          const wanted: string = current;
+          try {
+            const detail = await queryClient.fetchQuery({
+              queryKey: queryKeys.node(snapshotId, wanted),
+              queryFn: ({ signal }) => api.getNode(snapshotId, wanted, signal),
+            });
+            model.addNodes([detail.node]);
+            node = detail.node;
+          } catch (error) {
+            setNotice(`Couldn't find ${wanted}: ${describeError(error).detail}`);
+            return false;
+          }
+        }
+        if (node.kind === "dir" || node.kind === "file") break;
+        current = node.parent_key ?? null;
+      }
+      const chain = [...model.ancestorsOf(key)].reverse();
+      if (chain[0] !== ROOT) return false;
+      for (let index = 0; index < chain.length; index += 1) {
+        const container = chain[index]!;
+        const next = chain[index + 1] ?? key;
+        if (container !== ROOT) {
+          if (!(await load(container))) return false;
+          if (!model.expanded.has(container)) {
+            const outcome = model.expand(container, {
+              keep: [next],
+              makeRoom: true,
+              hideOthers: true,
+            });
+            reportClosed(outcome.closed);
+            if (!outcome.ok) {
+              sync();
+              setNotice(`Couldn't open ${labelOf(container)} to show ${labelOf(key)}.`);
+              return false;
+            }
+          }
+        }
+        if (!model.showChild(container, next)) {
+          sync();
+          setNotice(
+            `The map is at its ${model.cap}-node limit. Close a container to show ${labelOf(key)}.`,
+          );
+          return false;
+        }
+      }
+      sync();
+      return whenDrawn(key);
+    },
+    [api, labelOf, load, model, queryClient, reportClosed, snapshotId, sync, whenDrawn, setNotice],
+  );
+
+  const focus = useCallback(
+    (key: string) => {
+      const node = flow.getInternalNode(key);
+      if (!node) return;
+      const { x, y } = node.internals.positionAbsolute;
+      const width = node.measured.width ?? 0;
+      const height = node.measured.height ?? 0;
+      void flow.setCenter(x + width / 2, y + height / 2, {
+        zoom: Math.max(flow.getZoom(), 1),
+        duration: 400,
+      });
+      setPulse(key);
+      setTimeout(() => setPulse((current) => (current === key ? null : current)), 1600);
+      requestAnimationFrame(() =>
+        document
+          .querySelector<HTMLElement>(`.react-flow__node[data-id="${CSS.escape(key)}"]`)
+          ?.focus({ preventScroll: true }),
+      );
+    },
+    [flow, setPulse],
+  );
+
   useImperativeHandle(
     ref,
     () => ({
-      revealNode: async (key) => model.isVisible(key),
-      focusNode: (key) => {
-        const node = flow.getInternalNode(key);
-        if (!node) return;
-        const { x, y } = node.internals.positionAbsolute;
-        const width = node.measured.width ?? 0;
-        const height = node.measured.height ?? 0;
-        void flow.setCenter(x + width / 2, y + height / 2, {
-          zoom: Math.max(flow.getZoom(), 1),
-          duration: 400,
-        });
-      },
+      revealNode: reveal,
+      focusNode: focus,
       fitView: () => void flow.fitView({ padding: 0.12, duration: 300, maxZoom: 1.1 }),
       expand,
       collapse,
     }),
-    [collapse, expand, flow, model],
+    [collapse, expand, flow, focus, reveal],
   );
 
   const onNodeClick = useCallback<NodeMouseHandler>(

@@ -113,6 +113,33 @@ describe("expanding and collapsing", () => {
     expect(model.expanded.has("dir:src/shop")).toBe(true);
   });
 
+  it("tucks unrelated siblings into more nodes when closing containers isn't enough", () => {
+    const { model } = setup(py, 7);
+    for (const key of ["dir:src", "dir:src/shop"]) {
+      if (!model.isLoaded(key)) model.addSubgraph(py.subgraph(key, "dir"));
+    }
+    expect(model.expand("dir:src", { makeRoom: true })).toMatchObject({ ok: true });
+    // 5 top-level folders + shop + 1 free slot: shop can't open by closing containers alone.
+    expect(model.expand("dir:src/shop", { makeRoom: true })).toMatchObject({
+      ok: false,
+      reason: "cap",
+    });
+    expect(
+      model.expand("dir:src/shop", {
+        makeRoom: true,
+        hideOthers: true,
+        keep: ["dir:src/shop/utils"],
+      }),
+    ).toMatchObject({ ok: true });
+    expect(model.visibleCount()).toBeLessThanOrEqual(7);
+    expect(model.isVisible("dir:src/shop/utils")).toBe(true);
+    const tucked = ["dir:scripts", "dir:stubs", "dir:tests", "dir:vendor"].filter(
+      (key) => model.proxyOf(key) === moreId(ROOT),
+    );
+    expect(tucked.length).toBeGreaterThan(0);
+    expect(model.isVisible("dir:src")).toBe(true);
+  });
+
   it("never shows more nodes than the cap on a 10,000-node graph", () => {
     const graph = new MockGraph(syntheticGraph());
     const cap = 300;

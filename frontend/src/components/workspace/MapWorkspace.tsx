@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { GraphCanvas, type GraphCanvasHandle } from "@/components/graph/GraphCanvas";
 import type { NodeAction } from "@/components/graph/layers";
 import { NodePanel } from "@/components/panel/NodePanel";
+import { SearchBox } from "@/components/search/SearchBox";
 import { SiteHeader } from "@/components/ui/SiteHeader";
 import { NODE_KINDS, type SnapshotView } from "@/lib/api/types";
 
@@ -29,6 +30,14 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
     if (await canvas.current?.revealNode(key)) canvas.current?.focusNode(key);
   }, []);
 
+  const pick = useCallback(
+    (key: string) => {
+      setSelected(key);
+      void show(key);
+    },
+    [show],
+  );
+
   const onAction = useCallback(
     (key: string, actionId: string) => {
       if (actionId === "focus") void show(key);
@@ -39,10 +48,13 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
   return (
     <div className="flex h-screen flex-col">
       <SiteHeader>
-        <span className="truncate font-mono text-sm text-fg">{repo}</span>
-        <span className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-fg-muted">
+        <span className="hidden truncate font-mono text-sm text-fg sm:inline">{repo}</span>
+        <span className="hidden rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-fg-muted sm:inline">
           {snapshot.commit_sha.slice(0, 7)}
         </span>
+        <div className="ml-auto w-full max-w-md">
+          <SearchBox snapshotId={snapshot.id} onPick={(node) => pick(node.key)} slashShortcut />
+        </div>
       </SiteHeader>
       <div className="flex min-h-0 flex-1 border-t border-line">
         <main className="relative min-w-0 flex-1">
@@ -64,10 +76,7 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
               nodeKey={selected}
               actions={WORKSPACE_ACTIONS}
               onAction={onAction}
-              onNavigate={(key) => {
-                setSelected(key);
-                void show(key);
-              }}
+              onNavigate={pick}
               onClose={() => setSelected(null)}
             />
           </div>

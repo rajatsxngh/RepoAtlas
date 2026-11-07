@@ -437,3 +437,24 @@
 .ra-code-mark {
   background: var(--ra-code-highlight);
 }
+
+/* A ring that fades out, to show where a search or reveal landed. */
+@keyframes ra-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ra-focus) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--ra-focus) 0%, transparent);
+  }
+}
+
+.ra-pulse {
+  animation: ra-pulse 0.9s ease-out 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ra-pulse {
+    animation: none;
+    outline: 2px solid var(--ra-focus);
+  }
+}
