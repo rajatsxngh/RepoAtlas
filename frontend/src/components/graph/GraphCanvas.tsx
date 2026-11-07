@@ -34,7 +34,7 @@ import { config } from "@/lib/config";
 import { queryKeys } from "@/lib/query";
 import { CanvasActionsContext, type CanvasActions } from "./actions";
 import { EDGE_TYPES, EdgeMarkers } from "./edges";
-import { toFlow } from "./flow";
+import { createNumbering, toFlow } from "./flow";
 import { resolveLayers, type HighlightLayer, type NodeAction } from "./layers";
 import { getLayoutClient } from "./layoutClient";
 import { planLayout } from "./layoutPlan";
@@ -174,6 +174,7 @@ function Canvas({
   );
 
   const [stabilize] = useState(createStabilizer);
+  const [numberOf] = useState(createNumbering);
   const graph = useMemo(
     () =>
       stabilize(
@@ -186,6 +187,7 @@ function Canvas({
           pulse,
           layers: resolvedLayers,
           hiddenKinds,
+          numberOf,
           childCount: (key) => model.childrenOf(key)?.length,
           fileCount: (key) => {
             const node = model.nodes.get(key);
@@ -208,6 +210,7 @@ function Canvas({
       pulse,
       resolvedLayers,
       hiddenKinds,
+      numberOf,
       model,
       stabilize,
     ],
@@ -542,7 +545,8 @@ function Canvas({
   const empty = model.isLoaded(ROOT) && (model.childrenOf(ROOT)?.length ?? 0) === 0;
   // Focus mode: the hovered node's edges (else the selected node's) stay strong, others fade.
   const focusKey = hovered ?? selectedKey;
-  const focusIndex = focusKey !== null ? graph.index.get(focusKey) : undefined;
+  const focusNumber =
+    focusKey !== null && graph.sizes.has(focusKey) ? numberOf(focusKey) : undefined;
 
   return (
     <CanvasActionsContext.Provider value={actions}>
@@ -558,7 +562,7 @@ function Canvas({
         data-layout-ms={layout.lastMs ?? ""}
       />
       <EdgeMarkers />
-      <FocusStyle index={focusIndex} />
+      <FocusStyle number={focusNumber} />
       <ReactFlow
         nodes={graph.nodes}
         edges={graph.edges}
@@ -670,11 +674,10 @@ function Canvas({
 }
 
 /**
- * The CSS rule behind focus mode. It names nodes by their position in the node list (a number),
- * so no repo text ever reaches a stylesheet, and changing focus restyles instead of re-rendering
- * every edge.
+ * The CSS rule behind focus mode. It names nodes by number (`createNumbering`), so no repo text
+ * ever reaches a stylesheet, and changing focus restyles instead of re-rendering every edge.
  */
-function FocusStyle({ index }: { index: number | undefined }) {
+function FocusStyle({ number: index }: { number: number | undefined }) {
   if (index === undefined || !Number.isInteger(index) || index < 0) return null;
   return (
     <style>{`.react-flow :is(.ra-edge,.ra-edge-count):not([data-highlight]):not([data-s="${index}"]):not([data-t="${index}"]){opacity:.1}

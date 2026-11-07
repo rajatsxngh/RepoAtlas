@@ -73,8 +73,8 @@ export const MapEdge = memo(function MapEdge({ source, target, data }: EdgeProps
       <path
         d={path}
         className="ra-edge react-flow__edge-path"
-        data-s={data.ends?.[0]}
-        data-t={data.ends?.[1]}
+        data-s={data.sourceNo}
+        data-t={data.targetNo}
         data-kind={data.kind}
         data-guess={guess || undefined}
         data-highlight={data.highlight}
@@ -102,8 +102,8 @@ export const MapEdge = memo(function MapEdge({ source, target, data }: EdgeProps
           <div
             className="ra-edge-count nodrag nopan"
             // Same tags as the line, so focus mode fades the count with its edge.
-            data-s={data.ends?.[0]}
-            data-t={data.ends?.[1]}
+            data-s={data.sourceNo}
+            data-t={data.targetNo}
             data-highlight={data.highlight}
             style={{
               transform: `translate(-50%, -50%) translate(${(from.x + to.x) / 2}px, ${(from.y + to.y) / 2}px)`,

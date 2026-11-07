@@ -41,8 +41,9 @@ export type EdgeData = {
   offset: number;
   /** This edge carries its pair's count label. */
   showCount: boolean;
-  /** Positions of the two ends in the node list, for focus mode's CSS (numbers, no repo text). */
-  ends?: [number, number];
+  /** Numbers of the two ends (see `createNumbering`), for focus mode's CSS. */
+  sourceNo?: number;
+  targetNo?: number;
   /** Drawn in a highlight layer's color, on top. */
   highlight?: HighlightStyle;
   /** Faded while a layer highlights other edges. */
@@ -104,6 +105,8 @@ export interface FlowInput {
   edgeBudget?: number;
   /** Edge kinds the reader switched off (highlighted edges still show). */
   hiddenKinds?: ReadonlySet<EdgeKind>;
+  /** A stable number per node key (see `createNumbering`). */
+  numberOf: (key: string) => number;
   childCount: (key: string) => number | undefined;
   fileCount: (key: string) => number | undefined;
 }
@@ -115,8 +118,23 @@ export interface FlowOutput {
   sizes: Map<string, Size>;
   /** Edges between drawn nodes, and how many of them are drawn (the edge budget). */
   edgeCount: { total: number; drawn: number };
-  /** Position of each drawn node in `nodes`. */
-  index: Map<string, number>;
+}
+
+/**
+ * Gives each node key a number that never changes, so focus mode's CSS can name nodes without
+ * repo text and an edge's data stays equal across renders (an edge that didn't change keeps its
+ * object, and React Flow skips it).
+ */
+export function createNumbering(): (key: string) => number {
+  const numbers = new Map<string, number>();
+  return (key) => {
+    let number = numbers.get(key);
+    if (number === undefined) {
+      number = numbers.size;
+      numbers.set(key, number);
+    }
+    return number;
+  };
 }
 
 /**
@@ -281,11 +299,6 @@ export function toFlow(input: FlowInput): FlowOutput {
   );
   const dimOthers = Boolean(highlighted?.size || input.layers?.extra.length);
   const { offsets, labelled } = bundle(drawn);
-  const index = new Map(nodes.map((node, position) => [node.id, position]));
-  const ends = (source: string, target: string): [number, number] => [
-    index.get(source) ?? -1,
-    index.get(target) ?? -1,
-  ];
   const edges: MapFlowEdge[] = drawn.map((edge) => ({
     id: edge.id,
     source: edge.source,
@@ -302,7 +315,8 @@ export function toFlow(input: FlowInput): FlowOutput {
       showCount: labelled.has(edge.id),
       highlight: highlighted?.get(edge.id)?.style,
       dimmed: dimOthers && !highlighted?.has(edge.id),
-      ends: ends(edge.source, edge.target),
+      sourceNo: input.numberOf(edge.source),
+      targetNo: input.numberOf(edge.target),
     },
   }));
   for (const extra of input.layers?.extra ?? []) {
@@ -323,7 +337,8 @@ export function toFlow(input: FlowInput): FlowOutput {
         showCount: false,
         highlight: extra.style,
         extra: true,
-        ends: ends(extra.source, extra.target),
+        sourceNo: input.numberOf(extra.source),
+        targetNo: input.numberOf(extra.target),
       },
     });
   }
@@ -335,6 +350,5 @@ export function toFlow(input: FlowInput): FlowOutput {
     edges,
     sizes,
     edgeCount: { total: between.length, drawn: drawn.length },
-    index,
   };
 }

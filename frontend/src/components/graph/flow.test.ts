@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { ApiNode, EdgeKind } from "@/lib/api/types";
-import { toFlow, withinBudget, type FlowInput } from "./flow";
+import { createNumbering, toFlow, withinBudget, type FlowInput } from "./flow";
 import type { ResolvedLayers } from "./layers";
 import { ROOT, type VisibleEdge, type VisibleNode } from "./model";
+import { createStabilizer } from "./stable";
 
 function node(key: string): VisibleNode {
   const apiNode = { key, kind: "dir", name: key.slice(4), path: key.slice(4), meta: {} } as ApiNode;
@@ -42,6 +43,7 @@ function input(overrides: Partial<FlowInput> = {}): FlowInput {
     ]),
     loading: new Set(),
     selected: null,
+    numberOf: createNumbering(),
     childCount: () => undefined,
     fileCount: () => undefined,
     ...overrides,
@@ -73,13 +75,38 @@ describe("toFlow", () => {
     expect(flow.edges.slice(0, -1).every((e) => e.data!.dimmed)).toBe(true);
   });
 
-  it("numbers each drawn node, and tags each edge with its ends' numbers for focus mode", () => {
-    const flow = toFlow(input());
-    expect([...flow.index]).toEqual(KEYS.map((key, i) => [key, i]));
-    expect(flow.nodes.map((n) => n.id)).toEqual(KEYS);
-    const ends = Object.fromEntries(flow.edges.map((e) => [e.id, e.data!.ends]));
-    expect(ends["dir:a|dir:b|calls"]).toEqual([0, 1]);
-    expect(ends["dir:c|dir:a|tested_by"]).toEqual([2, 0]);
+  it("tags each edge with its ends' stable numbers for focus mode", () => {
+    const numberOf = createNumbering();
+    numberOf("dir:c");
+    const flow = toFlow(input({ numberOf }));
+    const ends = Object.fromEntries(
+      flow.edges.map((e) => [e.id, [e.data!.sourceNo, e.data!.targetNo]]),
+    );
+    // dir:c was numbered first; the rest in the order the edges met them.
+    expect(ends["dir:a|dir:b|calls"]).toEqual([1, 2]);
+    expect(ends["dir:c|dir:a|tested_by"]).toEqual([0, 1]);
+    // The same keys keep their numbers when the node list changes.
+    const fewer = toFlow(input({ numberOf, visible: KEYS.slice(1).map(node) }));
+    expect(fewer.edges.map((e) => [e.data!.sourceNo, e.data!.targetNo])).toEqual([[2, 0]]);
+  });
+});
+
+describe("toFlow with the stabilizer", () => {
+  it("keeps unchanged edges as the same objects when other nodes come and go", () => {
+    const numberOf = createNumbering();
+    const stabilize = createStabilizer();
+    const first = stabilize(toFlow(input({ numberOf, visible: KEYS.slice(0, 2).map(node) })));
+    const again = stabilize(toFlow(input({ numberOf })));
+    // dir:c joined the map; the a→b edge didn't change, so React Flow can skip it.
+    expect(again.edges.find((e) => e.id === "dir:a|dir:b|calls")).toBe(first.edges[0]);
+    expect(again.edges).toHaveLength(3);
+  });
+});
+
+describe("createNumbering", () => {
+  it("numbers keys in first-seen order and never renumbers them", () => {
+    const numberOf = createNumbering();
+    expect(["x", "y", "x", "z", "y"].map(numberOf)).toEqual([0, 1, 0, 2, 1]);
   });
 });
 
