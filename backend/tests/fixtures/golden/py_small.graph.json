@@ -1,0 +1,1887 @@
+{
+  "commit": null,
+  "digest": "ec01fa4353017159cbbb94c78c26d6302b7f36df6b81157d8ab1b75f1a9fd856",
+  "graph": {
+    "edges": [
+      {
+        "confidence": 1.0,
+        "dst": "dir:scripts",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:."
+      },
+      {
+        "confidence": 1.0,
+        "dst": "dir:src",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:."
+      },
+      {
+        "confidence": 1.0,
+        "dst": "dir:stubs",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:."
+      },
+      {
+        "confidence": 1.0,
+        "dst": "dir:tests",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:."
+      },
+      {
+        "confidence": 1.0,
+        "dst": "dir:vendor",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:."
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:scripts/api_pb2.py",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:scripts"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "dir:src/shop",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:src"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "dir:src/shop/utils",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:src/shop"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:src/shop/__init__.py",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:src/shop"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:src/shop/app.py",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:src/shop"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:src/shop/cart.py",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:src/shop"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:src/shop/utils/__init__.py",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:src/shop/utils"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:src/shop/utils/helpers.py",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:src/shop/utils"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:stubs/shop.pyi",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:stubs"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:tests/conftest.py",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:tests"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:tests/test_cart.py",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:tests"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:vendor/lib.py",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "dir:vendor"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:src/shop/app.py",
+        "kind": "imports",
+        "meta": {
+          "count": 1
+        },
+        "provenance": "import_resolver",
+        "site": {
+          "end_col": 31,
+          "end_line": 3,
+          "start_col": 0,
+          "start_line": 3
+        },
+        "src": "file:src/shop/__init__.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:src/shop/cart.py",
+        "kind": "imports",
+        "meta": {
+          "count": 1
+        },
+        "provenance": "import_resolver",
+        "site": {
+          "end_col": 26,
+          "end_line": 4,
+          "start_col": 0,
+          "start_line": 4
+        },
+        "src": "file:src/shop/__init__.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:src/shop/cart.py",
+        "kind": "imports",
+        "meta": {
+          "count": 1
+        },
+        "provenance": "import_resolver",
+        "site": {
+          "end_col": 22,
+          "end_line": 3,
+          "start_col": 0,
+          "start_line": 3
+        },
+        "src": "file:src/shop/app.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/app.py:add_item:function",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:src/shop/app.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/app.py:create_app:function",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:src/shop/app.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/app.py:get_cart:function",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:src/shop/app.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "route:src/shop/app.py:GET /carts/{cart_id}",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:src/shop/app.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "route:src/shop/app.py:POST /carts/{cart_id}/items",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:src/shop/app.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:src/shop/utils/helpers.py",
+        "kind": "imports",
+        "meta": {
+          "count": 1
+        },
+        "provenance": "import_resolver",
+        "site": {
+          "end_col": 56,
+          "end_line": 5,
+          "start_col": 0,
+          "start_line": 5
+        },
+        "src": "file:src/shop/cart.py"
+      },
+      {
+        "confidence": 0.9,
+        "dst": "file:tests/conftest.py",
+        "kind": "tested_by",
+        "meta": {},
+        "provenance": "import_resolver",
+        "site": {
+          "end_col": 26,
+          "end_line": 3,
+          "start_col": 0,
+          "start_line": 3
+        },
+        "src": "file:src/shop/cart.py"
+      },
+      {
+        "confidence": 0.6,
+        "dst": "file:tests/test_cart.py",
+        "kind": "tested_by",
+        "meta": {},
+        "provenance": "convention",
+        "site": null,
+        "src": "file:src/shop/cart.py"
+      },
+      {
+        "confidence": 0.9,
+        "dst": "file:tests/test_cart.py",
+        "kind": "tested_by",
+        "meta": {},
+        "provenance": "import_resolver",
+        "site": {
+          "end_col": 36,
+          "end_line": 3,
+          "start_col": 0,
+          "start_line": 3
+        },
+        "src": "file:src/shop/cart.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/cart.py:Cart:class",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:src/shop/cart.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/cart.py:GiftCart:class",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:src/shop/cart.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/utils/helpers.py:chunks:function",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:src/shop/utils/helpers.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/utils/helpers.py:dumps:function",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:src/shop/utils/helpers.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/utils/helpers.py:format_price:function",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:src/shop/utils/helpers.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/utils/helpers.py:round_money:function",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:src/shop/utils/helpers.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:src/shop/cart.py",
+        "kind": "imports",
+        "meta": {
+          "count": 1
+        },
+        "provenance": "import_resolver",
+        "site": {
+          "end_col": 26,
+          "end_line": 3,
+          "start_col": 0,
+          "start_line": 3
+        },
+        "src": "file:tests/conftest.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:tests/conftest.py:cart:function",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:tests/conftest.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "file:src/shop/cart.py",
+        "kind": "imports",
+        "meta": {
+          "count": 1
+        },
+        "provenance": "import_resolver",
+        "site": {
+          "end_col": 36,
+          "end_line": 3,
+          "start_col": 0,
+          "start_line": 3
+        },
+        "src": "file:tests/test_cart.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:tests/test_cart.py:TestGiftCart:class",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:tests/test_cart.py"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:tests/test_cart.py:test_add_rounds_prices:test",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "file:tests/test_cart.py"
+      },
+      {
+        "confidence": 0.15,
+        "dst": "py:src/shop/cart.py:Cart.add:method",
+        "kind": "calls",
+        "meta": {
+          "candidates": 2,
+          "count": 1,
+          "tier": "T6"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 45,
+          "end_line": 19,
+          "start_col": 4,
+          "start_line": 19
+        },
+        "src": "py:src/shop/app.py:add_item:function"
+      },
+      {
+        "confidence": 0.15,
+        "dst": "py:src/shop/cart.py:GiftCart.add:method",
+        "kind": "calls",
+        "meta": {
+          "candidates": 2,
+          "count": 1,
+          "tier": "T6"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 45,
+          "end_line": 19,
+          "start_col": 4,
+          "start_line": 19
+        },
+        "src": "py:src/shop/app.py:add_item:function"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/cart.py:Cart.__init__:method",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T1"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 44,
+          "end_line": 11,
+          "start_col": 38,
+          "start_line": 11
+        },
+        "src": "py:src/shop/app.py:get_cart:function"
+      },
+      {
+        "confidence": 0.5,
+        "dst": "py:src/shop/cart.py:Cart.describe:method",
+        "kind": "calls",
+        "meta": {
+          "candidates": 1,
+          "count": 1,
+          "tier": "T5"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 36,
+          "end_line": 12,
+          "start_col": 21,
+          "start_line": 12
+        },
+        "src": "py:src/shop/app.py:get_cart:function"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/cart.py:Cart:class",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T1"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 44,
+          "end_line": 11,
+          "start_col": 38,
+          "start_line": 11
+        },
+        "src": "py:src/shop/app.py:get_cart:function"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test",
+        "kind": "tested_by",
+        "meta": {},
+        "provenance": "name_match",
+        "site": {
+          "end_col": 25,
+          "end_line": 13,
+          "start_col": 15,
+          "start_line": 13
+        },
+        "src": "py:src/shop/cart.py:Cart.__init__:method"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/utils/helpers.py:round_money:function",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T1"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 51,
+          "end_line": 15,
+          "start_col": 33,
+          "start_line": 15
+        },
+        "src": "py:src/shop/cart.py:Cart.add:method"
+      },
+      {
+        "confidence": 0.15,
+        "dst": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test",
+        "kind": "tested_by",
+        "meta": {},
+        "provenance": "name_match",
+        "site": {
+          "end_col": 38,
+          "end_line": 14,
+          "start_col": 8,
+          "start_line": 14
+        },
+        "src": "py:src/shop/cart.py:Cart.add:method"
+      },
+      {
+        "confidence": 0.15,
+        "dst": "py:tests/test_cart.py:test_add_rounds_prices:test",
+        "kind": "tested_by",
+        "meta": {},
+        "provenance": "name_match",
+        "site": {
+          "end_col": 37,
+          "end_line": 7,
+          "start_col": 4,
+          "start_line": 7
+        },
+        "src": "py:src/shop/cart.py:Cart.add:method"
+      },
+      {
+        "confidence": 0.85,
+        "dst": "py:src/shop/cart.py:Cart._discount:method",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T3"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 57,
+          "end_line": 25,
+          "start_col": 41,
+          "start_line": 25
+        },
+        "src": "py:src/shop/cart.py:Cart.describe:method"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/utils/helpers.py:format_price:function",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T1"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 58,
+          "end_line": 25,
+          "start_col": 15,
+          "start_line": 25
+        },
+        "src": "py:src/shop/cart.py:Cart.describe:method"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/cart.py:Cart.__init__:method",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "py:src/shop/cart.py:Cart:class"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/cart.py:Cart._discount:method",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "py:src/shop/cart.py:Cart:class"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/cart.py:Cart.add:method",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "py:src/shop/cart.py:Cart:class"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/cart.py:Cart.describe:method",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "py:src/shop/cart.py:Cart:class"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/cart.py:Cart.total:method",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "py:src/shop/cart.py:Cart:class"
+      },
+      {
+        "confidence": 0.8,
+        "dst": "py:src/shop/cart.py:Cart.add:method",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T4"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 37,
+          "end_line": 30,
+          "start_col": 8,
+          "start_line": 30
+        },
+        "src": "py:src/shop/cart.py:GiftCart.add:method"
+      },
+      {
+        "confidence": 0.15,
+        "dst": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test",
+        "kind": "tested_by",
+        "meta": {},
+        "provenance": "name_match",
+        "site": {
+          "end_col": 38,
+          "end_line": 14,
+          "start_col": 8,
+          "start_line": 14
+        },
+        "src": "py:src/shop/cart.py:GiftCart.add:method"
+      },
+      {
+        "confidence": 0.15,
+        "dst": "py:tests/test_cart.py:test_add_rounds_prices:test",
+        "kind": "tested_by",
+        "meta": {},
+        "provenance": "name_match",
+        "site": {
+          "end_col": 37,
+          "end_line": 7,
+          "start_col": 4,
+          "start_line": 7
+        },
+        "src": "py:src/shop/cart.py:GiftCart.add:method"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/cart.py:Cart:class",
+        "kind": "inherits",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": {
+          "end_col": 19,
+          "end_line": 28,
+          "start_col": 15,
+          "start_line": 28
+        },
+        "src": "py:src/shop/cart.py:GiftCart:class"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/cart.py:GiftCart.add:method",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "py:src/shop/cart.py:GiftCart:class"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test",
+        "kind": "tested_by",
+        "meta": {},
+        "provenance": "name_match",
+        "site": {
+          "end_col": 25,
+          "end_line": 13,
+          "start_col": 15,
+          "start_line": 13
+        },
+        "src": "py:src/shop/cart.py:GiftCart:class"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/utils/helpers.py:format_price.with_symbol:function",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T1"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 47,
+          "end_line": 12,
+          "start_col": 11,
+          "start_line": 12
+        },
+        "src": "py:src/shop/utils/helpers.py:format_price:function"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:src/shop/utils/helpers.py:format_price.with_symbol:function",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "py:src/shop/utils/helpers.py:format_price:function"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/utils/helpers.py:round_money:function",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T1"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 45,
+          "end_line": 12,
+          "start_col": 27,
+          "start_line": 12
+        },
+        "src": "py:src/shop/utils/helpers.py:format_price:function"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/cart.py:Cart.__init__:method",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T1"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 17,
+          "end_line": 8,
+          "start_col": 11,
+          "start_line": 8
+        },
+        "src": "py:tests/conftest.py:cart:function"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/cart.py:Cart:class",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T1"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 17,
+          "end_line": 8,
+          "start_col": 11,
+          "start_line": 8
+        },
+        "src": "py:tests/conftest.py:cart:function"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/cart.py:Cart.__init__:method",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T1"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 25,
+          "end_line": 13,
+          "start_col": 15,
+          "start_line": 13
+        },
+        "src": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test"
+      },
+      {
+        "confidence": 0.15,
+        "dst": "py:src/shop/cart.py:Cart.add:method",
+        "kind": "calls",
+        "meta": {
+          "candidates": 2,
+          "count": 1,
+          "tier": "T6"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 38,
+          "end_line": 14,
+          "start_col": 8,
+          "start_line": 14
+        },
+        "src": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test"
+      },
+      {
+        "confidence": 0.15,
+        "dst": "py:src/shop/cart.py:GiftCart.add:method",
+        "kind": "calls",
+        "meta": {
+          "candidates": 2,
+          "count": 1,
+          "tier": "T6"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 38,
+          "end_line": 14,
+          "start_col": 8,
+          "start_line": 14
+        },
+        "src": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/cart.py:GiftCart:class",
+        "kind": "calls",
+        "meta": {
+          "count": 1,
+          "tier": "T1"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 25,
+          "end_line": 13,
+          "start_col": 15,
+          "start_line": 13
+        },
+        "src": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test"
+      },
+      {
+        "confidence": 1.0,
+        "dst": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test",
+        "kind": "contains",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": null,
+        "src": "py:tests/test_cart.py:TestGiftCart:class"
+      },
+      {
+        "confidence": 0.15,
+        "dst": "py:src/shop/cart.py:Cart.add:method",
+        "kind": "calls",
+        "meta": {
+          "candidates": 2,
+          "count": 1,
+          "tier": "T6"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 37,
+          "end_line": 7,
+          "start_col": 4,
+          "start_line": 7
+        },
+        "src": "py:tests/test_cart.py:test_add_rounds_prices:test"
+      },
+      {
+        "confidence": 0.15,
+        "dst": "py:src/shop/cart.py:GiftCart.add:method",
+        "kind": "calls",
+        "meta": {
+          "candidates": 2,
+          "count": 1,
+          "tier": "T6"
+        },
+        "provenance": "name_match",
+        "site": {
+          "end_col": 37,
+          "end_line": 7,
+          "start_col": 4,
+          "start_line": 7
+        },
+        "src": "py:tests/test_cart.py:test_add_rounds_prices:test"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/app.py:get_cart:function",
+        "kind": "routes_to",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": {
+          "end_col": 28,
+          "end_line": 9,
+          "start_col": 0,
+          "start_line": 9
+        },
+        "src": "route:src/shop/app.py:GET /carts/{cart_id}"
+      },
+      {
+        "confidence": 0.95,
+        "dst": "py:src/shop/app.py:add_item:function",
+        "kind": "routes_to",
+        "meta": {},
+        "provenance": "tree_sitter",
+        "site": {
+          "end_col": 35,
+          "end_line": 15,
+          "start_col": 0,
+          "start_line": 15
+        },
+        "src": "route:src/shop/app.py:POST /carts/{cart_id}/items"
+      }
+    ],
+    "nodes": {
+      "dir:.": {
+        "exported": false,
+        "key": "dir:.",
+        "kind": "dir",
+        "meta": {},
+        "name": ".",
+        "name_range": null,
+        "parent_key": null,
+        "path": ".",
+        "qualified_name": ".",
+        "span": null
+      },
+      "dir:scripts": {
+        "exported": false,
+        "key": "dir:scripts",
+        "kind": "dir",
+        "meta": {},
+        "name": "scripts",
+        "name_range": null,
+        "parent_key": "dir:.",
+        "path": "scripts",
+        "qualified_name": "scripts",
+        "span": null
+      },
+      "dir:src": {
+        "exported": false,
+        "key": "dir:src",
+        "kind": "dir",
+        "meta": {},
+        "name": "src",
+        "name_range": null,
+        "parent_key": "dir:.",
+        "path": "src",
+        "qualified_name": "src",
+        "span": null
+      },
+      "dir:src/shop": {
+        "exported": false,
+        "key": "dir:src/shop",
+        "kind": "dir",
+        "meta": {},
+        "name": "shop",
+        "name_range": null,
+        "parent_key": "dir:src",
+        "path": "src/shop",
+        "qualified_name": "src/shop",
+        "span": null
+      },
+      "dir:src/shop/utils": {
+        "exported": false,
+        "key": "dir:src/shop/utils",
+        "kind": "dir",
+        "meta": {},
+        "name": "utils",
+        "name_range": null,
+        "parent_key": "dir:src/shop",
+        "path": "src/shop/utils",
+        "qualified_name": "src/shop/utils",
+        "span": null
+      },
+      "dir:stubs": {
+        "exported": false,
+        "key": "dir:stubs",
+        "kind": "dir",
+        "meta": {},
+        "name": "stubs",
+        "name_range": null,
+        "parent_key": "dir:.",
+        "path": "stubs",
+        "qualified_name": "stubs",
+        "span": null
+      },
+      "dir:tests": {
+        "exported": false,
+        "key": "dir:tests",
+        "kind": "dir",
+        "meta": {},
+        "name": "tests",
+        "name_range": null,
+        "parent_key": "dir:.",
+        "path": "tests",
+        "qualified_name": "tests",
+        "span": null
+      },
+      "dir:vendor": {
+        "exported": false,
+        "key": "dir:vendor",
+        "kind": "dir",
+        "meta": {},
+        "name": "vendor",
+        "name_range": null,
+        "parent_key": "dir:.",
+        "path": "vendor",
+        "qualified_name": "vendor",
+        "span": null
+      },
+      "file:scripts/api_pb2.py": {
+        "exported": false,
+        "key": "file:scripts/api_pb2.py",
+        "kind": "file",
+        "meta": {
+          "blob_oid": "22b418418915b08021384f01e48c874dfc139287",
+          "is_test": false,
+          "language": "py",
+          "skip_reason": "generated"
+        },
+        "name": "api_pb2.py",
+        "name_range": null,
+        "parent_key": "dir:scripts",
+        "path": "scripts/api_pb2.py",
+        "qualified_name": "scripts/api_pb2.py",
+        "span": null
+      },
+      "file:src/shop/__init__.py": {
+        "exported": false,
+        "key": "file:src/shop/__init__.py",
+        "kind": "file",
+        "meta": {
+          "blob_oid": "6def3e88c00aaf4caa3803ff452b07a11599a28a",
+          "is_test": false,
+          "language": "py",
+          "loc": 4
+        },
+        "name": "__init__.py",
+        "name_range": null,
+        "parent_key": "dir:src/shop",
+        "path": "src/shop/__init__.py",
+        "qualified_name": "src/shop/__init__.py",
+        "span": null
+      },
+      "file:src/shop/app.py": {
+        "exported": false,
+        "key": "file:src/shop/app.py",
+        "kind": "file",
+        "meta": {
+          "blob_oid": "0943e8fe35d9e601ed2804fec248a7f9b794e67f",
+          "is_test": false,
+          "language": "py",
+          "loc": 14
+        },
+        "name": "app.py",
+        "name_range": null,
+        "parent_key": "dir:src/shop",
+        "path": "src/shop/app.py",
+        "qualified_name": "src/shop/app.py",
+        "span": null
+      },
+      "file:src/shop/cart.py": {
+        "exported": false,
+        "key": "file:src/shop/cart.py",
+        "kind": "file",
+        "meta": {
+          "blob_oid": "7ab435457eedd2f028a2efb241fff6325fbd1814",
+          "is_test": false,
+          "language": "py",
+          "loc": 19
+        },
+        "name": "cart.py",
+        "name_range": null,
+        "parent_key": "dir:src/shop",
+        "path": "src/shop/cart.py",
+        "qualified_name": "src/shop/cart.py",
+        "span": null
+      },
+      "file:src/shop/utils/__init__.py": {
+        "exported": false,
+        "key": "file:src/shop/utils/__init__.py",
+        "kind": "file",
+        "meta": {
+          "blob_oid": "aff9dd2279f2c756c6b79afe5963310e220318f7",
+          "is_test": false,
+          "language": "py",
+          "loc": 1
+        },
+        "name": "__init__.py",
+        "name_range": null,
+        "parent_key": "dir:src/shop/utils",
+        "path": "src/shop/utils/__init__.py",
+        "qualified_name": "src/shop/utils/__init__.py",
+        "span": null
+      },
+      "file:src/shop/utils/helpers.py": {
+        "exported": false,
+        "key": "file:src/shop/utils/helpers.py",
+        "kind": "file",
+        "meta": {
+          "blob_oid": "d04efafd2acb75b438d2a385b65e6dd7c26bfa02",
+          "is_test": false,
+          "language": "py",
+          "loc": 16
+        },
+        "name": "helpers.py",
+        "name_range": null,
+        "parent_key": "dir:src/shop/utils",
+        "path": "src/shop/utils/helpers.py",
+        "qualified_name": "src/shop/utils/helpers.py",
+        "span": null
+      },
+      "file:stubs/shop.pyi": {
+        "exported": false,
+        "key": "file:stubs/shop.pyi",
+        "kind": "file",
+        "meta": {
+          "blob_oid": "23b5501faccc7446ec7ad8e592b4d0f50affa583",
+          "is_test": false,
+          "language": "py",
+          "skip_reason": "declaration"
+        },
+        "name": "shop.pyi",
+        "name_range": null,
+        "parent_key": "dir:stubs",
+        "path": "stubs/shop.pyi",
+        "qualified_name": "stubs/shop.pyi",
+        "span": null
+      },
+      "file:tests/conftest.py": {
+        "exported": false,
+        "key": "file:tests/conftest.py",
+        "kind": "file",
+        "meta": {
+          "blob_oid": "ebb0f09ad6d54da0865499a126dccac15581b041",
+          "is_test": true,
+          "language": "py",
+          "loc": 5
+        },
+        "name": "conftest.py",
+        "name_range": null,
+        "parent_key": "dir:tests",
+        "path": "tests/conftest.py",
+        "qualified_name": "tests/conftest.py",
+        "span": null
+      },
+      "file:tests/test_cart.py": {
+        "exported": false,
+        "key": "file:tests/test_cart.py",
+        "kind": "file",
+        "meta": {
+          "blob_oid": "1aa356dce50c24768cc34dc68200f881b82e61e5",
+          "is_test": true,
+          "language": "py",
+          "loc": 10
+        },
+        "name": "test_cart.py",
+        "name_range": null,
+        "parent_key": "dir:tests",
+        "path": "tests/test_cart.py",
+        "qualified_name": "tests/test_cart.py",
+        "span": null
+      },
+      "file:vendor/lib.py": {
+        "exported": false,
+        "key": "file:vendor/lib.py",
+        "kind": "file",
+        "meta": {
+          "blob_oid": "18b1c7e430645e1ee0e43807cc78acd7a99065d2",
+          "is_test": false,
+          "language": "py",
+          "skip_reason": "vendored"
+        },
+        "name": "lib.py",
+        "name_range": null,
+        "parent_key": "dir:vendor",
+        "path": "vendor/lib.py",
+        "qualified_name": "vendor/lib.py",
+        "span": null
+      },
+      "py:src/shop/app.py:add_item:function": {
+        "exported": true,
+        "key": "py:src/shop/app.py:add_item:function",
+        "kind": "function",
+        "meta": {
+          "decorators": [
+            "app.post(\"/carts/{cart_id}/items\")"
+          ],
+          "signature": "def add_item(cart_id: int, name: str, price: str) -> None"
+        },
+        "name": "add_item",
+        "name_range": {
+          "end_col": 12,
+          "end_line": 16,
+          "start_col": 4,
+          "start_line": 16
+        },
+        "parent_key": "file:src/shop/app.py",
+        "path": "src/shop/app.py",
+        "qualified_name": "add_item",
+        "span": {
+          "end_col": 45,
+          "end_line": 19,
+          "start_col": 0,
+          "start_line": 15
+        }
+      },
+      "py:src/shop/app.py:create_app:function": {
+        "exported": true,
+        "key": "py:src/shop/app.py:create_app:function",
+        "kind": "function",
+        "meta": {
+          "public": true,
+          "signature": "def create_app() -> FastAPI"
+        },
+        "name": "create_app",
+        "name_range": {
+          "end_col": 14,
+          "end_line": 22,
+          "start_col": 4,
+          "start_line": 22
+        },
+        "parent_key": "file:src/shop/app.py",
+        "path": "src/shop/app.py",
+        "qualified_name": "create_app",
+        "span": {
+          "end_col": 14,
+          "end_line": 23,
+          "start_col": 0,
+          "start_line": 22
+        }
+      },
+      "py:src/shop/app.py:get_cart:function": {
+        "exported": true,
+        "key": "py:src/shop/app.py:get_cart:function",
+        "kind": "function",
+        "meta": {
+          "decorators": [
+            "app.get(\"/carts/{cart_id}\")"
+          ],
+          "modifiers": [
+            "async"
+          ],
+          "signature": "async def get_cart(cart_id: int) -> dict[str, str]"
+        },
+        "name": "get_cart",
+        "name_range": {
+          "end_col": 18,
+          "end_line": 10,
+          "start_col": 10,
+          "start_line": 10
+        },
+        "parent_key": "file:src/shop/app.py",
+        "path": "src/shop/app.py",
+        "qualified_name": "get_cart",
+        "span": {
+          "end_col": 37,
+          "end_line": 12,
+          "start_col": 0,
+          "start_line": 9
+        }
+      },
+      "py:src/shop/cart.py:Cart.__init__:method": {
+        "exported": true,
+        "key": "py:src/shop/cart.py:Cart.__init__:method",
+        "kind": "method",
+        "meta": {
+          "signature": "def __init__(self) -> None"
+        },
+        "name": "__init__",
+        "name_range": {
+          "end_col": 16,
+          "end_line": 11,
+          "start_col": 8,
+          "start_line": 11
+        },
+        "parent_key": "py:src/shop/cart.py:Cart:class",
+        "path": "src/shop/cart.py",
+        "qualified_name": "Cart.__init__",
+        "span": {
+          "end_col": 50,
+          "end_line": 12,
+          "start_col": 4,
+          "start_line": 11
+        }
+      },
+      "py:src/shop/cart.py:Cart._discount:method": {
+        "exported": false,
+        "key": "py:src/shop/cart.py:Cart._discount:method",
+        "kind": "method",
+        "meta": {
+          "signature": "def _discount(self) -> Decimal"
+        },
+        "name": "_discount",
+        "name_range": {
+          "end_col": 17,
+          "end_line": 21,
+          "start_col": 8,
+          "start_line": 21
+        },
+        "parent_key": "py:src/shop/cart.py:Cart:class",
+        "path": "src/shop/cart.py",
+        "qualified_name": "Cart._discount",
+        "span": {
+          "end_col": 25,
+          "end_line": 22,
+          "start_col": 4,
+          "start_line": 21
+        }
+      },
+      "py:src/shop/cart.py:Cart.add:method": {
+        "exported": true,
+        "key": "py:src/shop/cart.py:Cart.add:method",
+        "kind": "method",
+        "meta": {
+          "signature": "def add(self, name: str, price: Decimal) -> None"
+        },
+        "name": "add",
+        "name_range": {
+          "end_col": 11,
+          "end_line": 14,
+          "start_col": 8,
+          "start_line": 14
+        },
+        "parent_key": "py:src/shop/cart.py:Cart:class",
+        "path": "src/shop/cart.py",
+        "qualified_name": "Cart.add",
+        "span": {
+          "end_col": 53,
+          "end_line": 15,
+          "start_col": 4,
+          "start_line": 14
+        }
+      },
+      "py:src/shop/cart.py:Cart.describe:method": {
+        "exported": true,
+        "key": "py:src/shop/cart.py:Cart.describe:method",
+        "kind": "method",
+        "meta": {
+          "signature": "def describe(self) -> str"
+        },
+        "name": "describe",
+        "name_range": {
+          "end_col": 16,
+          "end_line": 24,
+          "start_col": 8,
+          "start_line": 24
+        },
+        "parent_key": "py:src/shop/cart.py:Cart:class",
+        "path": "src/shop/cart.py",
+        "qualified_name": "Cart.describe",
+        "span": {
+          "end_col": 58,
+          "end_line": 25,
+          "start_col": 4,
+          "start_line": 24
+        }
+      },
+      "py:src/shop/cart.py:Cart.total:method": {
+        "exported": true,
+        "key": "py:src/shop/cart.py:Cart.total:method",
+        "kind": "method",
+        "meta": {
+          "decorators": [
+            "property"
+          ],
+          "modifiers": [
+            "property"
+          ],
+          "signature": "def total(self) -> Decimal"
+        },
+        "name": "total",
+        "name_range": {
+          "end_col": 13,
+          "end_line": 18,
+          "start_col": 8,
+          "start_line": 18
+        },
+        "parent_key": "py:src/shop/cart.py:Cart:class",
+        "path": "src/shop/cart.py",
+        "qualified_name": "Cart.total",
+        "span": {
+          "end_col": 66,
+          "end_line": 19,
+          "start_col": 4,
+          "start_line": 17
+        }
+      },
+      "py:src/shop/cart.py:Cart:class": {
+        "exported": true,
+        "key": "py:src/shop/cart.py:Cart:class",
+        "kind": "class",
+        "meta": {
+          "public": true,
+          "signature": "class Cart"
+        },
+        "name": "Cart",
+        "name_range": {
+          "end_col": 10,
+          "end_line": 8,
+          "start_col": 6,
+          "start_line": 8
+        },
+        "parent_key": "file:src/shop/cart.py",
+        "path": "src/shop/cart.py",
+        "qualified_name": "Cart",
+        "span": {
+          "end_col": 58,
+          "end_line": 25,
+          "start_col": 0,
+          "start_line": 8
+        }
+      },
+      "py:src/shop/cart.py:GiftCart.add:method": {
+        "exported": true,
+        "key": "py:src/shop/cart.py:GiftCart.add:method",
+        "kind": "method",
+        "meta": {
+          "signature": "def add(self, name: str, price: Decimal) -> None"
+        },
+        "name": "add",
+        "name_range": {
+          "end_col": 11,
+          "end_line": 29,
+          "start_col": 8,
+          "start_line": 29
+        },
+        "parent_key": "py:src/shop/cart.py:GiftCart:class",
+        "path": "src/shop/cart.py",
+        "qualified_name": "GiftCart.add",
+        "span": {
+          "end_col": 37,
+          "end_line": 30,
+          "start_col": 4,
+          "start_line": 29
+        }
+      },
+      "py:src/shop/cart.py:GiftCart:class": {
+        "exported": true,
+        "key": "py:src/shop/cart.py:GiftCart:class",
+        "kind": "class",
+        "meta": {
+          "signature": "class GiftCart(Cart)"
+        },
+        "name": "GiftCart",
+        "name_range": {
+          "end_col": 14,
+          "end_line": 28,
+          "start_col": 6,
+          "start_line": 28
+        },
+        "parent_key": "file:src/shop/cart.py",
+        "path": "src/shop/cart.py",
+        "qualified_name": "GiftCart",
+        "span": {
+          "end_col": 37,
+          "end_line": 30,
+          "start_col": 0,
+          "start_line": 28
+        }
+      },
+      "py:src/shop/utils/helpers.py:chunks:function": {
+        "exported": true,
+        "key": "py:src/shop/utils/helpers.py:chunks:function",
+        "kind": "function",
+        "meta": {
+          "modifiers": [
+            "generator"
+          ],
+          "signature": "def chunks(items: list[int], size: int)"
+        },
+        "name": "chunks",
+        "name_range": {
+          "end_col": 10,
+          "end_line": 15,
+          "start_col": 4,
+          "start_line": 15
+        },
+        "parent_key": "file:src/shop/utils/helpers.py",
+        "path": "src/shop/utils/helpers.py",
+        "qualified_name": "chunks",
+        "span": {
+          "end_col": 41,
+          "end_line": 17,
+          "start_col": 0,
+          "start_line": 15
+        }
+      },
+      "py:src/shop/utils/helpers.py:dumps:function": {
+        "exported": true,
+        "key": "py:src/shop/utils/helpers.py:dumps:function",
+        "kind": "function",
+        "meta": {
+          "signature": "def dumps(obj: object) -> bytes"
+        },
+        "name": "dumps",
+        "name_range": {
+          "end_col": 13,
+          "end_line": 24,
+          "start_col": 8,
+          "start_line": 24
+        },
+        "parent_key": "file:src/shop/utils/helpers.py",
+        "path": "src/shop/utils/helpers.py",
+        "qualified_name": "dumps",
+        "span": {
+          "end_col": 39,
+          "end_line": 27,
+          "start_col": 4,
+          "start_line": 24
+        }
+      },
+      "py:src/shop/utils/helpers.py:format_price.with_symbol:function": {
+        "exported": false,
+        "key": "py:src/shop/utils/helpers.py:format_price.with_symbol:function",
+        "kind": "function",
+        "meta": {
+          "signature": "def with_symbol(text: str) -> str"
+        },
+        "name": "with_symbol",
+        "name_range": {
+          "end_col": 19,
+          "end_line": 9,
+          "start_col": 8,
+          "start_line": 9
+        },
+        "parent_key": "py:src/shop/utils/helpers.py:format_price:function",
+        "path": "src/shop/utils/helpers.py",
+        "qualified_name": "format_price.with_symbol",
+        "span": {
+          "end_col": 25,
+          "end_line": 10,
+          "start_col": 4,
+          "start_line": 9
+        }
+      },
+      "py:src/shop/utils/helpers.py:format_price:function": {
+        "exported": true,
+        "key": "py:src/shop/utils/helpers.py:format_price:function",
+        "kind": "function",
+        "meta": {
+          "signature": "def format_price(value: Decimal) -> str"
+        },
+        "name": "format_price",
+        "name_range": {
+          "end_col": 16,
+          "end_line": 8,
+          "start_col": 4,
+          "start_line": 8
+        },
+        "parent_key": "file:src/shop/utils/helpers.py",
+        "path": "src/shop/utils/helpers.py",
+        "qualified_name": "format_price",
+        "span": {
+          "end_col": 47,
+          "end_line": 12,
+          "start_col": 0,
+          "start_line": 8
+        }
+      },
+      "py:src/shop/utils/helpers.py:round_money:function": {
+        "exported": true,
+        "key": "py:src/shop/utils/helpers.py:round_money:function",
+        "kind": "function",
+        "meta": {
+          "signature": "def round_money(value: Decimal) -> Decimal"
+        },
+        "name": "round_money",
+        "name_range": {
+          "end_col": 15,
+          "end_line": 4,
+          "start_col": 4,
+          "start_line": 4
+        },
+        "parent_key": "file:src/shop/utils/helpers.py",
+        "path": "src/shop/utils/helpers.py",
+        "qualified_name": "round_money",
+        "span": {
+          "end_col": 66,
+          "end_line": 5,
+          "start_col": 0,
+          "start_line": 4
+        }
+      },
+      "py:tests/conftest.py:cart:function": {
+        "exported": true,
+        "key": "py:tests/conftest.py:cart:function",
+        "kind": "function",
+        "meta": {
+          "decorators": [
+            "pytest.fixture"
+          ],
+          "signature": "def cart() -> Cart"
+        },
+        "name": "cart",
+        "name_range": {
+          "end_col": 8,
+          "end_line": 7,
+          "start_col": 4,
+          "start_line": 7
+        },
+        "parent_key": "file:tests/conftest.py",
+        "path": "tests/conftest.py",
+        "qualified_name": "cart",
+        "span": {
+          "end_col": 17,
+          "end_line": 8,
+          "start_col": 0,
+          "start_line": 6
+        }
+      },
+      "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test": {
+        "exported": true,
+        "key": "py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test",
+        "kind": "test",
+        "meta": {
+          "framework": "pytest",
+          "runner_id": "tests/test_cart.py::TestGiftCart::test_gifts_are_free",
+          "signature": "def test_gifts_are_free(self) -> None"
+        },
+        "name": "test_gifts_are_free",
+        "name_range": {
+          "end_col": 27,
+          "end_line": 12,
+          "start_col": 8,
+          "start_line": 12
+        },
+        "parent_key": "py:tests/test_cart.py:TestGiftCart:class",
+        "path": "tests/test_cart.py",
+        "qualified_name": "TestGiftCart.test_gifts_are_free",
+        "span": {
+          "end_col": 30,
+          "end_line": 15,
+          "start_col": 4,
+          "start_line": 12
+        }
+      },
+      "py:tests/test_cart.py:TestGiftCart:class": {
+        "exported": true,
+        "key": "py:tests/test_cart.py:TestGiftCart:class",
+        "kind": "class",
+        "meta": {
+          "signature": "class TestGiftCart"
+        },
+        "name": "TestGiftCart",
+        "name_range": {
+          "end_col": 18,
+          "end_line": 11,
+          "start_col": 6,
+          "start_line": 11
+        },
+        "parent_key": "file:tests/test_cart.py",
+        "path": "tests/test_cart.py",
+        "qualified_name": "TestGiftCart",
+        "span": {
+          "end_col": 30,
+          "end_line": 15,
+          "start_col": 0,
+          "start_line": 11
+        }
+      },
+      "py:tests/test_cart.py:test_add_rounds_prices:test": {
+        "exported": true,
+        "key": "py:tests/test_cart.py:test_add_rounds_prices:test",
+        "kind": "test",
+        "meta": {
+          "framework": "pytest",
+          "runner_id": "tests/test_cart.py::test_add_rounds_prices",
+          "signature": "def test_add_rounds_prices(cart: Cart) -> None"
+        },
+        "name": "test_add_rounds_prices",
+        "name_range": {
+          "end_col": 26,
+          "end_line": 6,
+          "start_col": 4,
+          "start_line": 6
+        },
+        "parent_key": "file:tests/test_cart.py",
+        "path": "tests/test_cart.py",
+        "qualified_name": "test_add_rounds_prices",
+        "span": {
+          "end_col": 40,
+          "end_line": 8,
+          "start_col": 0,
+          "start_line": 6
+        }
+      },
+      "route:src/shop/app.py:GET /carts/{cart_id}": {
+        "exported": false,
+        "key": "route:src/shop/app.py:GET /carts/{cart_id}",
+        "kind": "route",
+        "meta": {
+          "method": "GET",
+          "pattern": "/carts/{cart_id}",
+          "public": true,
+          "source": "decorator"
+        },
+        "name": "GET /carts/{cart_id}",
+        "name_range": {
+          "end_col": 28,
+          "end_line": 9,
+          "start_col": 0,
+          "start_line": 9
+        },
+        "parent_key": "file:src/shop/app.py",
+        "path": "src/shop/app.py",
+        "qualified_name": "GET /carts/{cart_id}",
+        "span": {
+          "end_col": 28,
+          "end_line": 9,
+          "start_col": 0,
+          "start_line": 9
+        }
+      },
+      "route:src/shop/app.py:POST /carts/{cart_id}/items": {
+        "exported": false,
+        "key": "route:src/shop/app.py:POST /carts/{cart_id}/items",
+        "kind": "route",
+        "meta": {
+          "method": "POST",
+          "pattern": "/carts/{cart_id}/items",
+          "public": true,
+          "source": "decorator"
+        },
+        "name": "POST /carts/{cart_id}/items",
+        "name_range": {
+          "end_col": 35,
+          "end_line": 15,
+          "start_col": 0,
+          "start_line": 15
+        },
+        "parent_key": "file:src/shop/app.py",
+        "path": "src/shop/app.py",
+        "qualified_name": "POST /carts/{cart_id}/items",
+        "span": {
+          "end_col": 35,
+          "end_line": 15,
+          "start_col": 0,
+          "start_line": 15
+        }
+      }
+    },
+    "owners": {},
+    "stats": {
+      "builtin_calls": 5,
+      "call_sites": 34,
+      "call_sites_by_tier": {
+        "T1": 7,
+        "T3": 1,
+        "T4": 1,
+        "T5": 1,
+        "T6": 3
+      },
+      "edges_by_kind": {
+        "calls": 19,
+        "contains": 39,
+        "imports": 6,
+        "inherits": 1,
+        "routes_to": 2,
+        "tested_by": 9
+      },
+      "external_calls": 11,
+      "files_with_owners": 0,
+      "history_commits": 0,
+      "import_statements": 14,
+      "imports_by_outcome": {
+        "external": 8,
+        "internal": 6
+      },
+      "nodes_by_kind": {
+        "class": 3,
+        "dir": 8,
+        "file": 10,
+        "function": 9,
+        "method": 6,
+        "route": 2,
+        "test": 2
+      },
+      "unresolved_by_reason": {
+        "not_found": 5
+      },
+      "unresolved_calls": 5
+    },
+    "unresolved": [
+      {
+        "callee_text": "app.get",
+        "caller_key": "file:src/shop/app.py",
+        "candidates": [],
+        "reason": "not_found",
+        "receiver_text": "app",
+        "site": {
+          "end_col": 28,
+          "end_line": 9,
+          "start_col": 1,
+          "start_line": 9
+        }
+      },
+      {
+        "callee_text": "app.post",
+        "caller_key": "file:src/shop/app.py",
+        "candidates": [],
+        "reason": "not_found",
+        "receiver_text": "app",
+        "site": {
+          "end_col": 35,
+          "end_line": 15,
+          "start_col": 1,
+          "start_line": 15
+        }
+      },
+      {
+        "callee_text": "_carts.setdefault",
+        "caller_key": "py:src/shop/app.py:get_cart:function",
+        "candidates": [],
+        "reason": "not_found",
+        "receiver_text": "_carts",
+        "site": {
+          "end_col": 45,
+          "end_line": 11,
+          "start_col": 11,
+          "start_line": 11
+        }
+      },
+      {
+        "callee_text": "self.items.append",
+        "caller_key": "py:src/shop/cart.py:Cart.add:method",
+        "candidates": [],
+        "reason": "not_found",
+        "receiver_text": "self.items",
+        "site": {
+          "end_col": 53,
+          "end_line": 15,
+          "start_col": 8,
+          "start_line": 15
+        }
+      },
+      {
+        "callee_text": "value.quantize",
+        "caller_key": "py:src/shop/utils/helpers.py:round_money:function",
+        "candidates": [],
+        "reason": "not_found",
+        "receiver_text": "value",
+        "site": {
+          "end_col": 66,
+          "end_line": 5,
+          "start_col": 11,
+          "start_line": 5
+        }
+      }
+    ]
+  },
+  "parse_digest": "31cf59ec616dfb6ad6ecfc27a216c0a5c9fde59b9e3120e296d78547e5442ea5",
+  "source": "dir:py_small"
+}

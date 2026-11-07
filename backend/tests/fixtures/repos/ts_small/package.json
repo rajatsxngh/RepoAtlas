@@ -1,5 +1,6 @@
 {
   "name": "ts-small",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "main": "./dist/index.js"
 }

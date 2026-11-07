@@ -50,6 +50,10 @@ jobs:
         run: |
           uv run repoatlas parse tests/fixtures/repos/py_small
           uv run repoatlas parse tests/fixtures/repos/ts_small
+      - name: Fixture graph digests (the golden tests require identical output on every OS)
+        run: |
+          uv run repoatlas graph tests/fixtures/repos/py_small
+          uv run repoatlas graph tests/fixtures/repos/ts_small
       - name: Migrations apply to the service database
         run: uv run repoatlas db upgrade && uv run repoatlas db current
 
@@ -73,6 +77,10 @@ jobs:
         run: |
           uv run repoatlas parse tests/fixtures/repos/py_small
           uv run repoatlas parse tests/fixtures/repos/ts_small
+      - name: Fixture graph digests (must match the Linux job)
+        run: |
+          uv run repoatlas graph tests/fixtures/repos/py_small
+          uv run repoatlas graph tests/fixtures/repos/ts_small
 
   docs:
     name: Docs lint
