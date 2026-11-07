@@ -15,6 +15,7 @@ from pydantic import JsonValue
 from repoatlas.graph.edges import EdgeSet
 from repoatlas.graph.keys import ROOT_DIR, ancestors, dir_key, file_key, parent_dir
 from repoatlas.graph.model import EdgeKind, Node, NodeKind, Provenance
+from repoatlas.graph.tiers import CONTAINS_CONFIDENCE
 from repoatlas.ingest.inventory import FileEntry, Inventory
 from repoatlas.parsing.models import ParsedFile, Symbol, TestCase
 
@@ -46,7 +47,13 @@ def add_contains_edges(nodes: Iterable[Node], edges: EdgeSet) -> None:
     """``contains`` from every node's parent: dir → dir/file, file → symbol, symbol → member."""
     for node in nodes:
         if node.parent_key is not None:
-            edges.add(node.parent_key, node.key, EdgeKind.CONTAINS, Provenance.TREE_SITTER, 1.0)
+            edges.add(
+                node.parent_key,
+                node.key,
+                EdgeKind.CONTAINS,
+                Provenance.TREE_SITTER,
+                CONTAINS_CONFIDENCE,
+            )
 
 
 def _dir_node(path: str) -> Node:

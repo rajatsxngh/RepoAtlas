@@ -6,6 +6,7 @@ from collections.abc import Mapping
 
 from repoatlas.graph.build import build_graph
 from repoatlas.graph.model import CodeGraph, Edge, EdgeKind
+from repoatlas.graph.project import ProjectFiles
 from repoatlas.ingest.source import MemorySourceTree
 from repoatlas.pipeline.parse import ParseOutput, parse_tree
 
@@ -21,9 +22,13 @@ def parse_files(files: Mapping[str, str | bytes]) -> ParseOutput:
         return parse_tree(tree, **CAPS)
 
 
-def graph_of(files: Mapping[str, str | bytes]) -> CodeGraph:
+def graph_of(
+    files: Mapping[str, str | bytes], config: Mapping[str, str] | None = None
+) -> CodeGraph:
+    """Parse ``files`` and build their graph; ``config`` holds project files (tsconfig.json…)."""
     output = parse_files(files)
-    return build_graph(output.inventory, output.files)
+    project = ProjectFiles(files=dict(config or {}))
+    return build_graph(output.inventory, output.files, project=project)
 
 
 def pairs(graph: CodeGraph, kind: EdgeKind) -> set[tuple[str, str]]:
