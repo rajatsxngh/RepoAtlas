@@ -31,7 +31,7 @@ test("the 10,000-node graph stays under the node cap and lays out every expansio
   await page.goto("/s/4");
   await waitForMap(page);
 
-  const timings: { key: string; ms: number; visible: number }[] = [];
+  const timings: { key: string; ms: number; visible: number; layoutMs: number }[] = [];
   const opened = new Set<string>();
   for (let round = 0; round < 40; round += 1) {
     // Off-screen nodes aren't drawn, so fit everything into view before picking one.
@@ -45,7 +45,7 @@ test("the 10,000-node graph stays under the node cap and lays out every expansio
     opened.add(key);
     const ms = await openNode(page, key);
     const state = await mapState(page);
-    timings.push({ key, ms, visible: state.visibleNodes });
+    timings.push({ key, ms, visible: state.visibleNodes, layoutMs: state.layoutMs });
     expect(state.visibleNodes, `after opening ${key}`).toBeLessThanOrEqual(CAP);
   }
 
@@ -67,6 +67,10 @@ test("the 10,000-node graph stays under the node cap and lays out every expansio
     description: `${timings.length} expansions; median ${median} ms, slowest ${slowest} ms; peak ${peak} visible nodes (cap ${CAP})`,
   });
   console.log(`stress: ${test.info().annotations.at(-1)!.description}`);
+  // The slowest expansions, with how much of each was ELK (the rest: fetch, model, render).
+  for (const t of [...timings].sort((a, b) => b.ms - a.ms).slice(0, 3)) {
+    console.log(`  ${t.ms} ms (ELK ${t.layoutMs} ms, ${t.visible} visible): ${t.key}`);
+  }
   expect(timings.length).toBeGreaterThanOrEqual(25);
   expect(peak).toBeGreaterThan(CAP * 0.8);
   expect(slowest).toBeLessThan(LIMIT_MS);

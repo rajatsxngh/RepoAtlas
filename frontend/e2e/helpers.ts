@@ -5,6 +5,8 @@ export interface MapState {
   renderedNodes: number;
   renderedEdges: number;
   layoutPending: number;
+  /** How long ELK took for the latest layout request, in ms (0 before the first). */
+  layoutMs: number;
 }
 
 /** The canvas's own counters (a hidden element the map keeps current). */
@@ -16,6 +18,7 @@ export async function mapState(page: Page): Promise<MapState> {
       renderedNodes: Number(data.renderedNodes),
       renderedEdges: Number(data.renderedEdges),
       layoutPending: Number(data.layoutPending),
+      layoutMs: Number(data.layoutMs || 0),
     };
   });
 }
@@ -37,24 +40,30 @@ export function mapNode(page: Page, key: string) {
 
 /**
  * Clicks a node's open button and waits until the node is drawn as a laid-out container.
- * Clicks through the DOM, so nodes outside the viewport work too. Returns the milliseconds.
+ * Clicks through the DOM, so nodes outside the viewport work too. Returns the milliseconds,
+ * measured inside the page: polling from the test over the DevTools protocol added up to a
+ * second per expansion on a busy machine.
  */
 export async function openNode(page: Page, key: string): Promise<number> {
-  const started = Date.now();
-  await mapNode(page, key).evaluate((node) => {
+  return mapNode(page, key).evaluate(async (node, id) => {
     const button = node.querySelector<HTMLButtonElement>('button[aria-label^="Open "]');
     if (!button) throw new Error("This node has no open button.");
+    const state = document.querySelector<HTMLElement>('[data-testid="map-state"]');
+    // Compared by id, not by selector: ids hold repo text (the XSS fixture's payloads).
+    const drawnAsContainer = () =>
+      [...document.querySelectorAll<HTMLElement>(".react-flow__node")].some(
+        (element) => element.dataset.id === id && element.querySelector(".ra-container"),
+      );
+    const started = performance.now();
     button.click();
-  });
-  await expect
-    .poll(
-      async () =>
-        (await mapNode(page, key).locator(".ra-container").count()) > 0 &&
-        (await mapState(page)).layoutPending === 0,
-      { timeout: 10_000, intervals: [25, 50, 100] },
-    )
-    .toBe(true);
-  return Date.now() - started;
+    while (performance.now() - started < 10_000) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      if (state?.dataset.layoutPending === "0" && drawnAsContainer()) {
+        return Math.round(performance.now() - started);
+      }
+    }
+    throw new Error("The node wasn't drawn as a laid-out container within 10 s.");
+  }, key);
 }
 
 /** Fails the test if anything in the page opens a dialog (a payload's alert()). */
