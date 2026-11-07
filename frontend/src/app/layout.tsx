@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { ReactNode } from "react";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
+import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,7 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Script id="repoatlas-theme" strategy="beforeInteractive">
           {THEME_BOOT_SCRIPT}
         </Script>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
