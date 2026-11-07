@@ -29,7 +29,7 @@ import { Legend } from "@/components/legend/Legend";
 import { Spinner } from "@/components/ui/Spinner";
 import { useApi } from "@/lib/api/context";
 import { describeError } from "@/lib/api/errors";
-import type { SubgraphLevel } from "@/lib/api/types";
+import type { EdgeKind, SubgraphLevel } from "@/lib/api/types";
 import { config } from "@/lib/config";
 import { queryKeys } from "@/lib/query";
 import { CanvasActionsContext, type CanvasActions } from "./actions";
@@ -43,6 +43,12 @@ import { NodeMenu } from "./NodeMenu";
 import { NODE_TYPES } from "./nodes";
 import { createStabilizer } from "./stable";
 import { useMapLayout } from "./useMapLayout";
+
+/**
+ * Edge kinds hidden until the reader turns them on. Test links fan out from every test folder to
+ * the code it covers and drown the rest; the node panel still counts a node's tests.
+ */
+export const DEFAULT_HIDDEN_KINDS: readonly EdgeKind[] = ["tested_by"];
 
 export interface GraphCanvasHandle {
   /** Expands the node's ancestors in order so the node is visible. */
@@ -98,6 +104,10 @@ function Canvas({
   const [fetching, setFetching] = useState<ReadonlySet<string>>(() => new Set());
   const [notice, setNotice] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ key: string; x: number; y: number } | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [hiddenKinds, setHiddenKinds] = useState<ReadonlySet<EdgeKind>>(
+    () => new Set(DEFAULT_HIDDEN_KINDS),
+  );
   const fitted = useRef(false);
   const zoomBand = useStore((state) =>
     state.transform[2] < 0.55 ? "ra-far" : state.transform[2] < 0.85 ? "ra-mid" : "ra-near",
@@ -175,6 +185,7 @@ function Canvas({
           selected: selectedKey,
           pulse,
           layers: resolvedLayers,
+          hiddenKinds,
           childCount: (key) => model.childrenOf(key)?.length,
           fileCount: (key) => {
             const node = model.nodes.get(key);
@@ -196,6 +207,7 @@ function Canvas({
       selectedKey,
       pulse,
       resolvedLayers,
+      hiddenKinds,
       model,
       stabilize,
     ],
@@ -528,6 +540,9 @@ function Canvas({
   }
 
   const empty = model.isLoaded(ROOT) && (model.childrenOf(ROOT)?.length ?? 0) === 0;
+  // Focus mode: the hovered node's edges (else the selected node's) stay strong, others fade.
+  const focusKey = hovered ?? selectedKey;
+  const focusIndex = focusKey !== null ? graph.index.get(focusKey) : undefined;
 
   return (
     <CanvasActionsContext.Provider value={actions}>
@@ -543,13 +558,19 @@ function Canvas({
         data-layout-ms={layout.lastMs ?? ""}
       />
       <EdgeMarkers />
+      <FocusStyle index={focusIndex} />
       <ReactFlow
         nodes={graph.nodes}
         edges={graph.edges}
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
         onNodeClick={onNodeClick}
+        onNodeMouseEnter={(_event, node) => setHovered(node.id)}
+        onNodeMouseLeave={() => setHovered(null)}
         onPaneClick={() => onSelect(null)}
+        // Containers set their own z-index (deeper is higher) and edges stay beneath all nodes,
+        // so lines pass under container headers instead of over them.
+        zIndexMode="manual"
         nodesDraggable={false}
         nodesConnectable={false}
         edgesFocusable={false}
@@ -557,7 +578,7 @@ function Canvas({
         maxZoom={2.5}
         proOptions={{ hideAttribution: false }}
         aria-label="Code map"
-        className={zoomBand}
+        className={`${zoomBand} ${graph.edges.length > 500 ? "ra-very-dense" : graph.edges.length > 120 ? "ra-dense" : ""}`}
       >
         <Background variant={BackgroundVariant.Dots} gap={22} size={1} />
         <Controls
@@ -589,10 +610,23 @@ function Canvas({
           zoomable
           nodeColor={minimapColor}
           nodeStrokeWidth={0}
+          style={{ width: 168, height: 112 }}
           ariaLabel="Overview of the map"
         />
         <Panel position="bottom-left">
-          <Legend layers={layers} edges={graph.edgeCount} />
+          <Legend
+            layers={layers}
+            edges={graph.edgeCount}
+            hiddenKinds={hiddenKinds}
+            onToggleKind={(kind) =>
+              setHiddenKinds((current) => {
+                const next = new Set(current);
+                if (next.has(kind)) next.delete(kind);
+                else next.add(kind);
+                return next;
+              })
+            }
+          />
         </Panel>
       </ReactFlow>
       {!model.isLoaded(ROOT) ? (
@@ -632,6 +666,19 @@ function Canvas({
         ) : null}
       </div>
     </CanvasActionsContext.Provider>
+  );
+}
+
+/**
+ * The CSS rule behind focus mode. It names nodes by their position in the node list (a number),
+ * so no repo text ever reaches a stylesheet, and changing focus restyles instead of re-rendering
+ * every edge.
+ */
+function FocusStyle({ index }: { index: number | undefined }) {
+  if (index === undefined || !Number.isInteger(index) || index < 0) return null;
+  return (
+    <style>{`.react-flow :is(.ra-edge,.ra-edge-count):not([data-highlight]):not([data-s="${index}"]):not([data-t="${index}"]){opacity:.1}
+.react-flow .ra-edge[data-s="${index}"],.react-flow .ra-edge[data-t="${index}"]{opacity:1}`}</style>
   );
 }
 

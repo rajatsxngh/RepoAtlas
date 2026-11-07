@@ -31,7 +31,52 @@ describe("GraphCanvas", () => {
     await waitFor(() =>
       expect(document.querySelector('[data-id="dir:tests|dir:src|calls"]')).not.toBeNull(),
     );
-    expect(document.querySelector('[data-id="dir:src|dir:tests|tested_by"]')).not.toBeNull();
+  });
+
+  it("hides test links until the legend turns them on, and back off", async () => {
+    renderCanvas();
+    await waitFor(() =>
+      expect(document.querySelector('[data-id="dir:tests|dir:src|calls"]')).not.toBeNull(),
+    );
+    const testLinks = '[data-id="dir:src|dir:tests|tested_by"]';
+    expect(document.querySelector(testLinks)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^Legend/ }));
+    const toggle = screen.getByRole("button", { name: /Tested by/ });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => expect(document.querySelector(testLinks)).not.toBeNull());
+    // Other kinds turn off the same way.
+    fireEvent.click(screen.getByRole("button", { name: /^Calls/ }));
+    await waitFor(() =>
+      expect(document.querySelector('[data-id="dir:tests|dir:src|calls"]')).toBeNull(),
+    );
+    expect(document.querySelector(testLinks)).not.toBeNull();
+  });
+
+  it("keeps the hovered node's edges strong and fades the rest, by node position only", async () => {
+    renderCanvas();
+    await waitFor(() =>
+      expect(document.querySelector('[data-id="dir:tests|dir:src|calls"]')).not.toBeNull(),
+    );
+    const focusRules = () =>
+      [...document.querySelectorAll("style")]
+        .map((style) => style.textContent ?? "")
+        .filter((text) => text.includes(".ra-edge[data-s="));
+    expect(focusRules()).toHaveLength(0);
+    const node = document.querySelector('.react-flow__node[data-id="dir:tests"]');
+    expect(node).not.toBeNull();
+    fireEvent.mouseEnter(node!);
+    await waitFor(() => expect(focusRules()).toHaveLength(1));
+    // The rule names a number, never the node's key or name.
+    expect(focusRules()[0]).toMatch(/\[data-s="\d+"\]/);
+    expect(focusRules()[0]).not.toContain("tests");
+    const edge = document.querySelector('[data-id="dir:tests|dir:src|calls"] path.ra-edge');
+    const index = edge?.getAttribute("data-s");
+    expect(index).toMatch(/^\d+$/);
+    expect(focusRules()[0]).toContain(`[data-s="${index}"]`);
+    fireEvent.mouseLeave(node!);
+    await waitFor(() => expect(focusRules()).toHaveLength(0));
   });
 
   it("selects a node on click", async () => {

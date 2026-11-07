@@ -73,6 +73,8 @@ export const MapEdge = memo(function MapEdge({ source, target, data }: EdgeProps
       <path
         d={path}
         className="ra-edge react-flow__edge-path"
+        data-s={data.ends?.[0]}
+        data-t={data.ends?.[1]}
         data-kind={data.kind}
         data-guess={guess || undefined}
         data-highlight={data.highlight}
@@ -82,7 +84,8 @@ export const MapEdge = memo(function MapEdge({ source, target, data }: EdgeProps
           stroke: color,
           strokeWidth: width,
           strokeDasharray: guess ? GUESS_DASH : undefined,
-          opacity: data.dimmed ? 0.22 : 1,
+          // Only when dimmed: otherwise CSS (dense views, focus mode) decides.
+          opacity: data.dimmed ? 0.22 : undefined,
         }}
       />
       <path
@@ -98,9 +101,14 @@ export const MapEdge = memo(function MapEdge({ source, target, data }: EdgeProps
         <EdgeLabelRenderer>
           <div
             className="ra-edge-count nodrag nopan"
+            // Same tags as the line, so focus mode fades the count with its edge.
+            data-s={data.ends?.[0]}
+            data-t={data.ends?.[1]}
+            data-highlight={data.highlight}
             style={{
               transform: `translate(-50%, -50%) translate(${(from.x + to.x) / 2}px, ${(from.y + to.y) / 2}px)`,
               borderColor: edgeColor(data.kind),
+              opacity: data.dimmed ? 0.22 : undefined,
             }}
             title={title}
           >

@@ -38,10 +38,19 @@ export interface LegendProps {
   layers?: readonly HighlightLayer[];
   /** How many edges the map draws out of those between its nodes (the edge budget). */
   edges?: { total: number; drawn: number };
+  /** Edge kinds switched off; with `onToggleKind`, each kind becomes a toggle. */
+  hiddenKinds?: ReadonlySet<EdgeKind>;
+  onToggleKind?: (kind: EdgeKind) => void;
   defaultOpen?: boolean;
 }
 
-export function Legend({ layers = [], edges, defaultOpen = false }: LegendProps) {
+export function Legend({
+  layers = [],
+  edges,
+  hiddenKinds,
+  onToggleKind,
+  defaultOpen = false,
+}: LegendProps) {
   const trimmed = edges && edges.drawn < edges.total;
   const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
@@ -98,12 +107,34 @@ export function Legend({ layers = [], edges, defaultOpen = false }: LegendProps)
               Edges
             </h3>
             <ul className="space-y-1">
-              {EDGE_KINDS.map((kind) => (
-                <li key={kind} className="flex items-center gap-2 text-fg-muted">
-                  <Line color={`var(--ra-edge-${kind.replace("_", "-")})`} />
-                  {EDGE_LABELS[kind].legend}
-                </li>
-              ))}
+              {EDGE_KINDS.map((kind) => {
+                const hidden = hiddenKinds?.has(kind) ?? false;
+                const line = <Line color={`var(--ra-edge-${kind.replace("_", "-")})`} />;
+                return (
+                  <li key={kind}>
+                    {onToggleKind ? (
+                      <button
+                        type="button"
+                        aria-pressed={!hidden}
+                        title={hidden ? "Show these edges" : "Hide these edges"}
+                        onClick={() => onToggleKind(kind)}
+                        className={`flex w-full cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-left hover:bg-surface-2 ${
+                          hidden ? "text-fg-faint" : "text-fg-muted"
+                        }`}
+                      >
+                        <span className={hidden ? "opacity-35" : ""}>{line}</span>
+                        <span className="flex-1">{EDGE_LABELS[kind].legend}</span>
+                        <span className="text-[11px] text-fg-faint">{hidden ? "hidden" : ""}</span>
+                      </button>
+                    ) : (
+                      <span className="flex items-center gap-2 px-1 py-0.5 text-fg-muted">
+                        {line}
+                        {EDGE_LABELS[kind].legend}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
           <div>

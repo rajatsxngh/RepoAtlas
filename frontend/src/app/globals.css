@@ -458,3 +458,12 @@
     outline: 2px solid var(--ra-focus);
   }
 }
+
+/* Dense views draw edges lighter, so the nodes stay readable (hover a node to bring its edges
+   back: focus mode). */
+.ra-dense .ra-edge:not([data-highlight]) {
+  opacity: 0.6;
+}
+.ra-very-dense .ra-edge:not([data-highlight]) {
+  opacity: 0.32;
+}

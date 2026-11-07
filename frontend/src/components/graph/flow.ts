@@ -41,6 +41,8 @@ export type EdgeData = {
   offset: number;
   /** This edge carries its pair's count label. */
   showCount: boolean;
+  /** Positions of the two ends in the node list, for focus mode's CSS (numbers, no repo text). */
+  ends?: [number, number];
   /** Drawn in a highlight layer's color, on top. */
   highlight?: HighlightStyle;
   /** Faded while a layer highlights other edges. */
@@ -100,6 +102,8 @@ export interface FlowInput {
   layers?: ResolvedLayers;
   /** Most edges to draw (default `EDGE_BUDGET`). */
   edgeBudget?: number;
+  /** Edge kinds the reader switched off (highlighted edges still show). */
+  hiddenKinds?: ReadonlySet<EdgeKind>;
   childCount: (key: string) => number | undefined;
   fileCount: (key: string) => number | undefined;
 }
@@ -111,6 +115,8 @@ export interface FlowOutput {
   sizes: Map<string, Size>;
   /** Edges between drawn nodes, and how many of them are drawn (the edge budget). */
   edgeCount: { total: number; drawn: number };
+  /** Position of each drawn node in `nodes`. */
+  index: Map<string, number>;
 }
 
 /**
@@ -259,10 +265,13 @@ export function toFlow(input: FlowInput): FlowOutput {
       });
     }
   }
-  const between = input.edges.filter(
-    (edge) => rendered.has(edge.source) && rendered.has(edge.target),
-  );
   const highlighted = input.layers?.edges;
+  const between = input.edges.filter(
+    (edge) =>
+      rendered.has(edge.source) &&
+      rendered.has(edge.target) &&
+      (!input.hiddenKinds?.has(edge.kind) || highlighted?.has(edge.id)),
+  );
   const drawn = withinBudget(between, input.edgeBudget ?? EDGE_BUDGET, (edge) =>
     highlighted?.has(edge.id)
       ? 2
@@ -272,6 +281,11 @@ export function toFlow(input: FlowInput): FlowOutput {
   );
   const dimOthers = Boolean(highlighted?.size || input.layers?.extra.length);
   const { offsets, labelled } = bundle(drawn);
+  const index = new Map(nodes.map((node, position) => [node.id, position]));
+  const ends = (source: string, target: string): [number, number] => [
+    index.get(source) ?? -1,
+    index.get(target) ?? -1,
+  ];
   const edges: MapFlowEdge[] = drawn.map((edge) => ({
     id: edge.id,
     source: edge.source,
@@ -288,8 +302,8 @@ export function toFlow(input: FlowInput): FlowOutput {
       showCount: labelled.has(edge.id),
       highlight: highlighted?.get(edge.id)?.style,
       dimmed: dimOthers && !highlighted?.has(edge.id),
+      ends: ends(edge.source, edge.target),
     },
-    ...(highlighted?.has(edge.id) ? { zIndex: 1000 } : {}),
   }));
   for (const extra of input.layers?.extra ?? []) {
     if (!rendered.has(extra.source) || !rendered.has(extra.target)) continue;
@@ -300,7 +314,6 @@ export function toFlow(input: FlowInput): FlowOutput {
       type: "map",
       selectable: false,
       focusable: false,
-      zIndex: 1000,
       data: {
         kind: extra.kind,
         count: 1,
@@ -310,8 +323,18 @@ export function toFlow(input: FlowInput): FlowOutput {
         showCount: false,
         highlight: extra.style,
         extra: true,
+        ends: ends(extra.source, extra.target),
       },
     });
   }
-  return { nodes, edges, sizes, edgeCount: { total: between.length, drawn: drawn.length } };
+  // Edges sit under every node (manual z-index); highlighted ones go last so they draw on top
+  // of the other edges.
+  edges.sort((a, b) => Number(Boolean(a.data?.highlight)) - Number(Boolean(b.data?.highlight)));
+  return {
+    nodes,
+    edges,
+    sizes,
+    edgeCount: { total: between.length, drawn: drawn.length },
+    index,
+  };
 }
