@@ -1,6 +1,6 @@
 # M02 — Graph building
 
-**Type of work:** Static analysis · **Size:** L (11 tasks) · **Status:** In progress
+**Type of work:** Static analysis · **Size:** L (11 tasks) · **Status:** Done
 
 ## Goal
 
@@ -224,3 +224,5 @@ Binding-based tiers (T1–T4) were right in all 35 sampled edges; name-matched t
 
 **Other findings**
 - The TypeScript extractor treats `const X = f(() => …)` as a wrapped function (meant for `memo(function …)`), so zod's `const DATA = makeData(1000, () => …)` is a function node. The structure is still correct (hand-check row 2); logged in the backlog.
+
+**CI.** Run [42346503598](https://github.com/rajatsxngh/RepoAtlas/actions/runs/42346503598) on `f32fff8` passed all three jobs: the Linux full check (429 passed, the symlink test included), the Windows unit tests (421 passed), and the docs lint. Both backend jobs printed the same digests as this machine: graphs `py_small` `ec01fa4353017159…` and `ts_small` `c066ffa9b52dbd10…`, and parses `py_small` `31cf59ec616dfb6a…` and `ts_small` `13b0ed333b8a253e…`, unchanged since the previous gate.
