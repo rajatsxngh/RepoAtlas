@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 
 import pytest
 from fastapi import FastAPI, Query
@@ -160,3 +160,24 @@ def test_cors_origins_come_from_a_comma_separated_setting() -> None:
         "https://a.example",
         "https://b.example",
     ]
+
+
+async def test_request_bodies_are_capped(app: FastAPI) -> None:
+    async def stream() -> AsyncIterator[bytes]:
+        for _ in range(10):
+            yield b"x" * 10_000
+
+    async with client_for(app) as client:
+        declared = await client.post(f"{API_PREFIX}/repos", content=b"{" + b" " * 70_000 + b"}")
+        streamed = await client.post(
+            f"{API_PREFIX}/repos", content=stream(), headers={"content-type": "application/json"}
+        )
+        small = await client.post(f"{API_PREFIX}/repos", json={"url": "https://gitlab.com/a/b"})
+    assert declared.status_code == 413
+    assert error_of(declared) == {
+        "code": "invalid_request",
+        "message": "The request body is larger than 65,536 bytes.",
+        "details": {"max_bytes": 65536},
+    }
+    assert streamed.status_code == 413 and error_of(streamed)["code"] == "invalid_request"
+    assert small.status_code == 422 and error_of(small)["code"] == "invalid_url"

@@ -69,6 +69,7 @@ class Settings(BaseSettings):
     # API
     web_origins: str = "http://localhost:3000"  # comma-separated origins allowed by CORS
     db_connect_timeout_s: float = 10.0  # opening one database connection, in the API and worker
+    max_body_bytes: int = 65_536  # request bodies (build requests are tiny)
     rate_limit_enabled: bool = True
     builds_per_hour: int = 5  # build requests per client
     reads_per_minute: int = 120  # other API requests per client

@@ -7,6 +7,7 @@ import uuid
 
 import structlog
 from starlette.datastructures import Headers, MutableHeaders
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from repoatlas.api.errors import ErrorCode, error_response
@@ -108,3 +109,47 @@ class EncodedKeyMiddleware:
             if match is not None and match.group(0).isascii():  # else keep the decoded path
                 scope = dict(scope, path=match.group(0).decode("ascii"))
         await self.app(scope, receive, send)
+
+
+class BodyTooLarge(StarletteHTTPException):
+    """Raised while a body streams in past the limit (FastAPI re-raises HTTP exceptions from
+    body reads, so the handlers render it as a 413 in the error model)."""
+
+    def __init__(self, max_bytes: int) -> None:
+        super().__init__(413, f"The request body is larger than {max_bytes:,} bytes.")
+
+
+class BodyLimitMiddleware:
+    """Refuse request bodies over ``max_bytes`` with 413 before they are read into memory: by
+    ``Content-Length`` when the client sends one, else while the body streams in."""
+
+    def __init__(self, app: ASGIApp, *, max_bytes: int) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        declared = Headers(scope=scope).get("content-length", "")
+        if declared.isdigit() and int(declared) > self.max_bytes:
+            response = error_response(
+                413,
+                ErrorCode.INVALID_REQUEST,
+                f"The request body is larger than {self.max_bytes:,} bytes.",
+                details={"max_bytes": self.max_bytes},
+            )
+            await response(scope, receive, send)
+            return
+        received = 0
+
+        async def limited_receive() -> Message:
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > self.max_bytes:
+                    raise BodyTooLarge(self.max_bytes)
+            return message
+
+        await self.app(scope, limited_receive, send)

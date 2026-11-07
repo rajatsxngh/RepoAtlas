@@ -7,8 +7,9 @@ with ``uvicorn repoatlas.api.app:create_app --factory``.
 Middleware, outermost first: a request ID for every request (echoed in ``X-Request-ID`` and
 bound to the log context), CORS for the web app's origins, a last-resort handler that turns
 unexpected exceptions into a 500 in the error model, per-client rate limits (inside CORS, so a
-browser can read a 429's ``Retry-After``), and the symbol-key path fix. Routes run as plain
-functions in the threadpool, because the store and the GitHub client are synchronous.
+browser can read a 429's ``Retry-After``), a cap on request bodies, and the symbol-key path
+fix. Routes run as plain functions in the threadpool, because the store and the GitHub client
+are synchronous.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from repoatlas import __version__
 from repoatlas.api import errors
 from repoatlas.api.middleware import (
     REQUEST_ID_HEADER,
+    BodyLimitMiddleware,
     EncodedKeyMiddleware,
     RequestContextMiddleware,
     UnhandledErrorMiddleware,
@@ -89,6 +91,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ),
             Middleware(UnhandledErrorMiddleware),
             *limits,
+            Middleware(BodyLimitMiddleware, max_bytes=settings.max_body_bytes),
             Middleware(EncodedKeyMiddleware, prefix=API_PREFIX),
         ],
     )
