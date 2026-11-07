@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from repoatlas.parsing.models import ImportBinding, ParsedFile
+from repoatlas.parsing.models import ImportBinding, ParsedFile, Symbol
 from tests.unit.parsing.helpers import keys, parse_source, symbol
 
 TS = "src/mod.ts"
@@ -180,9 +180,18 @@ def test_computed_and_string_method_names() -> None:
 # --- exports and module patterns -----------------------------------------------------------------
 
 
+def columns(sym: Symbol) -> tuple[int, int, int]:
+    r = sym.name_range
+    assert r.start_line == r.end_line
+    return (r.start_line, r.start_col, r.end_col)
+
+
 def test_default_exports() -> None:
     anonymous = ts("export default function () { run(); }\n")
-    assert symbol(anonymous, "default").exported is True
+    fn = symbol(anonymous, "default")
+    assert fn.exported is True
+    assert fn.signature == "function ()"
+    assert columns(fn) == (1, 7, 14)  # anonymous: named by the `default` keyword
     assert anonymous.calls[0].enclosing == "ts:src/mod.ts:default:function"
 
     named = ts("export default function main() {}\n")
@@ -194,6 +203,7 @@ def test_default_exports() -> None:
 
     klass = ts("export default class { m() {} }\n")
     assert keys(klass) == ["ts:src/mod.ts:default:class", "ts:src/mod.ts:default.m:method"]
+    assert columns(symbol(klass, "default")) == (1, 7, 14)
 
 
 def test_object_literal_methods_at_module_scope() -> None:
@@ -242,6 +252,14 @@ def test_commonjs_patterns() -> None:
         "Router.route": False,
         "app.init": False,
     }
+    # Name ranges cover the assigned property; signatures still start at the assignment target.
+    assert {s.qualname: columns(s) for s in parsed.symbols} == {
+        "join": (3, 8, 12),
+        "Router.route": (4, 17, 22),
+        "app.init": (5, 4, 8),
+    }
+    assert symbol(parsed, "Router.route").signature == "Router.prototype.route = function route(p)"
+    assert symbol(parsed, "join").signature == "exports.join = function join(a, b)"
     first, second = parsed.imports
     assert (first.kind, first.module, first.bindings) == (
         "require",

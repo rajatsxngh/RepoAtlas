@@ -1,6 +1,6 @@
 {
   "commit": null,
-  "digest": "c595a4e7d64b493686cd6a05a5b142319d7c5019beb5d9b071a69e2c6958a5ce",
+  "digest": "13b0ed333b8a253edbded0f5bf15856818656765b01820e624c67a56e11a9d95",
   "files": [
     {
       "blob_oid": "c6ef7123becd51e750c409e628c10b7f08a25ee9",
@@ -1051,7 +1051,7 @@
           "name_range": {
             "end_col": 12,
             "end_line": 4,
-            "start_col": 0,
+            "start_col": 8,
             "start_line": 4
           },
           "parent": null,

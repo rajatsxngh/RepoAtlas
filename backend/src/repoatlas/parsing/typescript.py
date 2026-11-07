@@ -238,10 +238,12 @@ class TypeScriptExtractor:
         exported: bool,
         *,
         modifiers: list[str] | None = None,
+        header_from: Node | None = None,
     ) -> list[Item]:
         body = value.child_by_field_name("body")
         header_end = body.start_byte if body is not None else value.end_byte
-        header = self.src[name_node.start_byte : header_end].decode("utf-8", "replace")
+        header_start = (header_from or name_node).start_byte
+        header = self.src[header_start:header_end].decode("utf-8", "replace")
         sym = self._add(
             name=name,
             kind=self._function_kind(scope),
@@ -480,17 +482,27 @@ class TypeScriptExtractor:
             return items
         value = node.child_by_field_name("value")
         if value is not None:  # export default <expression>
+            # An anonymous function or class is named by the `default` keyword.
+            keyword = next((c for c in node.children if c.type == "default"), node)
             if value.type == "identifier":
                 local = node_text(self.src, value)
                 self._export("default", local, node)
                 return []
             if value.type in FUNCTION_VALUES:
                 self._export("default", "default", node)
-                return self._value_function("default", value, value, node, scope, True)
+                return self._value_function(
+                    "default", keyword, value, node, scope, True, header_from=value
+                )
             if value.type == "class":
                 self._export("default", "default", node)
                 return self._class(
-                    value, node, scope, exported=True, decorators=decorators, name="default"
+                    value,
+                    node,
+                    scope,
+                    exported=True,
+                    decorators=decorators,
+                    name="default",
+                    name_node=keyword,
                 )
             return [(value, scope)]
         for clause in (c for c in node.named_children if c.type == "export_clause"):
@@ -670,7 +682,9 @@ class TypeScriptExtractor:
                 name = target.removeprefix(prefix)
                 if right.type in FUNCTION_VALUES:
                     self._export(name, name, statement)
-                    return self._value_function(name, left, right, statement, None, True)
+                    return self._value_function(
+                        name, _member_property(left), right, statement, None, True, header_from=left
+                    )
                 if right.type == "identifier":
                     self._export(name, node_text(self.src, right), statement)
                 return [(right, None)]
@@ -686,7 +700,7 @@ class TypeScriptExtractor:
             name=qualname.rsplit(".", 1)[-1],
             kind="function",
             scope=None,
-            name_node=left,
+            name_node=_member_property(left),
             span=statement,
             signature=collapse(
                 self.src[left.start_byte : header_end].decode("utf-8", "replace").rstrip()
@@ -1046,6 +1060,11 @@ def _plain_dotted(node: Node) -> bool:
             return False
         node = obj
     return node.type == "identifier"
+
+
+def _member_property(node: Node) -> Node:
+    """The ``c`` of ``a.b.c = …``: the token that names an assigned member."""
+    return node.child_by_field_name("property") or node
 
 
 def _normalize(text: str) -> str:
