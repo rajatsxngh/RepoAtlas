@@ -3,21 +3,28 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Annotated, NoReturn
+from typing import Annotated, Any, NoReturn, cast
 
 import typer
+from pydantic import BaseModel
 from sqlalchemy.exc import OperationalError
 
 from repoatlas import __version__
 from repoatlas.canonical import pretty_json, write_text_lf
 from repoatlas.config import get_settings
 from repoatlas.db import migrate
-from repoatlas.db.engine import redact_url
+from repoatlas.db.engine import create_db_engine, redact_url
 from repoatlas.ingest.errors import IngestError
 from repoatlas.logging import configure
+from repoatlas.pipeline.build import BuildResult, run_build
 from repoatlas.pipeline.graph import GraphOutput, run_graph
 from repoatlas.pipeline.parse import ParseOutput, run_parse
+from repoatlas.store.cache import Direction, Level
+from repoatlas.store.errors import StoreError
+from repoatlas.store.graphstore import GraphStore
+from repoatlas.store.results import SnapshotInfo
 
 START_DB_HINT = "Start it with: docker compose -f infra/docker-compose.yml up -d"
 
@@ -29,6 +36,10 @@ app = typer.Typer(
 )
 db_app = typer.Typer(help="Database migrations.", no_args_is_help=True)
 app.add_typer(db_app, name="db")
+query_app = typer.Typer(
+    help="Read a stored snapshot (debugging). Results are JSON on stdout.", no_args_is_help=True
+)
+app.add_typer(query_app, name="query")
 
 
 def _show_version(value: bool) -> None:
@@ -226,3 +237,222 @@ def _graph_summary(output: GraphOutput, elapsed: float, *, detailed: bool) -> li
             f"and {stats.external_calls:,} external calls",
         ]
     return [*lines, f"Digest:   {output.digest}", f"Time:     {elapsed:.1f} s"]
+
+
+@app.command("build")
+def build_command(
+    url: Annotated[str, typer.Argument(help="A public GitHub URL: https://github.com/<o>/<r>.")],
+    commit: Annotated[
+        str | None, typer.Option(help="Full commit SHA (default: the default branch's head).")
+    ] = None,
+    keep_workdir: Annotated[
+        bool, typer.Option(help="Keep the fetched git data for debugging.")
+    ] = False,
+) -> None:
+    """Build a repository's snapshot into the store: fetch, inventory, parse, graph, store."""
+    settings = get_settings()
+    started = time.perf_counter()
+    engine = create_db_engine(settings.database_url)
+    try:
+        result = run_build(url, settings, engine=engine, commit=commit, keep_workdir=keep_workdir)
+        info = GraphStore(engine).snapshot(result.snapshot_id)
+    except (IngestError, StoreError) as error:
+        typer.secho(f"Error: {error}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from None
+    except OperationalError as error:
+        _connection_failed(settings.database_url, error)
+    finally:
+        engine.dispose()
+    for line in _build_summary(result, info, time.perf_counter() - started):
+        typer.echo(line)
+
+
+def _build_summary(result: BuildResult, info: SnapshotInfo, elapsed: float) -> list[str]:
+    stats: dict[str, Any] = dict(info.stats)
+    graph: dict[str, Any] = stats.get("graph", {})
+    blobs: dict[str, Any] = stats.get("blobs", {})
+    nodes = sum(graph.get("nodes_by_kind", {}).values())
+    edges = sum(graph.get("edges_by_kind", {}).values())
+    how = "reused: already built with this configuration" if result.reused else "built"
+    steps = " · ".join(f"{name} {seconds:.1f} s" for name, seconds in result.timings.items())
+    return [
+        f"Snapshot: {result.snapshot_id} ({info.status}, {how})",
+        f"Repo:     github.com/{result.repo} @ {result.commit}",
+        f"Graph:    {nodes:,} nodes, {edges:,} edges; "
+        f"{graph.get('unresolved_calls', 0):,} unresolved calls",
+        f"Blobs:    {blobs.get('needed', 0):,} files with text; "
+        f"{blobs.get('stored', 0):,} stored, {blobs.get('shared', 0):,} already in the store",
+        f"Digest:   {stats.get('graph_digest', '')}",
+        f"Config:   {result.fingerprint[:16]}…",
+        f"Steps:    {steps}",
+        f"Time:     {elapsed:.1f} s",
+    ]
+
+
+SnapshotOption = Annotated[
+    int, typer.Option("--snapshot", "-s", help="Snapshot ID (repoatlas build prints it).")
+]
+EdgeKindsOption = Annotated[
+    list[str] | None,
+    typer.Option("--kinds", "-k", help="Edge kinds, comma-separated or repeated."),
+]
+DepthOption = Annotated[int, typer.Option(help="How many hops to follow.")]
+
+
+def _split(values: Sequence[str] | None) -> list[str] | None:
+    if values is None:
+        return None
+    return [part.strip() for value in values for part in value.split(",") if part.strip()]
+
+
+QueryResult = BaseModel | Sequence[BaseModel] | None
+
+
+def _query(read: Callable[[GraphStore], QueryResult], missing: str = "Not found.") -> None:
+    """Run one read against the configured database and print the result as JSON."""
+    settings = get_settings()
+    engine = create_db_engine(settings.database_url)
+    try:
+        result = read(GraphStore.from_settings(settings, engine))
+    except StoreError as error:
+        typer.secho(f"Error: {error}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from None
+    except ValueError as error:  # an unknown kind or direction
+        typer.secho(f"Error: {error}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from None
+    except OperationalError as error:
+        _connection_failed(settings.database_url, error)
+    finally:
+        engine.dispose()
+    if result is None:
+        typer.secho(missing, err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+    if isinstance(result, BaseModel):
+        typer.echo(pretty_json(result), nl=False)
+    else:
+        typer.echo(pretty_json([item.model_dump(mode="json") for item in result]), nl=False)
+
+
+@query_app.command("snapshot")
+def query_snapshot(snapshot: SnapshotOption) -> None:
+    """A snapshot's repo, commit, status, stats, and error."""
+    _query(lambda store: store.snapshot(snapshot))
+
+
+@query_app.command("node")
+def query_node(
+    key: Annotated[str, typer.Argument(help="Symbol key.")], snapshot: SnapshotOption
+) -> None:
+    """One node by symbol key."""
+    _query(lambda store: store.get_node(snapshot, key), f"Snapshot {snapshot} has no node {key!r}.")
+
+
+@query_app.command("search")
+def query_search(
+    query: Annotated[str, typer.Argument(help="Name, qualified name, or key to look for.")],
+    snapshot: SnapshotOption,
+    kinds: Annotated[
+        list[str] | None,
+        typer.Option("--kinds", "-k", help="Node kinds, comma-separated or repeated."),
+    ] = None,
+    limit: Annotated[int, typer.Option(help="At most this many results.")] = 20,
+) -> None:
+    """Symbols by exact name, prefix, or trigram similarity."""
+    _query(lambda store: store.find_symbols(snapshot, query, _split(kinds), limit))
+
+
+@query_app.command("locate")
+def query_locate(
+    path: Annotated[str, typer.Argument(help="Repo-relative file path.")],
+    line: Annotated[int, typer.Argument(help="1-based line number.")],
+    snapshot: SnapshotOption,
+) -> None:
+    """The innermost symbol containing a line (or the file)."""
+    _query(lambda store: store.locate(snapshot, path, line))
+
+
+@query_app.command("callers")
+def query_callers(
+    key: Annotated[str, typer.Argument(help="Symbol key.")],
+    snapshot: SnapshotOption,
+    depth: DepthOption = 1,
+) -> None:
+    """Who calls a symbol, up to DEPTH calls away."""
+    _query(lambda store: store.callers(snapshot, key, depth))
+
+
+@query_app.command("callees")
+def query_callees(
+    key: Annotated[str, typer.Argument(help="Symbol key.")],
+    snapshot: SnapshotOption,
+    depth: DepthOption = 1,
+) -> None:
+    """What a symbol calls, up to DEPTH calls away."""
+    _query(lambda store: store.callees(snapshot, key, depth))
+
+
+@query_app.command("neighbors")
+def query_neighbors(
+    key: Annotated[str, typer.Argument(help="Symbol key.")],
+    snapshot: SnapshotOption,
+    direction: Annotated[str, typer.Option(help="in, out, or both.")] = "out",
+    kinds: EdgeKindsOption = None,
+    depth: DepthOption = 1,
+) -> None:
+    """Nodes linked to a symbol by edges of the given kinds (default: all)."""
+    chosen = cast(Direction, direction)  # the store rejects anything else
+    _query(lambda store: store.neighbors(snapshot, key, chosen, _split(kinds), depth))
+
+
+@query_app.command("path")
+def query_path(
+    src: Annotated[str, typer.Argument(help="Symbol key to start from.")],
+    dst: Annotated[str, typer.Argument(help="Symbol key to reach.")],
+    snapshot: SnapshotOption,
+    kinds: EdgeKindsOption = None,
+) -> None:
+    """A shortest path (default kinds: calls and imports)."""
+    _query(
+        lambda store: store.shortest_path(snapshot, src, dst, _split(kinds)),
+        f"No path between {src!r} and {dst!r}.",
+    )
+
+
+@query_app.command("subgraph")
+def query_subgraph(
+    snapshot: SnapshotOption,
+    parent: Annotated[str, typer.Argument(help="Directory, file, or symbol key.")] = "dir:.",
+    level: Annotated[str, typer.Option(help="dir, file, or symbol.")] = "dir",
+) -> None:
+    """A container's children and the aggregated edges between them."""
+    chosen = cast(Level, level)  # the store rejects anything else
+    _query(lambda store: store.subgraph(snapshot, parent, chosen))
+
+
+@query_app.command("code")
+def query_code(
+    path: Annotated[str, typer.Argument(help="Repo-relative file path.")],
+    start: Annotated[int, typer.Argument(help="First line (1-based).")],
+    end: Annotated[int, typer.Argument(help="Last line (inclusive).")],
+    snapshot: SnapshotOption,
+) -> None:
+    """Lines of a file in the snapshot, from the stored text."""
+    _query(lambda store: store.read_code(snapshot, path, start, end))
+
+
+@query_app.command("owners")
+def query_owners(
+    path: Annotated[str, typer.Argument(help="Repo-relative file path.")],
+    snapshot: SnapshotOption,
+) -> None:
+    """A file's authors by commit count."""
+    _query(lambda store: store.owners(snapshot, path))
+
+
+@query_app.command("unresolved")
+def query_unresolved(
+    name: Annotated[str, typer.Argument(help="Callee name (append) or text (self.items.append).")],
+    snapshot: SnapshotOption,
+) -> None:
+    """Call sites with no edge whose callee has this name."""
+    _query(lambda store: store.unresolved_calls(snapshot, name))

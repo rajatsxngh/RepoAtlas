@@ -8,6 +8,10 @@ from repoatlas.parsing.python import PythonExtractor
 from repoatlas.parsing.ts_runtime import MAX_ISSUES_PER_FILE, collect_issues, grammar_for, parse
 from repoatlas.parsing.typescript import TypeScriptExtractor
 
+# Bump when parse_file's output changes for the same input (the parse goldens change with it);
+# it is part of every snapshot's configuration fingerprint.
+EXTRACTOR_VERSION = 1
+
 
 def parse_file(entry: FileEntry, data: bytes) -> ParsedFile:
     """Extract symbols, imports, calls, and tests; syntax errors are recorded, never raised.

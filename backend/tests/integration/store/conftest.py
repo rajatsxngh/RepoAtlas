@@ -7,12 +7,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import pytest
-from sqlalchemy import Engine, text
+from sqlalchemy import Engine
 
 from repoatlas.graph.model import CodeGraph, Owner
 from repoatlas.store.graphstore import GraphStore
 from repoatlas.store.loader import save_snapshot
-from repoatlas.store.models import STORE_TABLES
+from tests.integration.conftest import empty_store
 from tests.integration.store.helpers import (
     FINGERPRINT,
     SHA_A,
@@ -72,19 +72,6 @@ class Stored:
     loop: int
     graphs: dict[int, CodeGraph]
     built: dict[int, Built]
-
-
-def empty_store(engine: Engine) -> None:
-    with engine.begin() as connection:
-        connection.execute(text(f"TRUNCATE {', '.join(STORE_TABLES)} RESTART IDENTITY CASCADE"))
-
-
-@pytest.fixture
-def clean_store(pg_engine: Engine) -> Iterator[None]:
-    """For tests that save snapshots: the loader commits its own transactions, so empty the
-    store tables afterwards."""
-    yield
-    empty_store(pg_engine)
 
 
 @pytest.fixture(scope="session")

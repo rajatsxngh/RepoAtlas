@@ -41,15 +41,20 @@ class ParseOutput(BaseModel):
     digest: str
 
 
+def parse_files(tree: SourceTree, inventory: Inventory) -> list[ParsedFile]:
+    """Parse every indexed file of ``inventory`` (read from ``tree``) in path order."""
+    return [
+        parse_file(entry, tree.read(TreeEntry(entry.path, entry.mode, entry.blob_oid, entry.size)))
+        for entry in inventory.indexed
+    ]
+
+
 def parse_tree(tree: SourceTree, *, max_source_files: int, max_file_bytes: int) -> ParseOutput:
     """Inventory and parse every file of ``tree`` in path order."""
     inventory = build_inventory(
         tree, max_source_files=max_source_files, max_file_bytes=max_file_bytes
     )
-    files = [
-        parse_file(entry, tree.read(TreeEntry(entry.path, entry.mode, entry.blob_oid, entry.size)))
-        for entry in inventory.indexed
-    ]
+    files = parse_files(tree, inventory)
     stats = ParseStats(
         files_parsed=len(files),
         files_with_issues=sum(1 for parsed in files if parsed.issue_count),

@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from repoatlas.config import get_settings
 from repoatlas.db import migrate
+from repoatlas.store.models import STORE_TABLES
 
 START_HINT = "Start it with: docker compose -f infra/docker-compose.yml up -d"
 
@@ -95,3 +96,17 @@ def db_session(pg_engine: Engine) -> Iterator[Session]:
         session.close()
         transaction.rollback()
         connection.close()
+
+
+def empty_store(engine: Engine) -> None:
+    """Delete every snapshot, blob, and repo (and restart their IDs)."""
+    with engine.begin() as connection:
+        connection.execute(text(f"TRUNCATE {', '.join(STORE_TABLES)} RESTART IDENTITY CASCADE"))
+
+
+@pytest.fixture
+def clean_store(pg_engine: Engine) -> Iterator[None]:
+    """For tests that save snapshots: the loader commits its own transactions, so the store
+    tables are emptied afterwards instead of rolled back."""
+    yield
+    empty_store(pg_engine)
