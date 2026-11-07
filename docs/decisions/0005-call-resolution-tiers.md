@@ -22,3 +22,12 @@ Tree-sitter shows structure, not which function a call actually reaches across f
 ## Addendum
 
 _Calibrated tier confidences go here._
+
+## Addendum — name-matching candidates (2026-11-07)
+
+Measured on `pallets/flask` at `49943b5` and `colinhacks/zod` at `19c40d2` while building the first graphs. "Exactly one class or module defines `m`" is read narrowly, because the wide reading mostly matched builtin methods:
+
+- T5/T6 match **instance members** only: methods of classes (getters, setters, and properties excluded, since they are read, not called) and functions assigned onto objects or prototypes (`res.json = function`, `Router.prototype.route = function`). Module-level, object-literal, and namespace functions are reached through import bindings (T1/T2); as candidates they caught `items.map()`, `x.toString()`, and `arr.find()` (9% of zod's T5/T6 edges, nearly all wrong).
+- Members defined in test files are candidates only for calls from test files, and classes defined inside functions only for calls in their own file.
+- A call whose receiver resolves, to a module, a class, or `super()`, but lacks the member becomes an unresolved call instead of a name match.
+- Seeded hand check, 5 edges per tier: T1–T4 were 35 of 35 correct across both repos; T5 was 0/5 on zod (its v4 API attaches methods to instances at runtime, so v3 classes are the only static definers) and 4/5 on flask; T6 was 1/5 on both, as expected when one call spreads over several candidates.
