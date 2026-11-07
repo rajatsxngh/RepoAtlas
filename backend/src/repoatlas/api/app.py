@@ -24,10 +24,11 @@ from repoatlas import __version__
 from repoatlas.api import errors
 from repoatlas.api.middleware import (
     REQUEST_ID_HEADER,
+    EncodedKeyMiddleware,
     RequestContextMiddleware,
     UnhandledErrorMiddleware,
 )
-from repoatlas.api.routes import health, jobs, repos
+from repoatlas.api.routes import health, jobs, repos, snapshots
 from repoatlas.config import Settings, get_settings
 from repoatlas.db.engine import create_db_engine
 from repoatlas.logging import configure
@@ -76,12 +77,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 max_age=600,
             ),
             Middleware(UnhandledErrorMiddleware),
+            Middleware(EncodedKeyMiddleware, prefix=API_PREFIX),
         ],
     )
     app.state.settings = settings
     app.state.engine = engine
     app.state.store = GraphStore.from_settings(settings, engine)
+    app.state.ready_snapshots = set()  # IDs of snapshots seen ready (they never change)
     errors.install(app)
-    for router in (repos.router, jobs.router, health.router):
+    for router in (repos.router, jobs.router, snapshots.router, health.router):
         app.include_router(router, prefix=API_PREFIX)
     return app

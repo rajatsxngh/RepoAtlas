@@ -83,3 +83,28 @@ class UnhandledErrorMiddleware:
                 details={"request_id": request_id} if request_id else None,
             )
             await response(scope, receive, send)
+
+
+class EncodedKeyMiddleware:
+    """Keep a percent-encoded symbol key in one path segment, so the route decodes it once.
+
+    Servers decode the request path before routing, which turns ``%2F`` inside a key (keys hold
+    file paths) into ``/`` and splits the key across segments. For paths that name a node,
+    this puts the key's raw, still-encoded segment back from ``raw_path``; the route then
+    unquotes it exactly once, so a ``%`` that is part of the key survives as ``%25``.
+    """
+
+    def __init__(self, app: ASGIApp, *, prefix: str) -> None:
+        self.app = app
+        self._pattern = re.compile(
+            rb"^(" + re.escape(prefix.encode("ascii")) + rb"/snapshots/[^/]+/nodes/)([^/]+)"
+            rb"(/neighbors)?$"
+        )
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http":
+            raw = scope.get("raw_path")
+            match = self._pattern.match(raw) if isinstance(raw, bytes) else None
+            if match is not None and match.group(0).isascii():  # else keep the decoded path
+                scope = dict(scope, path=match.group(0).decode("ascii"))
+        await self.app(scope, receive, send)

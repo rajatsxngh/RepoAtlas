@@ -7,18 +7,60 @@ import re
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import Path
-from pydantic import BaseModel, ConfigDict, Field
+from fastapi import Path, Query
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, JsonValue
 
+from repoatlas.graph.model import Node, Owner
 from repoatlas.jobs.models import JobStatus
 from repoatlas.jobs.queue import Job
 from repoatlas.store.models import SnapshotStatus
+from repoatlas.store.results import RepoInfo, SnapshotInfo, SymbolMatch
 
 MAX_ID = 2**63 - 1  # Postgres bigint
+MAX_LINE = 2**31 - 1  # Postgres integer
 MAX_URL_CHARS = 512
+MAX_KEY_CHARS = 4_096
+MAX_PATH_CHARS = 4_096
+MAX_QUERY_CHARS = 200
+MAX_SEARCH_LIMIT = 50
+
+
+def no_nul(value: str) -> str:
+    """Postgres text can't hold NUL characters, and no key, path, or name contains one."""
+    if "\x00" in value:
+        raise ValueError("must not contain NUL characters")
+    return value
+
+
+def repo_path(value: str) -> str:
+    """A repo-relative POSIX path, as in the snapshot's file list: never absolute, and with no
+    empty, ``.``, or ``..`` segments (git trees can't hold those either)."""
+    no_nul(value)
+    if value.startswith("/") or any(part in ("", ".", "..") for part in value.split("/")):
+        raise ValueError("must be a repo-relative path without empty, '.', or '..' segments")
+    return value
+
 
 SnapshotIdPath = Annotated[int, Path(ge=1, le=MAX_ID, description="Snapshot ID.")]
 JobIdPath = Annotated[int, Path(ge=1, le=MAX_ID, description="Job ID.")]
+KeyPath = Annotated[
+    str,
+    Path(
+        max_length=MAX_KEY_CHARS * 3,
+        description="Symbol key, URL-encoded as one path segment (`/` as `%2F`, `%` as `%25`).",
+    ),
+]
+RepoPathQuery = Annotated[
+    str,
+    Query(min_length=1, max_length=MAX_PATH_CHARS, description="Repo-relative file path."),
+    AfterValidator(repo_path),
+]
+LineQuery = Annotated[int, Query(ge=1, le=MAX_LINE, description="1-based line number.")]
+
+
+def key_query(description: str, *, alias: str | None = None) -> object:
+    return Query(alias=alias, min_length=1, max_length=MAX_KEY_CHARS, description=description)
+
 
 # Recorded failures of these types are written for people (see repoatlas.ingest.errors).
 SAFE_ERROR_TYPES = frozenset(
@@ -132,3 +174,60 @@ class JobView(_Schema):
             started_at=job.started_at,
             finished_at=job.finished_at,
         )
+
+
+class SnapshotView(_Schema):
+    """A snapshot (any status): the repository, commit, configuration, and build stats."""
+
+    id: int
+    repo: RepoInfo
+    commit_sha: str
+    config_fingerprint: str
+    status: SnapshotStatus
+    stats: dict[str, JsonValue]
+    embedding_model: str | None
+    embedding_dim: int | None
+    error: str | None = Field(description="Why the build failed, if it did.")
+    created_at: datetime
+    updated_at: datetime
+    job: JobView | None = Field(description="The snapshot's latest build job, if any.")
+
+    @classmethod
+    def of(cls, info: SnapshotInfo, job: Job | None) -> SnapshotView:
+        return cls(
+            id=info.id,
+            repo=info.repo,
+            commit_sha=info.commit_sha,
+            config_fingerprint=info.config_fingerprint,
+            status=info.status,
+            stats=info.stats,
+            embedding_model=info.embedding_model,
+            embedding_dim=info.embedding_dim,
+            error=public_error(info.error),
+            created_at=info.created_at,
+            updated_at=info.updated_at,
+            job=None if job is None else JobView.of(job),
+        )
+
+
+class Degree(_Schema):
+    """Edges at a node by kind (only kinds with at least one edge)."""
+
+    incoming: dict[str, int]
+    outgoing: dict[str, int]
+
+
+class NodeDetail(_Schema):
+    """A node, the owners of its file (most commits first), and its edge counts."""
+
+    node: Node
+    owners: list[Owner]
+    degree: Degree
+
+
+class SearchResults(_Schema):
+    """Exact matches first (key, name, or qualified name, any case), then prefixes, then
+    trigram matches by similarity."""
+
+    query: str
+    results: list[SymbolMatch]
