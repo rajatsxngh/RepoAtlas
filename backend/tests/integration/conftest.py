@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import uuid
 from collections.abc import Iterator
+from contextlib import contextmanager
 
 import pytest
 from sqlalchemy import URL, Engine, create_engine, make_url, text
@@ -43,16 +44,35 @@ def pg_url(pg_admin_url: URL) -> Iterator[str]:
             pytrace=False,
         )
 
+    try:
+        with throwaway_database(admin, pg_admin_url) as url:
+            migrate.upgrade(url)
+            yield url
+    finally:
+        admin.dispose()
+
+
+@contextmanager
+def throwaway_database(admin: Engine, admin_url: URL) -> Iterator[str]:
+    """Create an empty database next to ``admin_url``; drop it on exit."""
     name = f"repoatlas_test_{uuid.uuid4().hex[:12]}"
     with admin.connect() as connection:
         connection.execute(text(f'CREATE DATABASE "{name}"'))
-    url = pg_admin_url.set(database=name).render_as_string(hide_password=False)
     try:
-        migrate.upgrade(url)
-        yield url
+        yield admin_url.set(database=name).render_as_string(hide_password=False)
     finally:
         with admin.connect() as connection:
             connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+
+
+@pytest.fixture
+def scratch_db_url(pg_url: str, pg_admin_url: URL) -> Iterator[str]:
+    """An empty, unmigrated database for migration tests (needs ``pg_url``'s reachability check)."""
+    admin = create_engine(pg_admin_url, isolation_level="AUTOCOMMIT")
+    try:
+        with throwaway_database(admin, pg_admin_url) as url:
+            yield url
+    finally:
         admin.dispose()
 
 

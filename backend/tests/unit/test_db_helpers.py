@@ -6,8 +6,8 @@ from repoatlas.db import migrate
 from repoatlas.db.engine import redact_url
 
 
-def test_head_revision_is_the_baseline() -> None:
-    assert migrate.head_revision() == "0001_baseline"
+def test_head_revision_is_the_graph_store() -> None:
+    assert migrate.head_revision() == "0002_graph_store"
 
 
 def test_alembic_config_keeps_percent_encoded_passwords() -> None:
