@@ -1,6 +1,6 @@
 # M03 — Graph store & queries
 
-**Type of work:** Data and persistence · **Size:** M (8 tasks) · **Status:** In progress
+**Type of work:** Data and persistence · **Size:** M (8 tasks) · **Status:** Done
 
 ## Goal
 
@@ -140,3 +140,5 @@ The first benchmark run showed one `callers` call at 213 ms. Profiling the hubs 
 - `jsonb` would turn a float of 1e16 or more in `meta` (JSON writes it in exponent form) into an integer. The graph builder writes no such values, and the models docstring says so.
 
 **Open question.** Materializing root-level aggregates is not needed. On zod the first root aggregation takes 18 ms (dir level) and 49 ms (file level, 524 files), and repeats are memoized.
+
+**CI.** Run [42353118754](https://github.com/rajatsxngh/RepoAtlas/actions/runs/42353118754) on `df851aa` passed all three jobs: the Linux full check (583 passed, the symlink test and every Postgres integration suite included), the Windows unit tests (493 passed), and the docs lint. Both backend jobs printed the same fixture digests as this machine, unchanged since M02: graphs `py_small` `ec01fa4353017159…` and `ts_small` `c066ffa9b52dbd10…`, parses `py_small` `31cf59ec616dfb6a…` and `ts_small` `13b0ed333b8a253e…`.
