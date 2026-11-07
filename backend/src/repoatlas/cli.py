@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import time
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -59,6 +60,18 @@ def main(
 ) -> None:
     """Configure logging before any command runs."""
     configure(get_settings())
+
+
+def _echo_json(text: str) -> None:
+    """Write JSON to stdout as UTF-8 bytes. Text output would use the console code page, which
+    on Windows (cp1252 when piped) cannot encode most of Unicode."""
+    buffer = getattr(sys.stdout, "buffer", None)
+    if buffer is None:  # a text-only stream
+        sys.stdout.write(text)
+        return
+    sys.stdout.flush()
+    buffer.write(text.encode("utf-8"))
+    buffer.flush()
 
 
 def _connection_failed(database_url: str, error: OperationalError) -> NoReturn:
@@ -140,7 +153,7 @@ def parse_command(
     if json_out is not None:
         text = pretty_json(output)
         if to_stdout:
-            typer.echo(text, nl=False)
+            _echo_json(text)
         else:
             write_text_lf(Path(json_out), text)
     for line in _parse_summary(output, time.perf_counter() - started):
@@ -201,7 +214,7 @@ def graph_command(
     if json_out is not None:
         text = pretty_json(output)
         if to_stdout:
-            typer.echo(text, nl=False)
+            _echo_json(text)
         else:
             write_text_lf(Path(json_out), text)
     for line in _graph_summary(output, time.perf_counter() - started, detailed=stats):
@@ -326,9 +339,9 @@ def _query(read: Callable[[GraphStore], QueryResult], missing: str = "Not found.
         typer.secho(missing, err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1)
     if isinstance(result, BaseModel):
-        typer.echo(pretty_json(result), nl=False)
+        _echo_json(pretty_json(result))
     else:
-        typer.echo(pretty_json([item.model_dump(mode="json") for item in result]), nl=False)
+        _echo_json(pretty_json([item.model_dump(mode="json") for item in result]))
 
 
 @query_app.command("snapshot")
