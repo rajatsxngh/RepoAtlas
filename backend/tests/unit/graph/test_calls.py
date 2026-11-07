@@ -212,12 +212,40 @@ def test_t5_exactly_one_defining_class() -> None:
                 "    def describe(self):\n        return ''\n"
             ),
             "app.py": "def show(cart):\n    cart.describe()\n    cart.total()\n",
+            "cart.ts": "export class Cart { get count() { return 0; } }\n",
+            "app.ts": "export function show(cart) { return cart.count(); }\n",
         }
     )
     edge = call(graph, "py:app.py:show:function", "py:cart.py:Cart.describe:method")
     assert (edge.meta, edge.confidence) == ({"tier": "T5", "candidates": 1, "count": 1}, 0.5)
-    # A getter and setter pair is one defining class: still T5, to the later definition.
-    assert tier_of(graph, "py:app.py:show:function", "py:cart.py:Cart.total:method~2")[0] == "T5"
+    # Accessors are read, not called: `cart.total()` calls what the property returns.
+    assert unresolved(graph, "cart.total").reason == "not_found"
+    assert unresolved(graph, "cart.count").reason == "not_found"
+
+
+def test_known_receivers_are_not_guessed_by_name() -> None:
+    graph = build(
+        {
+            "other.py": (
+                "class Other:\n    def make(self):\n        pass\n    def go(self):\n        pass\n"
+            ),
+            "factory.py": "def build():\n    return len\n\nmake = build()\n",
+            "models.py": (
+                "class Base:\n    pass\n\n"
+                "class User(Base):\n"
+                "    def save(self):\n        super().go()\n"
+            ),
+            "app.py": (
+                "import factory\nfrom models import User\n\n"
+                "def run():\n    factory.make()\n    User.go()\n"
+            ),
+        }
+    )
+    # `make` is a value in a module we know, `User` and its bases define no `go`: no guesses
+    # at Other.make or Other.go.
+    assert set(calls(graph)) == {("file:factory.py", "py:factory.py:build:function")}
+    for callee in ("factory.make", "User.go", "super().go"):
+        assert unresolved(graph, callee).reason == "not_found"
 
 
 def test_t6_two_to_five_candidates_split_the_confidence() -> None:

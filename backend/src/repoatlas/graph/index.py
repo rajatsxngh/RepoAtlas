@@ -11,6 +11,8 @@ from repoatlas.parsing.models import ParsedFile, Symbol
 
 Family = str  # "py", or "js" for TypeScript and JavaScript, which call each other freely
 
+# Accessors are read, not called: `cart.total()` calls what the getter returns.
+ACCESSORS = frozenset({"getter", "setter", "property", "deleter"})
 # The signature of a function assigned to a member: `res.json = function (…)`.
 _ASSIGNED_MEMBER = re.compile(r"[\w$]+(?:\.[\w$]+)+\s*=")
 
@@ -52,7 +54,7 @@ class SymbolIndex:
                     self._module_level.setdefault((fam, symbol.name), {})[parsed.path] = symbol
                     continue
                 definer = self._definer(parsed, symbol)
-                if definer is not None:
+                if definer is not None and not ACCESSORS.intersection(symbol.modifiers):
                     self._members.setdefault((fam, symbol.name), {})[definer] = symbol
                     if self._is_local(definer):
                         self._local_definers.add(definer)

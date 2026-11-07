@@ -141,7 +141,9 @@ class CallResolver:
         found = self.hierarchy.find(cls.key, name, skip_self=True)
         if found is not None:
             return self._resolved(Tier.T4, [found.key], language)
-        return EXTERNAL if self.hierarchy.has_unresolved_bases(cls.key) else None
+        if self.hierarchy.has_unresolved_bases(cls.key):
+            return EXTERNAL
+        return _unresolved("not_found")  # super() only reaches the bases: no guessing
 
     def _super_constructor(self, enclosing: str | None) -> CallResolution:
         cls = self.index.enclosing_class(enclosing)
@@ -177,19 +179,21 @@ class CallResolver:
             return EXTERNAL
         if target.kind == "builtin":
             return BUILTIN
-        member: Target | None
         if target.kind == "module" and target.module is not None:
-            member = self.names.resolvers.member(target.module, name)
-            if member.kind in ("symbol", "external", "missing", "builtin"):
-                return self._bound(member, Tier.T2, language)
-            return None  # a submodule or a value: fall back to name matching
+            # The receiver is known; a member that is a value (a factory-made function, say)
+            # stays unresolved rather than being guessed by name.
+            return self._bound(self.names.resolvers.member(target.module, name), Tier.T2, language)
         if target.kind == "symbol" and target.key is not None:
             if self.index.kind(target.key) != "class":
-                return None  # the receiver is what a function returns: unknown
+                return None  # the receiver is what a function returns: unknown, match by name
             member = self.names.class_member(target.key, name)
-        else:
-            member = self.names.member_of(target, name)  # an object literal's function
-        return self._bound(member, Tier.T2, language) if member is not None else None
+            if member is None:
+                return _unresolved("not_found")
+            return self._bound(member, Tier.T2, language)
+        # A module-level value (an object literal, or an instance of something): its own
+        # functions if it is a literal, otherwise match by name.
+        literal = self.names.member_of(target, name)
+        return self._bound(literal, Tier.T2, language) if literal is not None else None
 
     # -- results ---------------------------------------------------------------------------
 
