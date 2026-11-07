@@ -46,6 +46,10 @@ jobs:
         run: uv sync --locked
       - name: Lint, type-check, test, docs lint
         run: uv run poe check
+      - name: Fixture parse digests (the golden tests require identical output on every OS)
+        run: |
+          uv run repoatlas parse tests/fixtures/repos/py_small
+          uv run repoatlas parse tests/fixtures/repos/ts_small
       - name: Migrations apply to the service database
         run: uv run repoatlas db upgrade && uv run repoatlas db current
 
@@ -65,6 +69,10 @@ jobs:
         run: uv sync --locked
       - name: Unit tests
         run: uv run poe test-unit
+      - name: Fixture parse digests (must match the Linux job)
+        run: |
+          uv run repoatlas parse tests/fixtures/repos/py_small
+          uv run repoatlas parse tests/fixtures/repos/ts_small
 
   docs:
     name: Docs lint
