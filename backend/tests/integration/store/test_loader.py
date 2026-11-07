@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
 
@@ -310,3 +311,48 @@ def test_load_graph_needs_a_ready_snapshot(pg_engine: Engine) -> None:
     with pytest.raises(SnapshotNotReady) as raised:
         load_graph(ref.id, engine=pg_engine)
     assert raised.value.status == "building"
+
+
+def test_concurrent_saves_of_one_snapshot_write_it_once(pg_engine: Engine, py_small: Built) -> None:
+    results: list[int] = []
+    errors: list[BaseException] = []
+    start = threading.Barrier(4)
+
+    def worker() -> None:
+        try:
+            start.wait()
+            results.append(save(pg_engine, py_small))
+        except BaseException as error:  # surfaced below
+            errors.append(error)
+
+    threads = [threading.Thread(target=worker) for _ in range(4)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert errors == [] and len(set(results)) == 1 and len(results) == 4
+    assert counts(pg_engine, results[0])["nodes"] == len(py_small.graph.nodes)
+    assert snapshot_row(pg_engine, results[0]).status == "ready"
+
+
+def test_concurrent_snapshots_that_share_blobs_both_succeed(
+    pg_engine: Engine, py_small: Built
+) -> None:
+    results: list[int] = []
+    errors: list[BaseException] = []
+    start = threading.Barrier(3)
+
+    def worker(sha: str) -> None:
+        try:
+            start.wait()
+            results.append(save(pg_engine, py_small, sha))
+        except BaseException as error:
+            errors.append(error)
+
+    threads = [threading.Thread(target=worker, args=(c * 40,)) for c in "abc"]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert errors == [] and len(set(results)) == 3
+    assert blob_count(pg_engine) == len({e.blob_oid for e in py_small.inventory.indexed})
