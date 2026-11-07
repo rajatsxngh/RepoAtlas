@@ -66,6 +66,17 @@ class Settings(BaseSettings):
     graph_cache_mb: int = 512  # estimated memory for cached snapshot adjacency
     max_read_lines: int = 400  # lines one code read returns at most
 
+    # API
+    web_origins: str = "http://localhost:3000"  # comma-separated origins allowed by CORS
+    db_connect_timeout_s: float = 10.0  # opening one database connection, in the API and worker
+
+    @property
+    def cors_origins(self) -> list[str]:
+        """The web app's origins, from the comma-separated ``web_origins``."""
+        return [
+            origin.strip().rstrip("/") for origin in self.web_origins.split(",") if origin.strip()
+        ]
+
     @field_validator("log_level", mode="before")
     @classmethod
     def _normalize_log_level(cls, value: object) -> object:

@@ -55,7 +55,7 @@ The arrows show build order. The exact dependencies of each milestone are in the
 | M01 | [Ingestion & parsing](M01-ingestion-parsing.md) | Static analysis | L | M00 | Done |
 | M02 | [Graph building](M02-graph-building.md) | Static analysis | L | M01 | Done |
 | M03 | [Graph store & queries](M03-graph-store.md) | Data and persistence | M | M00, M01, M02 | Done |
-| M04 | [API & background jobs](M04-api-jobs.md) | Backend service | M | M00, M01, M03 | Not started |
+| M04 | [API & background jobs](M04-api-jobs.md) | Backend service | M | M00, M01, M03 | In progress |
 | M05 | [Interactive map](M05-interactive-map.md) | Frontend | L | M04 | Not started |
 | M06 | [Retrieval](M06-retrieval.md) | Search | L | M00, M03, M04 | Not started |
 | M07 | [LLM client & cited answers](M07-llm-cited-answers.md) | AI application | L | M03, M04, M05, M06 | Not started |

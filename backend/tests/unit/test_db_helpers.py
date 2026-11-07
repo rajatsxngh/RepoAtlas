@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from repoatlas.db import engine as engine_module
 from repoatlas.db import migrate
 from repoatlas.db.engine import redact_url
 
@@ -42,3 +43,22 @@ def test_redact_url_hides_the_password() -> None:
 
 def test_redact_url_handles_garbage() -> None:
     assert redact_url("not a url") == "<invalid database URL>"
+
+
+def test_create_db_engine_can_bound_connection_time(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[dict[str, object]] = []
+
+    def fake_create_engine(url: str, **kwargs: object) -> object:
+        calls.append(kwargs)
+        return object()
+
+    monkeypatch.setattr(engine_module, "create_engine", fake_create_engine)
+    engine_module.create_db_engine("postgresql+psycopg://u@h/d")
+    engine_module.create_db_engine("postgresql+psycopg://u@h/d", connect_timeout_s=2.2)
+    engine_module.create_db_engine("postgresql+psycopg://u@h/d", connect_timeout_s=0.1)
+    assert [call["connect_args"] for call in calls] == [
+        {},
+        {"connect_timeout": 3},
+        {"connect_timeout": 1},
+    ]
+    assert all(call["pool_pre_ping"] is True for call in calls)

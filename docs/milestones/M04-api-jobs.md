@@ -1,6 +1,6 @@
 # M04 — API & background jobs
 
-**Type of work:** Backend service · **Size:** M (8 tasks) · **Status:** Not started
+**Type of work:** Backend service · **Size:** M (8 tasks) · **Status:** In progress
 
 ## Goal
 
@@ -48,7 +48,7 @@ API-1, API-2, API-3, API-4, API-5, API-6, API-7, API-8
 
 ## Tasks
 
-- [ ] **T1 — App skeleton.** `create_app`, settings, error model and exception handlers, CORS, `/health` and `/ready` (ready checks the database).
+- [x] **T1 — App skeleton.** `create_app`, settings, error model and exception handlers, CORS, `/health` and `/ready` (ready checks the database).
 - [ ] **T2 — Job queue and worker.** Migration, queue functions, worker loop, graceful shutdown; tests for claim exclusivity (two workers), lease expiry requeue, retries and backoff.
 - [ ] **T3 — Stage registry and fingerprint.** Registry API; the build job runs the existing steps as stages; progress reporting; test that registering a dummy stage changes the fingerprint.
 - [ ] **T4 — `POST /repos`.** Validation, GitHub checks (recorded responses), reuse, enqueue.

@@ -16,3 +16,9 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(pytest.mark.integration)
         elif "unit" in parts:
             item.add_marker(pytest.mark.unit)
+
+
+@pytest.fixture
+def anyio_backend() -> str:
+    """Async tests (``pytest.mark.anyio``) run on asyncio, like uvicorn."""
+    return "asyncio"
