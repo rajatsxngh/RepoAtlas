@@ -1,6 +1,6 @@
 # M05 — Interactive map
 
-**Type of work:** Frontend · **Size:** L (11 tasks) · **Status:** In progress
+**Type of work:** Frontend · **Size:** L (11 tasks) · **Status:** Done
 
 ## Goal
 
@@ -151,3 +151,5 @@ Gate checked on 2026-11-08 on branch `m05-interactive-map`.
 **Found and fixed at the gate.** After the review fixes, the stress test's slowest expansion rose from about 1.1 s to 1.9 s, for three reasons. Focus mode tagged each edge with a new array per render, which defeated the stabilizer that keeps unchanged React Flow objects, so every edge re-rendered on each update; nodes now get stable numbers. Network simplex ran for every container; it is now limited to 40 children and runs on the strong-edge skeleton. And the test timed expansions by polling the page over the DevTools protocol, which on a busy machine added up to a second each while the page itself took 0.3–0.4 s in a normal browser; it now times them inside the page. Separately, under the whole unit suite in parallel a few tests timed out after testing-library's default 1 s wait; it now waits up to 5 s.
 
 **Seen at the gate, not fixed.** One full backend run failed `test_build_follow_and_read_a_repository_over_http` (an M04 test, untouched since): it expects its first poll to see the job still queued, and while other processes kept this machine busy the worker claimed the job first. It passed three times on its own and in the next full run. The race is in the test, not in the API.
+
+**CI.** Run [42683575919](https://github.com/rajatsxngh/RepoAtlas/actions/runs/42683575919) on `cfb196a` passed all five jobs: the Linux full check (794 passed, with the symlink test and every Postgres suite), the Windows unit tests (581 passed), the API types job, the docs lint, and the new frontend job, which ran lint, typecheck, the 226 unit tests, and all 7 Playwright tests (the real API with a Postgres service, and mock mode) in 1.6 minutes. On the runner the stress test's median expansion took 416 ms and the slowest 515 ms, with at most 294 visible nodes. Both backend jobs printed the same fixture digests as this machine, unchanged since M02: graphs `py_small` `ec01fa4353017159…` and `ts_small` `c066ffa9b52dbd10…`, parses `py_small` `31cf59ec616dfb6a…` and `ts_small` `13b0ed333b8a253e…`.
