@@ -18,3 +18,4 @@ Short records of decisions that shape RepoAtlas. Each has a context, the decisio
 | [0012](0012-hardened-sandbox.md) | Hardened Docker sandbox for benchmark repos only | Accepted |
 | [0013](0013-evaluation-methodology.md) | Evaluation methodology | Accepted |
 | [0014](0014-observability.md) | Observability: own trace store plus OpenTelemetry | Accepted |
+| [0015](0015-map-first-screen.md) | A map that explains itself: overview, edge links, readable layout | Accepted |

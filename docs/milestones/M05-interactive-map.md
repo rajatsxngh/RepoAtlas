@@ -33,6 +33,7 @@ A fast, readable map of any snapshot that starts zoomed out and expands on deman
 - **`NodeAction`** — `{ id, label, appliesTo: NodeKind[] }`; actions appear in the node panel and context menu and call `onNodeAction`.
 - **`CodeViewer`** (`src/components/code/CodeViewer.tsx`) — props `snapshotId`, `path`, `startLine`, `endLine`, `highlightRanges?`; fetches `/code`; syntax highlighting; renders text only.
 - **`NodePanel`**, **`SearchBox`**, **`PathFinder`**, **`BuildProgress`**, **`Legend`** components.
+- **Added by decision 0015:** `OverviewPanel` ("Start here", open beside the map by default), `EdgePanel` (the links behind a clicked line; `GraphCanvas` gains `onEdgeSelect`), guessed edges hidden by default with a legend toggle, a layout shaped by "uses" edges only (`layoutDirection`), and faint lines into opened boxes from outside them.
 - **Layout worker:** `src/workers/layout.worker.ts` (elkjs layered layout) with a typed message protocol.
 - **Sanitized markdown:** `src/lib/markdown.tsx` — a renderer with a strict sanitizer (no raw HTML), for any markdown shown in the app.
 
