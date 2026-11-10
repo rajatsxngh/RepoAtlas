@@ -19,6 +19,7 @@ from repoatlas.pipeline.stages import Stage, register_builtin
 from repoatlas.retrieval import chunker
 from repoatlas.retrieval.chunkstore import save_chunks
 from repoatlas.retrieval.embed import EMBED_VERSION, embed_chunks, embedder_for
+from repoatlas.retrieval.keyword import KEYWORD_VERSION
 
 
 def chunk(ctx: BuildContext) -> None:
@@ -41,6 +42,7 @@ def _chunk_components() -> dict[str, JsonValue]:
         "chunker": chunker.CHUNKER_VERSION,
         "max_tokens": chunker.MAX_CHUNK_TOKENS,
         "overlap_lines": chunker.OVERLAP_LINES,
+        "keyword": KEYWORD_VERSION,
     }
 
 

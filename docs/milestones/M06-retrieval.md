@@ -82,7 +82,7 @@ LIMIT :k;
 - [x] **T1 — Schema and evidence references.** Migrations; `EvidenceRef` with compact form and tests.
 - [x] **T2 — Chunker and `chunk` stage.** Tests on the fixture repos (class chunks, module chunks, long-function splitting, headers from the same file only).
 - [x] **T3 — Embedders and `embed` stage.** `FastEmbedEmbedder`, `HashEmbedder`, cache lookups, fingerprint includes the model; tests with `HashEmbedder`.
-- [ ] **T4 — Keyword index.** Identifier splitting (table-driven tests), `tsvector`, query builder, ranking.
+- [x] **T4 — Keyword index.** Identifier splitting (table-driven tests), `tsvector`, query builder, ranking.
 - [ ] **T5 — Vector search.** Exact per-snapshot search; integration test that results never leak across snapshots.
 - [ ] **T6 — Rank fusion and seeds.** Tests with synthetic rankings.
 - [ ] **T7 — Graph expansion.** Tests on the fixture graph (hop decay, confidence weighting, deduplication).
