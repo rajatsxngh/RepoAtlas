@@ -66,6 +66,7 @@ def test_the_fingerprint_covers_the_registered_stages_in_order() -> None:
         "graph",
         "store",
         "chunk",
+        "embed",
         "publish",
     ]
     fetch = stages[0]
@@ -82,6 +83,7 @@ def test_the_fingerprint_covers_the_registered_stages_in_order() -> None:
         "graph",
         "store",
         "chunk",
+        "embed",
         "publish",
     ]
 
@@ -170,6 +172,7 @@ def test_stages_register_in_place(dummy: Stage) -> None:
             "graph",
             "store",
             "chunk",
+            "embed",
             "publish",
             "dummy",
         ]

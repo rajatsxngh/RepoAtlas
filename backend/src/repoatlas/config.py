@@ -66,6 +66,11 @@ class Settings(BaseSettings):
     graph_cache_mb: int = 512  # estimated memory for cached snapshot adjacency
     max_read_lines: int = 400  # lines one code read returns at most
 
+    # Retrieval
+    # A fastembed model, or hash-<dim> for the deterministic test embedder (no download).
+    embedding_model: str = "jinaai/jina-embeddings-v2-base-code"
+    embedding_threads: int | None = None  # CPU threads for embedding; fastembed's default if unset
+
     # API
     web_origins: str = "http://localhost:3000"  # comma-separated origins allowed by CORS
     db_connect_timeout_s: float = 10.0  # opening one database connection, in the API and worker

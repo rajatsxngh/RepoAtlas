@@ -33,6 +33,8 @@ def test_defaults() -> None:
     assert settings.github_token is None
     assert settings.anthropic_api_key is None
     assert settings.data_dir == Path(".repoatlas")
+    assert settings.embedding_model == "jinaai/jina-embeddings-v2-base-code"
+    assert settings.embedding_threads is None
     assert (settings.graph_cache_mb, settings.max_read_lines) == (512, 400)
 
 

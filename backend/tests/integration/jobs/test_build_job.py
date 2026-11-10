@@ -30,6 +30,7 @@ from repoatlas.pipeline.context import BuildContext
 from repoatlas.pipeline.stages import Stage, register_stage, registered_stages, unregister_stage
 from repoatlas.store.graphstore import GraphStore
 from repoatlas.store.loader import begin_snapshot
+from tests.conftest import TEST_EMBEDDING_MODEL
 from tests.integration.origin import URL, Origin, serve_origin
 
 pytestmark = pytest.mark.usefixtures("clean_store", "jobs_engine")
@@ -181,6 +182,7 @@ def test_killing_a_worker_process_mid_build_lets_another_worker_finish_it(
             "REPOATLAS_JOB_HEARTBEAT_S": "0.5",
             "REPOATLAS_WORKER_POLL_S": "0.1",
             "REPOATLAS_LOG_LEVEL": "WARNING",
+            "REPOATLAS_EMBEDDING_MODEL": TEST_EMBEDDING_MODEL,
         }
     )
     victim = subprocess.Popen(

@@ -1,8 +1,10 @@
 """The retrieval stages of a build, registered between ``store`` and ``publish``.
 
 ``chunk`` cuts the stored snapshot into chunks (read from ``blobs``) and saves them with their
-keyword index. Each stage is idempotent: it replaces its own rows, so a retried build gives
-the same result.
+keyword index. ``embed`` gives every chunk a vector for the configured model, through the
+shared ``embeddings`` cache; the model name is one of its settings, so changing the model
+changes the config fingerprint and snapshots never mix models. Each stage is idempotent (it
+replaces or completes its own rows), so a retried build gives the same result.
 """
 
 from __future__ import annotations
@@ -16,6 +18,7 @@ from repoatlas.pipeline.context import BuildContext
 from repoatlas.pipeline.stages import Stage, register_builtin
 from repoatlas.retrieval import chunker
 from repoatlas.retrieval.chunkstore import save_chunks
+from repoatlas.retrieval.embed import EMBED_VERSION, embed_chunks, embedder_for
 
 
 def chunk(ctx: BuildContext) -> None:
@@ -41,7 +44,25 @@ def _chunk_components() -> dict[str, JsonValue]:
     }
 
 
+def embed(ctx: BuildContext) -> None:
+    stats = embed_chunks(
+        ctx.need(ctx.snapshot_id, "snapshot"),
+        embedder_for(ctx.settings),
+        engine=ctx.engine,
+        progress=lambda done, total: ctx.progress(done / total),
+    )
+    ctx.stats["embeddings"] = stats.as_json()
+
+
+def _embed_components() -> dict[str, JsonValue]:
+    return {"embedder": EMBED_VERSION}
+
+
 CHUNK_STAGE = Stage("chunk", 1, (), chunk, weight=0.5, components=_chunk_components)
-RETRIEVAL_STAGES: tuple[Stage, ...] = (CHUNK_STAGE,)
+EMBED_STAGE = Stage(
+    "embed", 1, ("embedding_model",), embed, weight=3.0, components=_embed_components
+)
+RETRIEVAL_STAGES: tuple[Stage, ...] = (CHUNK_STAGE, EMBED_STAGE)
 
 register_builtin(CHUNK_STAGE, after="store")
+register_builtin(EMBED_STAGE, after="chunk")

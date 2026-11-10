@@ -22,6 +22,7 @@ from repoatlas.pipeline.graph import run_graph
 from repoatlas.pipeline.stages import fingerprint_parts, registered_stages
 from repoatlas.store.graphstore import GraphStore
 from repoatlas.store.loader import load_graph
+from tests.conftest import TEST_EMBEDDING_MODEL
 from tests.integration.origin import HELPER, URL, UTIL, Origin, serve_origin
 from tests.unit.ingest.gitrepo import Spec
 
@@ -78,6 +79,9 @@ def test_build_stores_the_same_graph_as_run_graph(
     assert isinstance(timings, dict) and set(timings) == {"resolve", *stages[:-1]}
     chunks = info.stats["chunks"]
     assert isinstance(chunks, dict) and chunks["count"] == count_chunks(pg_engine)
+    embedded = info.stats["embeddings"]
+    assert isinstance(embedded, dict) and embedded["model"] == TEST_EMBEDDING_MODEL
+    assert (info.embedding_model, info.embedding_dim) == (TEST_EMBEDDING_MODEL, embedded["dim"])
     assert info.stats["fingerprint_parts"] == fingerprint_parts(settings)
     assert info.stats["resumed"] == []
     assert workdir_is_empty(settings)
@@ -185,6 +189,7 @@ def cli_env(tmp_path: Path, pg_url: str, monkeypatch: pytest.MonkeyPatch) -> Ite
             monkeypatch.delenv(key)
     monkeypatch.setenv("REPOATLAS_DATABASE_URL", pg_url)
     monkeypatch.setenv("REPOATLAS_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("REPOATLAS_EMBEDDING_MODEL", TEST_EMBEDDING_MODEL)
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

@@ -71,6 +71,7 @@ def main() -> None:
         data_dir=work / "data",
         web_origins=",".join(origins),
         rate_limit_enabled=False,
+        embedding_model="hash-256",  # no model download in end-to-end runs
         worker_poll_s=0.2,
         job_retry_backoff_s=(1.0,),
     )
