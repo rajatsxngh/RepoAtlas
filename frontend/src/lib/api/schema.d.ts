@@ -121,7 +121,7 @@ export interface paths {
         };
         /**
          * Where to start reading
-         * @description Entry points (routes, else public symbols), the files and symbols most used from other
+         * @description Public symbols and routes (outside test files), the files and symbols most used from other
          *     files (imports and calls; name-matched guesses left out), node counts by kind, and how
          *     many source files have linked tests.
          */
@@ -628,7 +628,9 @@ export interface components {
          * Overview
          * @description Where to start reading a snapshot.
          *
-         *     ``entry_points``: routes, else public symbols · ``core_files`` / ``core_symbols``: the most
+         *     ``public_symbols``: public classes and functions, most used from other files first ·
+         *     ``routes``: routes outside
+         *     test files · ``core_files`` / ``core_symbols``: the most
          *     used from other files (imports and calls, guesses left out) · ``tested_files``: source files
          *     with at least one ``tested_by`` edge, out of ``source_files`` (test files excluded).
          */
@@ -637,8 +639,10 @@ export interface components {
             counts: {
                 [key: string]: number;
             };
-            /** Entry Points */
-            entry_points: components["schemas"]["Node"][];
+            /** Public Symbols */
+            public_symbols: components["schemas"]["Node"][];
+            /** Routes */
+            routes: components["schemas"]["Node"][];
             /** Core Files */
             core_files: components["schemas"]["Ranked"][];
             /** Core Symbols */

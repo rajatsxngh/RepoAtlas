@@ -374,9 +374,18 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Counts read well up close; zoomed out they pile up, and widths already show weight. */
-.ra-far .ra-edge-count,
-.ra-mid .ra-edge-count {
+/* Counts pile up when zoomed far out, where widths already show weight; a sparse map keeps
+   them (data-always). */
+.ra-far .ra-edge-count:not([data-always]) {
+  display: none;
+}
+
+/* Lines into an opened box from outside it are context, not structure: faint until one of
+   their ends is hovered or selected (focus mode raises them). */
+.react-flow .ra-edge[data-crossing]:not([data-highlight]) {
+  opacity: 0.16;
+}
+.react-flow .ra-edge-count[data-crossing]:not([data-highlight]) {
   display: none;
 }
 

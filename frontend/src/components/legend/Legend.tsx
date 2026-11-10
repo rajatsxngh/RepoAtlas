@@ -41,6 +41,9 @@ export interface LegendProps {
   /** Edge kinds switched off; with `onToggleKind`, each kind becomes a toggle. */
   hiddenKinds?: ReadonlySet<EdgeKind>;
   onToggleKind?: (kind: EdgeKind) => void;
+  /** Guessed edges are hidden; with `onToggleGuesses`, a toggle shows them. */
+  hideGuesses?: boolean;
+  onToggleGuesses?: () => void;
   defaultOpen?: boolean;
 }
 
@@ -49,6 +52,8 @@ export function Legend({
   edges,
   hiddenKinds,
   onToggleKind,
+  hideGuesses,
+  onToggleGuesses,
   defaultOpen = false,
 }: LegendProps) {
   const trimmed = edges && edges.drawn < edges.total;
@@ -146,13 +151,37 @@ export function Legend({
                 <Line color="var(--ra-fg-muted)" />
                 Resolved
               </li>
-              <li className="flex items-center gap-2">
-                <Line color="var(--ra-fg-muted)" dash={GUESS_DASH} />
-                Guessed by name (below {LOW_CONFIDENCE})
+              <li>
+                {onToggleGuesses ? (
+                  <button
+                    type="button"
+                    aria-pressed={!hideGuesses}
+                    title={hideGuesses ? "Show guessed calls" : "Hide guessed calls"}
+                    onClick={onToggleGuesses}
+                    className={`flex w-full cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-left hover:bg-surface-2 ${
+                      hideGuesses ? "text-fg-faint" : "text-fg-muted"
+                    }`}
+                  >
+                    <span className={hideGuesses ? "opacity-35" : ""}>
+                      <Line color="var(--ra-fg-muted)" dash={GUESS_DASH} />
+                    </span>
+                    <span className="flex-1">Guessed by name (below {LOW_CONFIDENCE})</span>
+                    <span className="text-[11px] text-fg-faint">{hideGuesses ? "hidden" : ""}</span>
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-2 px-1 py-0.5">
+                    <Line color="var(--ra-fg-muted)" dash={GUESS_DASH} />
+                    Guessed by name (below {LOW_CONFIDENCE})
+                  </span>
+                )}
               </li>
               <li className="flex items-center gap-2">
                 <Line color="var(--ra-fg-muted)" width={4.5} />
                 Wider and numbered: many edges
+              </li>
+              <li className="text-fg-faint">
+                Arrows point from the code that uses to the code it uses; widely used code sits
+                lower. Click a line to list its links.
               </li>
             </ul>
             {trimmed ? (

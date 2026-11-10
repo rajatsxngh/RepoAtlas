@@ -117,9 +117,13 @@ describe("GraphCanvas expansion", () => {
 });
 
 describe("GraphCanvas styling", () => {
-  it("dashes edges that are only guesses and labels names as text", async () => {
+  it("hides guesses until asked, then dashes them, and labels names as text", async () => {
     renderCanvas(3);
     expect(await screen.findByText("<img src=x onerror=alert('dir')>")).toBeInTheDocument();
+    // This fixture's only edges are guesses: hidden by default.
+    expect(document.querySelector('path[data-guess="true"]')).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Legend" }));
+    fireEvent.click(screen.getByRole("button", { name: /Guessed by name/ }));
     await waitFor(() => expect(document.querySelector('path[data-guess="true"]')).not.toBeNull());
     const guess = document.querySelector('path[data-guess="true"]') as SVGPathElement;
     expect(guess.style.strokeDasharray).not.toBe("");

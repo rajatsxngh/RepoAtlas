@@ -105,7 +105,7 @@ def get_edge_links(
 
 @router.get("/overview", summary="Where to start reading", responses=READ_ERRORS)
 def get_overview(snapshot_id: ReadySnapshot, store: StoreDep) -> Overview:
-    """Entry points (routes, else public symbols), the files and symbols most used from other
+    """Public symbols and routes (outside test files), the files and symbols most used from other
     files (imports and calls; name-matched guesses left out), node counts by kind, and how
     many source files have linked tests."""
     return store.overview(snapshot_id)

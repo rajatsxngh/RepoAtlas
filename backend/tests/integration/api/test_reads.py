@@ -305,7 +305,7 @@ async def test_overview_matches_the_store(reads: Reads) -> None:
     response = await get(reads, url(reads.py, "/overview"))
     assert response.status_code == 200, response.text
     assert response.json() == dump(reads.store.overview(reads.py))
-    assert response.json()["entry_points"], "py_small has routes"
+    assert response.json()["routes"], "py_small has routes"
     not_ready = await get(reads, url(reads.pending, "/overview"))
     assert not_ready.status_code == 409
 

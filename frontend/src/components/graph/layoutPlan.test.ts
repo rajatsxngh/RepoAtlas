@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ApiNode } from "@/lib/api/types";
-import { planLayout } from "./layoutPlan";
+import { layoutDirection, planLayout } from "./layoutPlan";
 import { ROOT, type VisibleEdge, type VisibleNode } from "./model";
 
 function node(key: string, parent: string | null, expanded = false, depth = 0): VisibleNode {
@@ -72,5 +72,33 @@ describe("planLayout", () => {
     expect(heavier.find((c) => c.id === ROOT)!.signature).not.toBe(
       first.find((c) => c.id === ROOT)!.signature,
     );
+  });
+});
+
+describe("layoutDirection", () => {
+  const base: VisibleEdge = {
+    id: "x",
+    source: "dir:a",
+    target: "dir:b",
+    kind: "calls",
+    count: 1,
+    minConfidence: 1,
+    maxConfidence: 1,
+  };
+
+  it("keeps uses as they point and flips test links (the test uses the code)", () => {
+    for (const kind of ["imports", "calls", "inherits"] as const) {
+      expect(layoutDirection({ ...base, kind })).toEqual({ source: "dir:a", target: "dir:b" });
+    }
+    expect(layoutDirection({ ...base, kind: "tested_by" })).toEqual({
+      source: "dir:b",
+      target: "dir:a",
+    });
+  });
+
+  it("leaves route links and pure guesses out of the layout", () => {
+    expect(layoutDirection({ ...base, kind: "routes_to" })).toBeNull();
+    expect(layoutDirection({ ...base, minConfidence: 0.2, maxConfidence: 0.5 })).toBeNull();
+    expect(layoutDirection({ ...base, minConfidence: 0.2, maxConfidence: 0.9 })).not.toBeNull();
   });
 });

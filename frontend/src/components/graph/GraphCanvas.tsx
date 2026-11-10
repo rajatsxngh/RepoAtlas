@@ -63,6 +63,16 @@ export interface GraphCanvasHandle {
   collapse(key: string): void;
 }
 
+/** Below this many nodes on screen the whole map fits at a glance, so no minimap. */
+const MINIMAP_MIN_NODES = 24;
+
+export interface SelectedEdge {
+  src: string;
+  dst: string;
+  kind: EdgeKind;
+  count: number;
+}
+
 export interface GraphCanvasProps {
   snapshotId: number;
   layers: HighlightLayer[];
@@ -74,6 +84,8 @@ export interface GraphCanvasProps {
   /** Most nodes visible at once (default: NEXT_PUBLIC_NODE_CAP or 300). */
   nodeCap?: number;
   ref?: Ref<GraphCanvasHandle>;
+  /** A line was clicked: the aggregated edge's ends, kind, and count. */
+  onEdgeSelect?: (edge: SelectedEdge) => void;
 }
 
 /** Minimap colors: kind accents for nodes, a faint fill for containers. */
@@ -93,6 +105,7 @@ function Canvas({
   selectedKey = null,
   nodeCap = config.nodeCap,
   ref,
+  onEdgeSelect,
 }: GraphCanvasProps) {
   const api = useApi();
   const queryClient = useQueryClient();
@@ -108,6 +121,7 @@ function Canvas({
   const [hiddenKinds, setHiddenKinds] = useState<ReadonlySet<EdgeKind>>(
     () => new Set(DEFAULT_HIDDEN_KINDS),
   );
+  const [hideGuesses, setHideGuesses] = useState(true);
   const fitted = useRef(false);
   const zoomBand = useStore((state) =>
     state.transform[2] < 0.55 ? "ra-far" : state.transform[2] < 0.85 ? "ra-mid" : "ra-near",
@@ -187,6 +201,7 @@ function Canvas({
           pulse,
           layers: resolvedLayers,
           hiddenKinds,
+          hideGuesses,
           numberOf,
           childCount: (key) => model.childrenOf(key)?.length,
           fileCount: (key) => {
@@ -210,6 +225,7 @@ function Canvas({
       pulse,
       resolvedLayers,
       hiddenKinds,
+      hideGuesses,
       numberOf,
       model,
       stabilize,
@@ -572,6 +588,15 @@ function Canvas({
         onNodeMouseEnter={(_event, node) => setHovered(node.id)}
         onNodeMouseLeave={() => setHovered(null)}
         onPaneClick={() => onSelect(null)}
+        onEdgeClick={(_event, edge) => {
+          if (!edge.data || edge.data.extra) return;
+          onEdgeSelect?.({
+            src: edge.source,
+            dst: edge.target,
+            kind: edge.data.kind,
+            count: edge.data.count,
+          });
+        }}
         // Containers set their own z-index (deeper is higher) and edges stay beneath all nodes,
         // so lines pass under container headers instead of over them.
         zIndexMode="manual"
@@ -608,20 +633,24 @@ function Canvas({
             <LayoutGrid aria-hidden="true" />
           </ControlButton>
         </Controls>
-        <MiniMap
-          position="top-right"
-          pannable
-          zoomable
-          nodeColor={minimapColor}
-          nodeStrokeWidth={0}
-          style={{ width: 168, height: 112 }}
-          ariaLabel="Overview of the map"
-        />
+        {graph.nodes.length > MINIMAP_MIN_NODES ? (
+          <MiniMap
+            position="top-right"
+            pannable
+            zoomable
+            nodeColor={minimapColor}
+            nodeStrokeWidth={0}
+            style={{ width: 168, height: 112 }}
+            ariaLabel="Overview of the map"
+          />
+        ) : null}
         <Panel position="bottom-left">
           <Legend
             layers={layers}
             edges={graph.edgeCount}
             hiddenKinds={hiddenKinds}
+            hideGuesses={hideGuesses}
+            onToggleGuesses={() => setHideGuesses((value) => !value)}
             onToggleKind={(kind) =>
               setHiddenKinds((current) => {
                 const next = new Set(current);
@@ -681,7 +710,8 @@ function FocusStyle({ number: index }: { number: number | undefined }) {
   if (index === undefined || !Number.isInteger(index) || index < 0) return null;
   return (
     <style>{`.react-flow :is(.ra-edge,.ra-edge-count):not([data-highlight]):not([data-s="${index}"]):not([data-t="${index}"]){opacity:.1}
-.react-flow .ra-edge[data-s="${index}"],.react-flow .ra-edge[data-t="${index}"]{opacity:1}`}</style>
+.react-flow .ra-edge.ra-edge[data-s="${index}"],.react-flow .ra-edge.ra-edge[data-t="${index}"]{opacity:1}
+.react-flow .ra-edge-count.ra-edge-count[data-s="${index}"],.react-flow .ra-edge-count.ra-edge-count[data-t="${index}"]{display:block}`}</style>
   );
 }
 

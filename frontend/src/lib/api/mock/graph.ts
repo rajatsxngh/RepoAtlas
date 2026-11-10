@@ -12,12 +12,15 @@ import type {
   Direction,
   Edge,
   EdgeKind,
+  EdgeLinks,
   GraphPath,
   Hop,
   Neighborhood,
   NodeDetail,
   NodeKind,
+  Overview,
   Owner,
+  Ranked,
   SubgraphBody,
   SubgraphLevel,
   SymbolMatch,
@@ -50,6 +53,8 @@ export const MAX_READ_LINES = 400;
 export const MAX_NEIGHBORS = 1000;
 export const MAX_DEPTH = 20;
 export const MAX_SEARCH_LIMIT = 50;
+export const MAX_LINKS = 200;
+export const CORE_MIN_CONFIDENCE = 0.6;
 const LOCATABLE: ReadonlySet<NodeKind> = new Set(["class", "function", "method", "test"]);
 const KIND_RANK: Record<string, number> = { method: 0, function: 1, test: 2 };
 const EDGE_CODE = new Map(EDGE_KINDS.map((kind, index) => [kind, index]));
@@ -212,6 +217,103 @@ export class MockGraph {
     };
     this.memo.set(memoKey, result);
     return result;
+  }
+
+  /** The edges behind an aggregated edge (GraphStore.edge_links). */
+  edgeLinks(src: string, dst: string, kind: EdgeKind, limit: number): EdgeLinks {
+    if (limit < 1 || limit > MAX_LINKS) {
+      throw invalid(`The limit must be between 1 and ${MAX_LINKS}.`);
+    }
+    this.node(src);
+    this.node(dst);
+    const targets = new Set([dst, ...this.descendants(dst)]);
+    const found: Edge[] = [];
+    for (const key of [src, ...this.descendants(src)]) {
+      for (const edge of this.outgoing.get(key) ?? []) {
+        if (edge.kind === kind && targets.has(edge.dst)) found.push(edge);
+      }
+    }
+    // Strongest first; the API breaks ties by storage order, which the fixtures' edge order matches.
+    const links = found
+      .map((edge, index) => ({ edge, index }))
+      .sort((a, b) => b.edge.confidence - a.edge.confidence || a.index - b.index)
+      .slice(0, limit)
+      .map(({ edge }) => edge);
+    const ends = new Set(links.flatMap((edge) => [edge.src, edge.dst]));
+    return {
+      src,
+      dst,
+      kind,
+      total: found.length,
+      links,
+      nodes: [...ends].sort(byKey).map((key) => this.nodes.get(key)!),
+    };
+  }
+
+  private fileOf(key: string): string | null {
+    let node = this.nodes.get(key);
+    while (node && node.kind !== "file")
+      node = node.parent_key ? this.nodes.get(node.parent_key) : undefined;
+    return node ? node.key : null;
+  }
+
+  /** Where to start reading (GraphStore.overview). */
+  overview(top = 8): Overview {
+    const counts: Record<string, number> = {};
+    for (const node of this.nodes.values()) counts[node.kind] = (counts[node.kind] ?? 0) + 1;
+    const perFile = new Map<string, number>();
+    const perSymbol = new Map<string, number>();
+    const users = new Map<string, Set<string>>();
+    const count = (target: string, from: string, counter: Map<string, number>) => {
+      counter.set(target, (counter.get(target) ?? 0) + 1);
+      (users.get(target) ?? users.set(target, new Set()).get(target)!).add(from);
+    };
+    for (const edges of this.outgoing.values()) {
+      for (const edge of edges) {
+        if (edge.kind !== "imports" && edge.kind !== "calls") continue;
+        if (edge.confidence < CORE_MIN_CONFIDENCE) continue;
+        const from = this.fileOf(edge.src);
+        const to = this.fileOf(edge.dst);
+        if (!from || !to || from === to) continue;
+        count(to, from, perFile);
+        if (this.nodes.get(edge.dst)!.kind !== "file") count(edge.dst, from, perSymbol);
+      }
+    }
+    const ranked = (counter: Map<string, number>): Ranked[] =>
+      [...counter]
+        .sort((a, b) => b[1] - a[1] || byKey(a[0], b[0]))
+        .slice(0, top)
+        .map(([key, uses]) => ({ node: this.nodes.get(key)!, uses, files: users.get(key)!.size }));
+    const all = [...this.nodes.values()].sort((a, b) => byKey(a.key, b.key));
+    const isTestFile = (path: string) => this.filesByPath.get(path)?.meta?.is_test === true;
+    const routes = all.filter((node) => node.kind === "route" && !isTestFile(node.path));
+    const publicSymbols = all
+      .filter(
+        (node) => (node.kind === "class" || node.kind === "function") && node.meta?.public === true,
+      )
+      // Most used from other files first, so a library's main names lead (then by key).
+      .sort(
+        (a, b) => (perSymbol.get(b.key) ?? 0) - (perSymbol.get(a.key) ?? 0) || byKey(a.key, b.key),
+      );
+    const sourceFiles = new Set(
+      all.filter((node) => node.kind === "file" && node.meta?.is_test !== true).map((n) => n.key),
+    );
+    const tested = new Set<string>();
+    for (const edges of this.outgoing.values()) {
+      for (const edge of edges) {
+        const file = edge.kind === "tested_by" ? this.fileOf(edge.src) : null;
+        if (file && sourceFiles.has(file)) tested.add(file);
+      }
+    }
+    return {
+      counts,
+      public_symbols: publicSymbols.slice(0, top * 2),
+      routes: routes.slice(0, top * 2),
+      core_files: ranked(perFile),
+      core_symbols: ranked(perSymbol),
+      tested_files: tested.size,
+      source_files: sourceFiles.size,
+    };
   }
 
   private countByKind(edges: readonly Edge[]): Record<string, number> {

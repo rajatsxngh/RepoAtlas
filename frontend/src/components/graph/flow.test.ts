@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ApiNode, EdgeKind } from "@/lib/api/types";
-import { createNumbering, toFlow, withinBudget, type FlowInput } from "./flow";
+import { FEW_EDGES, createNumbering, toFlow, withinBudget, type FlowInput } from "./flow";
 import type { ResolvedLayers } from "./layers";
 import { ROOT, type VisibleEdge, type VisibleNode } from "./model";
 import { createStabilizer } from "./stable";
@@ -121,5 +121,54 @@ describe("withinBudget", () => {
     const keepFirst = (e: VisibleEdge) => (e.id === "dir:a|dir:b|calls" ? 1 : 0);
     expect(withinBudget(edges, 2, keepFirst).map((e) => e.count)).toEqual([1, 9]);
     expect(withinBudget(edges, 2, () => 0).map((e) => e.count)).toEqual([9, 4]);
+  });
+});
+
+describe("toFlow guesses and counts", () => {
+  const guess = { ...edge("dir:a", "dir:c", "calls", 2), minConfidence: 0.3, maxConfidence: 0.3 };
+
+  it("hides edges made only of guesses when asked, unless a layer highlights them", () => {
+    const edges = [...input().edges, guess];
+    expect(toFlow(input({ edges })).edges.map((e) => e.id)).toContain(guess.id);
+    const hidden = toFlow(input({ edges, hideGuesses: true }));
+    expect(hidden.edges.map((e) => e.id)).not.toContain(guess.id);
+    const lit = toFlow(input({ edges, hideGuesses: true, layers: highlight(guess.id) }));
+    expect(lit.edges.map((e) => e.id)).toContain(guess.id);
+  });
+
+  it("shows counts at every zoom while few edges are drawn", () => {
+    expect(toFlow(input()).edges.every((e) => e.data?.alwaysCount)).toBe(true);
+    const many = Array.from({ length: FEW_EDGES + 1 }, (_, i) =>
+      edge(KEYS[i % 3]!, KEYS[(i + 1) % 3]!, i % 2 ? "calls" : "imports", i + 1),
+    ).map((e, i) => ({ ...e, id: `${e.id}|${i}` }));
+    expect(toFlow(input({ edges: many })).edges.some((e) => e.data?.alwaysCount)).toBe(false);
+  });
+});
+
+describe("toFlow crossing edges", () => {
+  it("marks lines whose ends sit in different boxes", () => {
+    const inside = (key: string): VisibleNode => ({ ...node(key), parent: "dir:a", depth: 1 });
+    const visible = [
+      { ...node("dir:a"), expanded: true },
+      inside("dir:a/x"),
+      inside("dir:a/y"),
+      node("dir:b"),
+    ];
+    const edges = [edge("dir:a/x", "dir:a/y", "calls"), edge("dir:b", "dir:a/x", "imports")];
+    const layouts = new Map(
+      [ROOT, "dir:a"].map((id) => [
+        id,
+        {
+          positions: Object.fromEntries(visible.map((v, i) => [v.id, { x: i * 200, y: 0 }])),
+          content: { width: 800, height: 50 },
+        },
+      ]),
+    );
+    const flow = toFlow(input({ visible, edges, layouts }));
+    const crossing = Object.fromEntries(flow.edges.map((e) => [e.id, Boolean(e.data?.crossing)]));
+    expect(crossing).toEqual({
+      "dir:a/x|dir:a/y|calls": false,
+      "dir:b|dir:a/x|imports": true,
+    });
   });
 });

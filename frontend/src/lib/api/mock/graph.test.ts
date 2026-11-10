@@ -153,3 +153,28 @@ describe("mock graph reads", () => {
     ).toContain("&lt;img");
   });
 });
+
+describe.each(CASES)("mock edge links and overview on %s", (_name, data) => {
+  const graph = new MockGraph(data);
+
+  it("lists exactly the edges each aggregated edge counts, strongest first", () => {
+    for (const aggregated of graph.subgraph("dir:.", "file").edges) {
+      const found = graph.edgeLinks(aggregated.src, aggregated.dst, aggregated.kind, 200);
+      expect(found.total).toBe(aggregated.count);
+      expect(found.links).toHaveLength(aggregated.count);
+      const confidences = found.links.map((link) => link.confidence);
+      expect(confidences).toEqual([...confidences].sort((a, b) => b - a));
+    }
+    expect(() => graph.edgeLinks("dir:.", "dir:.", "calls", 0)).toThrow(MockApiError);
+  });
+
+  it("ranks core files by uses from other files and counts tested source files", () => {
+    const found = graph.overview();
+    expect(found.counts.file).toBeGreaterThan(0);
+    const uses = found.core_files.map((item) => item.uses);
+    expect(uses).toEqual([...uses].sort((a, b) => b - a));
+    expect(found.core_files.every((item) => item.node.kind === "file")).toBe(true);
+    expect(found.core_files.every((item) => item.files >= 1 && item.files <= item.uses)).toBe(true);
+    expect(found.tested_files).toBeLessThanOrEqual(found.source_files);
+  });
+});

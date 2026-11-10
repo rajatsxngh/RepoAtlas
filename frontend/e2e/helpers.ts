@@ -31,6 +31,18 @@ export async function waitForMap(page: Page): Promise<void> {
       return state.renderedNodes > 0 && state.layoutPending === 0;
     })
     .toBe(true);
+  await closeOverview(page);
+}
+
+/**
+ * Waits for the "Start here" overview, which opens beside the map, and closes it so the map has
+ * the full width (tests that drive the map open boxes near the right edge).
+ */
+export async function closeOverview(page: Page): Promise<void> {
+  const overview = page.getByRole("complementary", { name: "Start here" });
+  await expect(overview.getByRole("heading", { name: "Start here" })).toBeVisible();
+  await overview.getByRole("button", { name: "Close overview" }).click();
+  await expect(overview).toHaveCount(0);
 }
 
 /** A node on the canvas by its symbol key. */

@@ -120,13 +120,16 @@ class Ranked(_Result):
 class Overview(_Result):
     """Where to start reading a snapshot.
 
-    ``entry_points``: routes, else public symbols · ``core_files`` / ``core_symbols``: the most
+    ``public_symbols``: public classes and functions, most used from other files first ·
+    ``routes``: routes outside
+    test files · ``core_files`` / ``core_symbols``: the most
     used from other files (imports and calls, guesses left out) · ``tested_files``: source files
     with at least one ``tested_by`` edge, out of ``source_files`` (test files excluded).
     """
 
     counts: dict[str, int]
-    entry_points: list[Node]
+    public_symbols: list[Node]
+    routes: list[Node]
     core_files: list[Ranked]
     core_symbols: list[Ranked]
     tested_files: int

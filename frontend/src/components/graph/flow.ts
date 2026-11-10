@@ -2,7 +2,7 @@
 
 import { Position, type Edge as FlowEdge, type Node as FlowNode } from "@xyflow/react";
 import type { ApiNode, EdgeKind } from "@/lib/api/types";
-import { bundle } from "./edgeStyle";
+import { LOW_CONFIDENCE, bundle } from "./edgeStyle";
 import type { HighlightStyle, NodeHighlight, ResolvedLayers } from "./layers";
 import { ROOT, mayHaveChildren, type VisibleEdge, type VisibleNode } from "./model";
 import { CONTENT_OFFSET, MORE_SIZE, containerSize, leafSize, type Size } from "./sizes";
@@ -41,6 +41,10 @@ export type EdgeData = {
   offset: number;
   /** This edge carries its pair's count label. */
   showCount: boolean;
+  /** Few edges on screen: show the count label at every zoom. */
+  alwaysCount?: boolean;
+  /** The ends sit in different boxes (a line into an opened box from outside it). */
+  crossing?: boolean;
   /** Numbers of the two ends (see `createNumbering`), for focus mode's CSS. */
   sourceNo?: number;
   targetNo?: number;
@@ -105,6 +109,8 @@ export interface FlowInput {
   edgeBudget?: number;
   /** Edge kinds the reader switched off (highlighted edges still show). */
   hiddenKinds?: ReadonlySet<EdgeKind>;
+  /** Hide aggregated edges made only of name-matched guesses (highlighted ones still show). */
+  hideGuesses?: boolean;
   /** A stable number per node key (see `createNumbering`). */
   numberOf: (key: string) => number;
   childCount: (key: string) => number | undefined;
@@ -142,6 +148,9 @@ export function createNumbering(): (key: string) => number {
  * of overlapping lines carry no information and make every update slow.
  */
 export const EDGE_BUDGET = 1200;
+
+/** With at most this many edges drawn, every edge's count shows at any zoom. */
+export const FEW_EDGES = 40;
 
 const KIND_ORDER: Record<EdgeKind, number> = {
   calls: 0,
@@ -288,8 +297,11 @@ export function toFlow(input: FlowInput): FlowOutput {
     (edge) =>
       rendered.has(edge.source) &&
       rendered.has(edge.target) &&
-      (!input.hiddenKinds?.has(edge.kind) || highlighted?.has(edge.id)),
+      ((!input.hiddenKinds?.has(edge.kind) &&
+        !(input.hideGuesses && edge.maxConfidence < LOW_CONFIDENCE)) ||
+        Boolean(highlighted?.has(edge.id))),
   );
+  const parentOf = new Map(input.visible.map((entry) => [entry.id, entry.parent]));
   const drawn = withinBudget(between, input.edgeBudget ?? EDGE_BUDGET, (edge) =>
     highlighted?.has(edge.id)
       ? 2
@@ -313,6 +325,8 @@ export function toFlow(input: FlowInput): FlowOutput {
       maxConfidence: edge.maxConfidence,
       offset: offsets.get(edge.id) ?? 0,
       showCount: labelled.has(edge.id),
+      alwaysCount: drawn.length <= FEW_EDGES,
+      crossing: parentOf.get(edge.source) !== parentOf.get(edge.target),
       highlight: highlighted?.get(edge.id)?.style,
       dimmed: dimOthers && !highlighted?.has(edge.id),
       sourceNo: input.numberOf(edge.source),

@@ -412,6 +412,19 @@ export class MockBackend {
       }
       return { status: 200, body: graph.subgraph(query.get("parent") ?? "dir:.", level) };
     }
+    if (rest === "/links") {
+      const kind = query.get("kind") as EdgeKind | null;
+      const src = query.get("from");
+      const dst = query.get("to");
+      if (!kind || !EDGE_KINDS.includes(kind) || !src || !dst) {
+        throw new MockApiError(422, "invalid_request", "from, to, and a valid kind are required.");
+      }
+      return {
+        status: 200,
+        body: graph.edgeLinks(src, dst, kind, intParam(query.get("limit"), "limit", 50)),
+      };
+    }
+    if (rest === "/overview") return { status: 200, body: graph.overview() };
     const node = /^\/nodes\/([^/]+)(\/neighbors)?$/.exec(rest);
     if (node) {
       const key = decodeURIComponent(node[1]!);

@@ -10,6 +10,8 @@ import type {
   BuildAccepted,
   CodeQuery,
   CodeSlice,
+  EdgeLinks,
+  EdgeLinksQuery,
   GraphPath,
   JobView,
   LocateBody,
@@ -17,6 +19,7 @@ import type {
   NeighborsQuery,
   Neighborhood,
   NodeDetail,
+  Overview,
   PathQuery,
   SearchQuery,
   SearchResults,
@@ -178,6 +181,18 @@ export class ApiClient {
     signal?: AbortSignal,
   ): Promise<SubgraphBody> {
     return this.request("GET", this.snapshotPath(snapshotId, "/subgraph"), { query, signal });
+  }
+
+  getEdgeLinks(
+    snapshotId: number,
+    query: EdgeLinksQuery,
+    signal?: AbortSignal,
+  ): Promise<EdgeLinks> {
+    return this.request("GET", this.snapshotPath(snapshotId, "/links"), { query, signal });
+  }
+
+  getOverview(snapshotId: number, signal?: AbortSignal): Promise<Overview> {
+    return this.request("GET", this.snapshotPath(snapshotId, "/overview"), { signal });
   }
 
   getNode(snapshotId: number, key: string, signal?: AbortSignal): Promise<NodeDetail> {

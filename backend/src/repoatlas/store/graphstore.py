@@ -305,8 +305,8 @@ class GraphStore:
         )
 
     def overview(self, snapshot_id: int, top: int = 8) -> Overview:
-        """Where to start reading: entry points, the most used files and symbols, and how many
-        source files have linked tests (see ``Overview``)."""
+        """Where to start reading: public symbols and routes, the most used files and symbols,
+        and how many source files have linked tests (see ``Overview``)."""
         graph = self.graph(snapshot_id)
         per_file, per_symbol, users = graph.cross_file_uses(
             (EdgeKind.IMPORTS, EdgeKind.CALLS), min_confidence=CORE_MIN_CONFIDENCE
@@ -338,25 +338,35 @@ class GraphStore:
             route_ids = list(
                 connection.execute(
                     text(
-                        "SELECT id FROM nodes WHERE snapshot_id = :s AND kind = 'route' "
-                        "ORDER BY symbol_key LIMIT :n"
+                        "SELECT n.id FROM nodes n JOIN nodes f ON f.id = n.file_id "
+                        "WHERE n.snapshot_id = :s AND n.kind = 'route' "
+                        "AND NOT coalesce((f.meta->>'is_test')::boolean, false) "
+                        "ORDER BY n.symbol_key LIMIT :n"
                     ),
                     {"s": snapshot_id, "n": top * 2},
                 ).scalars()
             )
-            entry_ids = route_ids or list(
+            public_ids = list(
                 connection.execute(
                     text(
                         "SELECT id FROM nodes WHERE snapshot_id = :s "
                         "AND kind IN ('class', 'function') "
-                        "AND coalesce((meta->>'public')::boolean, false) "
-                        "ORDER BY symbol_key LIMIT :n"
+                        "AND coalesce((meta->>'public')::boolean, false)"
                     ),
-                    {"s": snapshot_id, "n": top * 2},
+                    {"s": snapshot_id},
                 ).scalars()
             )
+            # Most used from other files first, so a library's main names lead.
+            position_of = {node_id: n for n, node_id in enumerate(graph.node_ids)}
+            public_ids = sorted(
+                public_ids,
+                key=lambda node_id: (
+                    -per_symbol.get(position_of[node_id], 0),
+                    graph.keys[position_of[node_id]],
+                ),
+            )[: top * 2]
             wanted = [graph.node_ids[n] for n, _, _ in core_files + core_symbols]
-            nodes = _nodes_by_id(connection, [*entry_ids, *wanted])
+            nodes = _nodes_by_id(connection, [*public_ids, *route_ids, *wanted])
         source_files = {
             node
             for node, code in enumerate(graph.node_kinds)
@@ -364,7 +374,8 @@ class GraphStore:
         }
         return Overview(
             counts=counts,
-            entry_points=[nodes[node_id] for node_id in entry_ids],
+            public_symbols=[nodes[node_id] for node_id in public_ids],
+            routes=[nodes[node_id] for node_id in route_ids],
             core_files=[
                 Ranked(node=nodes[graph.node_ids[n]], uses=uses, files=files)
                 for n, uses, files in core_files

@@ -1,11 +1,17 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Route } from "lucide-react";
+import { Compass, Route } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GraphCanvas, type GraphCanvasHandle } from "@/components/graph/GraphCanvas";
+import {
+  GraphCanvas,
+  type GraphCanvasHandle,
+  type SelectedEdge,
+} from "@/components/graph/GraphCanvas";
 import type { NodeAction } from "@/components/graph/layers";
+import { EdgePanel } from "@/components/panel/EdgePanel";
 import { NodePanel } from "@/components/panel/NodePanel";
+import { OverviewPanel } from "@/components/panel/OverviewPanel";
 import { PathFinder, pathLayer } from "@/components/path/PathFinder";
 import { SearchBox } from "@/components/search/SearchBox";
 import { Button } from "@/components/ui/Button";
@@ -33,7 +39,17 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
   const queryClient = useQueryClient();
   const repo = `${snapshot.repo.owner}/${snapshot.repo.name}`;
   const canvas = useRef<GraphCanvasHandle>(null);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelectedKey] = useState<string | null>(null);
+  const [edge, setEdge] = useState<SelectedEdge | null>(null);
+  const [overviewOpen, setOverviewOpen] = useState(true);
+  const setSelected = useCallback((key: string | null) => {
+    setSelectedKey(key);
+    if (key) setEdge(null);
+  }, []);
+  const selectEdge = useCallback((found: SelectedEdge) => {
+    setSelectedKey(null);
+    setEdge(found);
+  }, []);
   const [pathOpen, setPathOpen] = useState(false);
   const [from, setFrom] = useState<ApiNode | null>(null);
   const [to, setTo] = useState<ApiNode | null>(null);
@@ -53,7 +69,7 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
       setSelected(key);
       void show(key);
     },
-    [show],
+    [show, setSelected],
   );
 
   const nodeOf = useCallback(
@@ -102,6 +118,18 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
         <div className="ml-auto flex w-full max-w-lg items-center gap-2">
           <SearchBox snapshotId={snapshot.id} onPick={(node) => pick(node.key)} slashShortcut />
           <Button
+            variant={overviewOpen && !selected && !edge ? "primary" : "secondary"}
+            aria-pressed={overviewOpen && !selected && !edge}
+            onClick={() => {
+              setSelected(null);
+              setEdge(null);
+              setOverviewOpen(true);
+            }}
+            icon={<Compass className="h-4 w-4" aria-hidden="true" />}
+          >
+            Overview
+          </Button>
+          <Button
             variant={pathOpen ? "primary" : "secondary"}
             aria-pressed={pathOpen}
             onClick={() => setPathOpen((open) => !open)}
@@ -121,6 +149,7 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
             onSelect={setSelected}
             nodeActions={WORKSPACE_ACTIONS}
             onNodeAction={onAction}
+            onEdgeSelect={selectEdge}
           />
           {pathOpen ? (
             <div className="absolute top-3 left-3 z-10">
@@ -155,6 +184,24 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
               onAction={onAction}
               onNavigate={pick}
               onClose={() => setSelected(null)}
+            />
+          </div>
+        ) : edge ? (
+          <div className="w-[min(420px,40vw)] shrink-0">
+            <EdgePanel
+              key={`${edge.src}|${edge.dst}|${edge.kind}`}
+              snapshotId={snapshot.id}
+              edge={edge}
+              onNavigate={pick}
+              onClose={() => setEdge(null)}
+            />
+          </div>
+        ) : overviewOpen ? (
+          <div className="w-[min(380px,36vw)] shrink-0">
+            <OverviewPanel
+              snapshotId={snapshot.id}
+              onNavigate={pick}
+              onClose={() => setOverviewOpen(false)}
             />
           </div>
         ) : null}

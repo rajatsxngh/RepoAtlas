@@ -27,6 +27,8 @@ ENDPOINTS = {
     ("get", "/api/v1/jobs/{job_id}"): "get_job_status",
     ("get", "/api/v1/snapshots/{snapshot_id}"): "get_snapshot",
     ("get", "/api/v1/snapshots/{snapshot_id}/subgraph"): "get_subgraph",
+    ("get", "/api/v1/snapshots/{snapshot_id}/links"): "get_edge_links",
+    ("get", "/api/v1/snapshots/{snapshot_id}/overview"): "get_overview",
     ("get", "/api/v1/snapshots/{snapshot_id}/nodes/{key}"): "get_node",
     ("get", "/api/v1/snapshots/{snapshot_id}/nodes/{key}/neighbors"): "get_neighbors",
     ("get", "/api/v1/snapshots/{snapshot_id}/locate"): "locate_line",

@@ -11,6 +11,9 @@ export type Provenance = Schemas["Provenance"];
 export type Range = Schemas["Range"];
 export type Edge = Schemas["Edge"];
 export type AggregatedEdge = Schemas["AggregatedEdge"];
+export type EdgeLinks = Schemas["EdgeLinks"];
+export type Overview = Schemas["Overview"];
+export type Ranked = Schemas["Ranked"];
 export type Subgraph = Schemas["Subgraph"];
 export type SubgraphLevel = Subgraph["level"];
 export type NodeDetail = Schemas["NodeDetail"];
@@ -63,6 +66,7 @@ export type LocateQuery = QueryOf<Get<"/api/v1/snapshots/{snapshot_id}/locate">>
 export type SearchQuery = QueryOf<Get<"/api/v1/snapshots/{snapshot_id}/search">>;
 export type PathQuery = QueryOf<Get<"/api/v1/snapshots/{snapshot_id}/path">>;
 export type CodeQuery = QueryOf<Get<"/api/v1/snapshots/{snapshot_id}/code">>;
+export type EdgeLinksQuery = QueryOf<Get<"/api/v1/snapshots/{snapshot_id}/links">>;
 
 export type SubgraphBody = OkOf<Get<"/api/v1/snapshots/{snapshot_id}/subgraph">>;
 export type LocateBody = OkOf<Get<"/api/v1/snapshots/{snapshot_id}/locate">>;

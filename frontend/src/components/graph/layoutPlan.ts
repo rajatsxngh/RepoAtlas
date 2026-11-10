@@ -8,6 +8,28 @@ import type { LayoutEdge } from "@/workers/layoutEngine";
 import { nodeLabel, nodeMeta } from "./flow";
 import { ROOT, type VisibleEdge, type VisibleNode } from "./model";
 import { MORE_SIZE, leafSize, type Size } from "./sizes";
+import { LOW_CONFIDENCE } from "./edgeStyle";
+
+/**
+ * How an edge shapes the layout: as a "uses" edge from user to used, so code that everything
+ * depends on settles at the bottom and its users sit above it. Imports, calls, and inheritance
+ * already point that way; a test link points from code to its test, so it is flipped (the test
+ * uses the code). Route links and guesses (every edge in the aggregate name-matched) don't shape
+ * the layout: they would pull unrelated code together.
+ */
+export function layoutDirection(edge: VisibleEdge): { source: string; target: string } | null {
+  if (edge.maxConfidence < LOW_CONFIDENCE) return null;
+  switch (edge.kind) {
+    case "imports":
+    case "calls":
+    case "inherits":
+      return { source: edge.source, target: edge.target };
+    case "tested_by":
+      return { source: edge.target, target: edge.source };
+    default:
+      return null;
+  }
+}
 
 export interface PlannedChild {
   id: string;
@@ -68,7 +90,9 @@ export function planLayout(
   }
   const depth = (id: string) => depthOf.get(id) ?? 0;
   const parent = (id: string) => parentOf.get(id) ?? ROOT;
-  for (const edge of edges) {
+  for (const visibleEdge of edges) {
+    const edge = layoutDirection(visibleEdge);
+    if (edge === null) continue;
     // Climb from both ends to the container where they meet; the edge belongs to that container,
     // between the two children on the way down. An edge between a container and something
     // inside it is not a layout constraint. (Depth-based climbing: no allocation per edge.)
@@ -92,7 +116,7 @@ export function planLayout(
       b = parent(b);
     }
     if (belowA === null || belowB === null || belowA === belowB) continue;
-    containers.get(a)?.edges.push({ source: belowA, target: belowB, weight: edge.count });
+    containers.get(a)?.edges.push({ source: belowA, target: belowB, weight: visibleEdge.count });
   }
   const planned = [...containers.values()];
   for (const container of planned) {

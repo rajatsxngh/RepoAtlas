@@ -2,7 +2,7 @@
 
 import { QueryClient } from "@tanstack/react-query";
 import { isApiError } from "@/lib/api/errors";
-import type { SubgraphLevel } from "@/lib/api/types";
+import type { EdgeKind, SubgraphLevel } from "@/lib/api/types";
 
 /** Retry transient failures (network, 5xx) twice; never retry what the server refused. */
 export function shouldRetry(failureCount: number, error: unknown): boolean {
@@ -33,6 +33,9 @@ export const queryKeys = {
   subgraph: (snapshotId: number, parent: string, level: SubgraphLevel) =>
     ["subgraph", snapshotId, parent, level] as const,
   node: (snapshotId: number, key: string) => ["node", snapshotId, key] as const,
+  edgeLinks: (snapshotId: number, src: string, dst: string, kind: EdgeKind) =>
+    ["edgeLinks", snapshotId, src, dst, kind] as const,
+  overview: (snapshotId: number) => ["overview", snapshotId] as const,
   neighbors: (
     snapshotId: number,
     key: string,

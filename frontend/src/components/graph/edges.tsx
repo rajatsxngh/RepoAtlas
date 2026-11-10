@@ -57,8 +57,9 @@ function shift(from: Point, to: Point, offset: number, flipped: boolean): [Point
 export const MapEdge = memo(function MapEdge({ source, target, data }: EdgeProps<MapFlowEdge>) {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
-  // Counts only read up close; zoomed out they'd be hundreds of hidden elements to keep current.
-  const near = useStore((state) => state.transform[2] >= 0.85);
+  // Counts read from mid zoom; zoomed far out they'd be hundreds of tiny elements to keep
+  // current, unless the map is sparse (alwaysCount).
+  const near = useStore((state) => state.transform[2] >= 0.5);
   if (!sourceNode || !targetNode || !data) return null;
   const ends = floatingEnds(rectOf(sourceNode), rectOf(targetNode));
   const [from, to] = shift(ends.from, ends.to, data.offset, source > target);
@@ -77,6 +78,7 @@ export const MapEdge = memo(function MapEdge({ source, target, data }: EdgeProps
         data-t={data.targetNo}
         data-kind={data.kind}
         data-guess={guess || undefined}
+        data-crossing={data.crossing || undefined}
         data-highlight={data.highlight}
         fill="none"
         markerEnd={`url(#${marker})`}
@@ -90,14 +92,14 @@ export const MapEdge = memo(function MapEdge({ source, target, data }: EdgeProps
       />
       <path
         d={path}
-        className="react-flow__edge-interaction"
+        className="react-flow__edge-interaction cursor-pointer"
         fill="none"
         stroke="transparent"
         strokeWidth={14}
       >
-        <title>{title}</title>
+        <title>{`${title}. Click to see each link.`}</title>
       </path>
-      {near && data.count > 1 && data.showCount ? (
+      {(near || data.alwaysCount) && data.count > 1 && data.showCount ? (
         <EdgeLabelRenderer>
           <div
             className="ra-edge-count nodrag nopan"
@@ -105,6 +107,8 @@ export const MapEdge = memo(function MapEdge({ source, target, data }: EdgeProps
             data-s={data.sourceNo}
             data-t={data.targetNo}
             data-highlight={data.highlight}
+            data-always={data.alwaysCount || undefined}
+            data-crossing={data.crossing || undefined}
             style={{
               transform: `translate(-50%, -50%) translate(${(from.x + to.x) / 2}px, ${(from.y + to.y) / 2}px)`,
               borderColor: edgeColor(data.kind),

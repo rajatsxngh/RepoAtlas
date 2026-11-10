@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from repoatlas.graph.model import CodeGraph, EdgeKind, NodeKind
+from repoatlas.store.cache import SnapshotGraph
 from repoatlas.store.errors import InvalidQuery
 from tests.integration.store.conftest import Stored
 
@@ -50,8 +51,26 @@ def test_overview_of_the_python_fixture(stored: Stored) -> None:
     found = stored.store.overview(stored.py)
     kinds = [node.kind.value for node in graph.nodes.values()]
     assert found.counts == {kind: kinds.count(kind) for kind in set(kinds)}
-    routes = sorted(key for key, node in graph.nodes.items() if node.kind == NodeKind.ROUTE)
-    assert [node.key for node in found.entry_points] == routes
+
+    def in_test_file(key: str) -> bool:
+        return bool(graph.nodes[f"file:{graph.nodes[key].path}"].meta.get("is_test"))
+
+    routes = sorted(
+        key
+        for key, node in graph.nodes.items()
+        if node.kind == NodeKind.ROUTE and not in_test_file(key)
+    )
+    assert routes and [node.key for node in found.routes] == routes
+    public = sorted(
+        key
+        for key, node in graph.nodes.items()
+        if node.kind in (NodeKind.CLASS, NodeKind.FUNCTION) and node.meta.get("public") is True
+    )
+    assert sorted(node.key for node in found.public_symbols) == sorted(public[:16])
+    snapshot = SnapshotGraph.from_code_graph(graph)
+    _, per_symbol, _ = snapshot.cross_file_uses((EdgeKind.IMPORTS, EdgeKind.CALLS), 0.6)
+    ranks = [per_symbol.get(snapshot.index[node.key], 0) for node in found.public_symbols]
+    assert ranks == sorted(ranks, reverse=True)
     assert found.core_files, "the fixture's files import each other"
     assert all(item.node.kind == NodeKind.FILE for item in found.core_files)
     assert all(item.node.kind not in (NodeKind.FILE, NodeKind.DIR) for item in found.core_symbols)

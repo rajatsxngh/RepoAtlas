@@ -531,7 +531,7 @@
           "snapshots"
         ],
         "summary": "Where to start reading",
-        "description": "Entry points (routes, else public symbols), the files and symbols most used from other\nfiles (imports and calls; name-matched guesses left out), node counts by kind, and how\nmany source files have linked tests.",
+        "description": "Public symbols and routes (outside test files), the files and symbols most used from other\nfiles (imports and calls; name-matched guesses left out), node counts by kind, and how\nmany source files have linked tests.",
         "operationId": "get_overview",
         "parameters": [
           {
@@ -2165,12 +2165,19 @@
             "type": "object",
             "title": "Counts"
           },
-          "entry_points": {
+          "public_symbols": {
             "items": {
               "$ref": "#/components/schemas/Node"
             },
             "type": "array",
-            "title": "Entry Points"
+            "title": "Public Symbols"
+          },
+          "routes": {
+            "items": {
+              "$ref": "#/components/schemas/Node"
+            },
+            "type": "array",
+            "title": "Routes"
           },
           "core_files": {
             "items": {
@@ -2199,14 +2206,15 @@
         "type": "object",
         "required": [
           "counts",
-          "entry_points",
+          "public_symbols",
+          "routes",
           "core_files",
           "core_symbols",
           "tested_files",
           "source_files"
         ],
         "title": "Overview",
-        "description": "Where to start reading a snapshot.\n\n``entry_points``: routes, else public symbols · ``core_files`` / ``core_symbols``: the most\nused from other files (imports and calls, guesses left out) · ``tested_files``: source files\nwith at least one ``tested_by`` edge, out of ``source_files`` (test files excluded)."
+        "description": "Where to start reading a snapshot.\n\n``public_symbols``: public classes and functions, most used from other files first ·\n``routes``: routes outside\ntest files · ``core_files`` / ``core_symbols``: the most\nused from other files (imports and calls, guesses left out) · ``tested_files``: source files\nwith at least one ``tested_by`` edge, out of ``source_files`` (test files excluded)."
       },
       "Owner": {
         "properties": {
