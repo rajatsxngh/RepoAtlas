@@ -58,7 +58,7 @@ async def test_build_follow_and_read_a_repository_over_http(
         assert job["status"] == "succeeded", job
         progress = [value for status, _, value in seen if status == "running"] + [1.0]
         assert progress == sorted(progress)  # never goes backwards
-        assert seen[0][0] == "queued" and seen[-1] == ("succeeded", "store", 1.0)
+        assert seen[0][0] == "queued" and seen[-1] == ("succeeded", "publish", 1.0)
 
         ready = (await client.get(base)).json()
         assert (ready["status"], ready["commit_sha"], ready["job"]["status"]) == (

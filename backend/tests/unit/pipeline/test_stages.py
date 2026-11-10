@@ -28,7 +28,7 @@ FILES = [
     Spec("src/shop/util.py", UTIL),
     Spec("tests/test_app.py", b"from shop.app import main\n\n\ndef test_main():\n    main()\n"),
 ]
-PRE_STORE = tuple(stage for stage in BUILTIN_STAGES if stage.name != "store")
+PRE_STORE = BUILTIN_STAGES[: [stage.name for stage in BUILTIN_STAGES].index("store")]
 
 
 class Stopped(Exception):

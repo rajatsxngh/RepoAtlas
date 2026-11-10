@@ -73,13 +73,11 @@ def test_build_stores_the_same_graph_as_run_graph(
     assert info.stats["graph_digest"] == expected.digest
     assert info.stats["source"] == "github.com/pallets/flask"
     timings = info.stats["timings"]
-    assert isinstance(timings, dict) and set(timings) == {
-        "resolve",
-        "fetch",
-        "inventory",
-        "parse",
-        "graph",
-    }
+    stages = [stage.name for stage in registered_stages()]
+    assert stages[-1] == "publish" and stages.index("chunk") == stages.index("store") + 1
+    assert isinstance(timings, dict) and set(timings) == {"resolve", *stages[:-1]}
+    chunks = info.stats["chunks"]
+    assert isinstance(chunks, dict) and chunks["count"] == count_chunks(pg_engine)
     assert info.stats["fingerprint_parts"] == fingerprint_parts(settings)
     assert info.stats["resumed"] == []
     assert workdir_is_empty(settings)
@@ -130,6 +128,32 @@ def test_a_failing_step_marks_the_snapshot_failed_and_a_retry_succeeds(
     assert status(pg_engine, snapshot_id) == ("failed", "RuntimeError: parser exploded")
     assert build_snapshot(URL, settings, engine=pg_engine) == snapshot_id
     assert status(pg_engine, snapshot_id) == ("ready", None)
+
+
+def count_chunks(engine: Engine) -> int:
+    with engine.connect() as connection:
+        return int(connection.execute(text("SELECT count(*) FROM chunks")).scalar_one())
+
+
+def test_a_failing_stage_after_store_never_leaves_a_ready_snapshot(
+    origin: Origin, settings: Settings, pg_engine: Engine
+) -> None:
+    def broken(ctx: BuildContext) -> None:
+        raise RuntimeError("chunker exploded")
+
+    stages = tuple(
+        dataclasses.replace(stage, run=broken) if stage.name == "chunk" else stage
+        for stage in registered_stages()
+    )
+    with pytest.raises(RuntimeError, match="chunker exploded"):
+        run_build(URL, settings, engine=pg_engine, stages=stages)
+    with pg_engine.connect() as connection:
+        snapshot_id = connection.execute(text("SELECT id FROM snapshots")).scalar_one()
+    assert status(pg_engine, snapshot_id) == ("failed", "RuntimeError: chunker exploded")
+    result = run_build(URL, settings, engine=pg_engine)
+    assert (result.snapshot_id, result.reused) == (snapshot_id, False)
+    assert status(pg_engine, snapshot_id) == ("ready", None)
+    assert count_chunks(pg_engine) > 0
 
 
 def test_fetch_errors_are_recorded(origin: Origin, settings: Settings, pg_engine: Engine) -> None:

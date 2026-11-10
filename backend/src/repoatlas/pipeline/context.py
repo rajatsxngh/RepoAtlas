@@ -25,10 +25,11 @@ from repoatlas.store.models import SnapshotId
 class BuildContext:
     """The state of one build. Each stage reads earlier stages' fields and fills its own.
 
-    ``workdir`` is where stages keep their output between attempts (checkpoints): a retried
-    build finds it there and resumes instead of starting over. Without one, stages work in a
-    temporary directory and keep nothing. ``resumed`` lists the stages whose output came from
-    a checkpoint. A stage reports how far it has got with ``progress``.
+        ``workdir`` is where stages keep their output between attempts (checkpoints): a retried
+        build finds it there and resumes instead of starting over. Without one, stages work in a
+        temporary directory and keep nothing. ``resumed`` lists the stages whose output came from
+        a checkpoint. A stage reports how far it has got with ``progress``; stages after ``store``
+    put what they measured in ``stats``, which ``publish`` adds to the snapshot's stats.
     """
 
     url: str
@@ -48,6 +49,7 @@ class BuildContext:
     project: ProjectFiles | None = None
     graph: CodeGraph | None = None
     timings: dict[str, float] = field(default_factory=dict)
+    stats: dict[str, JsonValue] = field(default_factory=dict)  # merged into the snapshot's stats
     resources: ExitStack = field(default_factory=ExitStack)
     workdir: Path | None = None
     resumed: list[str] = field(default_factory=list)

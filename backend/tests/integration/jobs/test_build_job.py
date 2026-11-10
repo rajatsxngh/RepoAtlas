@@ -111,19 +111,14 @@ def test_a_build_job_builds_the_snapshot_and_reports_progress(
     )
     assert worker(settings, pg_engine, "w1").run_once()
     done = job_now(pg_engine, job.id)
-    assert (done.status, done.progress, done.stage, done.attempts) == ("succeeded", 1, "store", 1)
+    assert (done.status, done.progress, done.stage, done.attempts) == ("succeeded", 1, "publish", 1)
     row = snapshot(pg_engine, snapshot_id)
     assert row.status == "ready" and row.error is None
     assert row.stats["resumed"] == [] and row.stats["source"] == "github.com/pallets/flask"
-    assert set(row.stats["timings"]) == {"fetch", "inventory", "parse", "graph"}  # jsonb: no order
+    names = [stage.name for stage in registered_stages()]
+    assert set(row.stats["timings"]) == set(names[:-1])  # every stage before publish
     stages = [stage for stage, _ in reports]
-    assert [name for i, name in enumerate(stages) if name not in stages[:i]] == [
-        "fetch",
-        "inventory",
-        "parse",
-        "graph",
-        "store",
-    ]
+    assert [name for i, name in enumerate(stages) if name not in stages[:i]] == names
     values = [value for _, value in reports]
     assert values == sorted(values) and values[0] == 0.0 and 0.8 < values[-1] <= 1.0
     assert not build_dir(settings, payload.full_name, payload.commit, payload.fingerprint).exists()

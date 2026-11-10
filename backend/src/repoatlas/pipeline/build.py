@@ -3,8 +3,12 @@
 ``resolve`` validates the URL, checks the repository on GitHub, pins the commit, computes the
 config fingerprint over the registered stages, and gets or creates the snapshot; a snapshot that
 is already ``ready`` is reused without fetching anything. The built-in stages, registered here,
-are ``fetch`` → ``inventory`` → ``parse`` → ``graph`` → ``store``. ``run_build`` runs them in
-process (``repoatlas build``); the worker runs the same stages as a background job.
+are ``fetch`` → ``inventory`` → ``parse`` → ``graph`` → ``store`` → ``publish``; other stages
+that work on the stored snapshot (chunking, embeddings) register between ``store`` and
+``publish``. ``store`` saves the snapshot as ``building`` and ``publish`` makes it ``ready``, so
+a snapshot is never ready (and reused) before every stage has run (decision 0016).
+``run_build`` runs them in process (``repoatlas build``); the worker runs the same stages as a
+background job.
 
 Stages keep their output in the build's work directory (``build_dir``, one per repo, commit,
 and fingerprint): the fetched commit, and the inventory, parse results, and graph as JSON
@@ -50,11 +54,11 @@ from repoatlas.pipeline.parse import parse_files
 from repoatlas.pipeline.stages import (
     Stage,
     fingerprint_parts,
-    register_stage,
+    register_builtin,
     registered_stages,
     run_stages,
 )
-from repoatlas.store.loader import begin_snapshot, mark_failed, save_snapshot
+from repoatlas.store.loader import begin_snapshot, mark_failed, mark_ready, save_snapshot
 from repoatlas.store.models import SnapshotId
 
 __all__ = [
@@ -70,6 +74,7 @@ __all__ = [
     "inventory",
     "open_build_dir",
     "parse",
+    "publish",
     "resolve",
     "resolve_target",
     "run_build",
@@ -365,9 +370,20 @@ def store(ctx: BuildContext) -> None:
         ctx.need(ctx.graph, "graph"),
         engine=ctx.engine,
         extra_stats=extra,
+        ready=False,
     )
     if saved != ctx.snapshot_id:
         raise RuntimeError(f"Saved snapshot {saved}, but the build created {ctx.snapshot_id}.")
+
+
+def publish(ctx: BuildContext) -> None:
+    """Make the snapshot ready, adding what later stages measured to its stats."""
+    extra: dict[str, JsonValue] = {
+        **ctx.stats,
+        "timings": dict(ctx.timings),
+        "resumed": list(ctx.resumed),
+    }
+    mark_ready(ctx.need(ctx.snapshot_id, "snapshot"), engine=ctx.engine, extra_stats=extra)
 
 
 def _parse_components() -> dict[str, JsonValue]:
@@ -383,10 +399,11 @@ BUILTIN_STAGES: tuple[Stage, ...] = (
     Stage("inventory", 1, ("max_source_files", "max_file_bytes"), inventory, weight=0.5),
     Stage("parse", 1, ("max_file_bytes",), parse, weight=3.0, components=_parse_components),
     Stage("graph", 1, ("owner_commits",), graph, weight=1.0, components=_graph_components),
-    Stage("store", 1, (), store, weight=1.5),
+    Stage("store", 2, (), store, weight=1.5),  # 2: saves as building; publish makes it ready
+    Stage("publish", 1, (), publish, weight=0.1),
 )
 for _stage in BUILTIN_STAGES:
-    register_stage(_stage)
+    register_builtin(_stage)
 
 
 # --- in-process builds --------------------------------------------------------------------

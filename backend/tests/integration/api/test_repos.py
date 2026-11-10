@@ -74,7 +74,7 @@ async def test_a_new_repo_is_queued_and_then_reused(
     assert (done["status"], done["progress"], done["stage"], done["attempts"]) == (
         "succeeded",
         1.0,
-        "store",
+        "publish",
         1,
     )
     assert done["started_at"] is not None and done["finished_at"] is not None

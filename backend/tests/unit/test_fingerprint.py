@@ -65,6 +65,8 @@ def test_the_fingerprint_covers_the_registered_stages_in_order() -> None:
         "parse",
         "graph",
         "store",
+        "chunk",
+        "publish",
     ]
     fetch = stages[0]
     assert fetch == {
@@ -79,6 +81,8 @@ def test_the_fingerprint_covers_the_registered_stages_in_order() -> None:
         "parse",
         "graph",
         "store",
+        "chunk",
+        "publish",
     ]
 
 
@@ -165,6 +169,8 @@ def test_stages_register_in_place(dummy: Stage) -> None:
             "after-parse",
             "graph",
             "store",
+            "chunk",
+            "publish",
             "dummy",
         ]
         with pytest.raises(ValueError, match="already registered"):

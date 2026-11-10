@@ -3,8 +3,9 @@
 A build is an ordered list of stages. Each ``Stage`` has a name, a version, the settings its
 output depends on, a ``run(ctx)`` over the shared ``BuildContext``, and a weight (its share of
 the build's progress). The built-in stages are ``fetch``, ``inventory``, ``parse``, ``graph``,
-and ``store``; new work registers more with ``register_stage(stage, after=…)`` and the job runner
-never changes.
+``store``, and ``publish``, with the retrieval stages (``chunk``, ``embed``) registered between
+``store`` and ``publish``; new work registers more with ``register_stage(stage, after=…)``
+and the job runner never changes.
 
 The config fingerprint is a sha256 over the ordered stages: each one's name, version, component
 versions, and the values of its settings. Registering, removing, reordering, or changing a stage
@@ -28,7 +29,7 @@ from repoatlas.pipeline import fingerprint
 from repoatlas.pipeline.context import BuildContext
 
 # Modules whose import registers the built-in stages, in order.
-BUILTIN_STAGE_MODULES: tuple[str, ...] = ("repoatlas.pipeline.build",)
+BUILTIN_STAGE_MODULES: tuple[str, ...] = ("repoatlas.pipeline.build", "repoatlas.retrieval.stages")
 
 
 @dataclass(frozen=True)
@@ -68,6 +69,12 @@ def _load_builtins() -> None:
 def register_stage(stage: Stage, after: str | None = None) -> None:
     """Add ``stage`` at the end of the pipeline, or right after the stage named ``after``."""
     _load_builtins()
+    register_builtin(stage, after)
+
+
+def register_builtin(stage: Stage, after: str | None = None) -> None:
+    """``register_stage`` for the modules in ``BUILTIN_STAGE_MODULES``, which register while
+    the built-ins load (each imports the modules whose stages it is placed after)."""
     if any(existing.name == stage.name for existing in _REGISTRY):
         raise ValueError(f"A stage named {stage.name!r} is already registered.")
     if after is None:

@@ -6,7 +6,9 @@
    ``building`` unless it is already ``ready``), so a build is visible while it runs.
 2. One transaction locks that row, bulk-loads blobs, files, nodes, edges, unresolved calls, and
    owners with ``COPY``, and sets the status to ``ready``. Readers see either nothing or the
-   whole snapshot, and ``ready`` becomes visible only when everything else commits.
+   whole snapshot, and ``ready`` becomes visible only when everything else commits. A build
+   with stages after the store saves with ``ready=False`` and calls ``mark_ready`` at the end,
+   so a snapshot is never ready before its last stage has run.
 3. If step 2 fails, a separate transaction marks the snapshot ``failed`` with the error.
 
 Saving is idempotent: a (repo, commit, fingerprint) that is already ``ready`` is returned
@@ -38,7 +40,14 @@ from repoatlas.store.errors import SnapshotNotFound, SnapshotNotReady
 from repoatlas.store.models import DEFAULT_HOST, SnapshotId, SnapshotStatus
 
 MAX_ERROR_CHARS = 2_000
-SNAPSHOT_TABLES = ("owners", "unresolved_calls", "edges", "nodes", "files")  # delete order
+SNAPSHOT_TABLES = (
+    "chunks",
+    "owners",
+    "unresolved_calls",
+    "edges",
+    "nodes",
+    "files",
+)  # delete order
 
 log = get_logger(__name__)
 
@@ -59,6 +68,7 @@ def save_snapshot(
     *,
     engine: Engine | None = None,
     extra_stats: Mapping[str, JsonValue] | None = None,
+    ready: bool = True,
 ) -> SnapshotId:
     """Store one snapshot and return its ID (see the module docstring for the steps).
 
@@ -66,7 +76,8 @@ def save_snapshot(
     store does not already have; it may be lazy, since only missing OIDs are looked up.
     ``extra_stats`` are merged into the snapshot's ``stats`` (for example step timings); the keys
     the store computes itself (``graph``, ``graph_digest``, ``inventory``, ``blobs``, ``rows``,
-    ``store_seconds``) always win.
+    ``store_seconds``) always win. With ``ready=False`` the snapshot stays ``building`` (saving
+    again replaces what was saved, including rows later stages added) until ``mark_ready``.
     """
     engine = engine or get_engine()
     ref = begin_snapshot(repo_meta, sha, fingerprint, engine=engine)
@@ -97,10 +108,14 @@ def save_snapshot(
             }
             connection.execute(
                 text(
-                    "UPDATE snapshots SET status = 'ready', stats = CAST(:stats AS jsonb), "
+                    "UPDATE snapshots SET status = :status, stats = CAST(:stats AS jsonb), "
                     "error = NULL, updated_at = now() WHERE id = :id"
                 ),
-                {"id": ref.id, "stats": canonical_json(stats)},
+                {
+                    "id": ref.id,
+                    "stats": canonical_json(stats),
+                    "status": "ready" if ready else "building",
+                },
             )
     except Exception as error:
         mark_failed(ref.id, error, engine=engine)
@@ -209,6 +224,38 @@ def find_snapshot(
     if row is None:
         return None
     return SnapshotRef(id=SnapshotId(row.id), status=cast(SnapshotStatus, row.status))
+
+
+def mark_ready(
+    snapshot_id: int,
+    *,
+    engine: Engine | None = None,
+    extra_stats: Mapping[str, JsonValue] | None = None,
+) -> None:
+    """Make a saved snapshot ``ready``, merging ``extra_stats`` into its stats (top-level keys
+    replace). A snapshot that is already ready is left alone; one that was never saved (or
+    failed meanwhile) is an error."""
+    engine = engine or get_engine()
+    with engine.begin() as connection:
+        row = connection.execute(
+            text("SELECT status FROM snapshots WHERE id = :id FOR UPDATE"), {"id": snapshot_id}
+        ).first()
+        if row is None:
+            raise SnapshotNotFound(f"Snapshot {snapshot_id} does not exist.")
+        if row.status == "ready":
+            return
+        if row.status != "building":
+            raise SnapshotNotReady(
+                f"Snapshot {snapshot_id} is {row.status}, not building.", status=row.status
+            )
+        connection.execute(
+            text(
+                "UPDATE snapshots SET status = 'ready', error = NULL, updated_at = now(), "
+                "stats = stats || CAST(:extra AS jsonb) WHERE id = :id"
+            ),
+            {"id": snapshot_id, "extra": canonical_json(dict(extra_stats or {}))},
+        )
+    log.info("snapshot ready", snapshot_id=snapshot_id)
 
 
 def mark_failed(
