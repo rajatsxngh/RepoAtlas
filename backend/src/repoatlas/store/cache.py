@@ -15,7 +15,7 @@ from __future__ import annotations
 import sys
 import threading
 from array import array
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from typing import Literal
@@ -405,6 +405,72 @@ class SnapshotGraph:
         self._aggregates[(parent, level)] = result
         self.extra_bytes += 200 + 8 * len(children) + 120 * len(links)
         return result
+
+    def links_between(
+        self, src: int, dst: int, kind: EdgeKind, limit: int
+    ) -> tuple[list[int], int]:
+        """Edges of ``kind`` from ``src`` (or a node below it) to ``dst`` (or a node below it):
+        the strongest ``limit`` of them (then by position) and how many there are in all. These
+        are the edges an aggregated edge between ``src`` and ``dst`` counts."""
+        order, enter, leave = self._containment()
+        offsets, edges = self._out[_EDGE_CODE[kind]]
+        low, high = enter[dst], leave[dst]
+        found = [
+            edge
+            for position in range(enter[src], leave[src] + 1)
+            for edge in edges[offsets[order[position]] : offsets[order[position] + 1]]
+            if low <= enter[self.edge_dst[edge]] <= high
+        ]
+        found.sort(key=lambda edge: (-self.edge_confidence[edge], edge))
+        return found[:limit], len(found)
+
+    def edges_of_kind(self, kind: EdgeKind) -> list[int]:
+        """Every edge of ``kind``, by position."""
+        _, edges = self._out[_EDGE_CODE[kind]]
+        return list(edges)
+
+    def file_of(self) -> array[int]:
+        """Per node, the file it is in (a file is in itself); ``-1`` for directories."""
+        order, _, _ = self._containment()
+        file_code = _NODE_CODE[NodeKind.FILE]
+        owner = array("i", [-1]) * len(order)
+        for node in order:  # preorder: a parent comes before its children
+            if self.node_kinds[node] == file_code:
+                owner[node] = node
+            elif self.parents[node] >= 0:
+                owner[node] = owner[self.parents[node]]
+        return owner
+
+    def cross_file_uses(
+        self, kinds: Iterable[EdgeKind], min_confidence: float
+    ) -> tuple[Counter[int], Counter[int], dict[int, set[int]]]:
+        """Uses that cross a file boundary, along ``kinds`` with at least ``min_confidence``:
+        incoming counts per target file and per target symbol, and the files each target node
+        is used from. Uses inside one file and edges into directories are left out."""
+        owner = self.file_of()
+        file_code = _NODE_CODE[NodeKind.FILE]
+        per_file: Counter[int] = Counter()
+        per_symbol: Counter[int] = Counter()
+        users: dict[int, set[int]] = {}
+        for kind in kinds:
+            offsets, edges = self._out[_EDGE_CODE[kind]]
+            for node in range(len(self.keys)):
+                source_file = owner[node]
+                if source_file < 0:
+                    continue
+                for edge in edges[offsets[node] : offsets[node + 1]]:
+                    if self.edge_confidence[edge] < min_confidence:
+                        continue
+                    target = self.edge_dst[edge]
+                    target_file = owner[target]
+                    if target_file < 0 or target_file == source_file:
+                        continue
+                    per_file[target_file] += 1
+                    users.setdefault(target_file, set()).add(source_file)
+                    if self.node_kinds[target] != file_code:
+                        per_symbol[target] += 1
+                        users.setdefault(target, set()).add(source_file)
+        return per_file, per_symbol, users
 
     def _containment(self) -> tuple[array[int], array[int], array[int]]:
         """Preorder of the containment tree (children in key order) and, per node, the

@@ -31,6 +31,7 @@ from repoatlas.store import rows
 from repoatlas.store.cache import (
     DIRECTIONS,
     LEVELS,
+    NODE_KINDS,
     Direction,
     EdgeRecord,
     Level,
@@ -49,10 +50,13 @@ from repoatlas.store.errors import (
 from repoatlas.store.results import (
     AggregatedEdge,
     CodeSlice,
+    EdgeLinks,
     GraphPath,
     Hop,
     MatchKind,
     Neighborhood,
+    Overview,
+    Ranked,
     RepoInfo,
     SnapshotInfo,
     Subgraph,
@@ -65,6 +69,8 @@ DEFAULT_MAX_READ_LINES = 400  # lines one code read returns at most
 LOCATABLE_KINDS = ("class", "function", "method", "test")  # routes span only their registration
 MAX_DEPTH = 20
 MAX_SEARCH_LIMIT = 100
+MAX_LINKS = 200  # edges one edge-details request returns at most
+CORE_MIN_CONFIDENCE = 0.6  # name-matched guesses below this don't count toward "most used"
 _MATCHES: tuple[MatchKind, ...] = ("exact", "exact", "prefix", "fuzzy")
 
 
@@ -270,6 +276,105 @@ class GraphStore:
             edges=[edges[edge_id] for edge_id in edge_ids],
             directed=found.directed,
             kinds=list(chosen),
+        )
+
+    def edge_links(
+        self, snapshot_id: int, src: str, dst: str, kind: EdgeKind | str, limit: int = 50
+    ) -> EdgeLinks:
+        """The edges behind an aggregated edge from ``src`` to ``dst``: edges of ``kind`` from
+        ``src`` or a node below it to ``dst`` or a node below it, strongest first."""
+        if not 1 <= limit <= MAX_LINKS:
+            raise InvalidQuery(f"The limit must be between 1 and {MAX_LINKS}.")
+        chosen = _edge_kinds([kind])[0]
+        graph = self.graph(snapshot_id)
+        found, total = graph.links_between(
+            _position(graph, src), _position(graph, dst), chosen, limit
+        )
+        ends = {graph.node_ids[graph.edge_src[e]] for e in found}
+        ends |= {graph.node_ids[graph.edge_dst[e]] for e in found}
+        with self.engine.connect() as connection:
+            edges = _edges_by_id(connection, [graph.edge_ids[e] for e in found])
+            nodes = _nodes_by_id(connection, sorted(ends))
+        return EdgeLinks(
+            src=src,
+            dst=dst,
+            kind=chosen,
+            total=total,
+            links=[edges[graph.edge_ids[e]] for e in found],
+            nodes=sorted(nodes.values(), key=lambda node: node.key),
+        )
+
+    def overview(self, snapshot_id: int, top: int = 8) -> Overview:
+        """Where to start reading: entry points, the most used files and symbols, and how many
+        source files have linked tests (see ``Overview``)."""
+        graph = self.graph(snapshot_id)
+        per_file, per_symbol, users = graph.cross_file_uses(
+            (EdgeKind.IMPORTS, EdgeKind.CALLS), min_confidence=CORE_MIN_CONFIDENCE
+        )
+        counts: dict[str, int] = {}
+        for code in graph.node_kinds:
+            kind = NODE_KINDS[code].value
+            counts[kind] = counts.get(kind, 0) + 1
+
+        def ranked(counter: dict[int, int]) -> list[tuple[int, int, int]]:
+            best = sorted(counter.items(), key=lambda item: (-item[1], graph.keys[item[0]]))
+            return [(node, uses, len(users[node])) for node, uses in best[:top]]
+
+        core_files = ranked(per_file)
+        core_symbols = ranked(per_symbol)
+        tested = {graph.edge_src[e] for e in graph.edges_of_kind(EdgeKind.TESTED_BY)}
+        owner = graph.file_of()
+        tested_files = {owner[node] for node in tested if owner[node] >= 0}
+        with self.engine.connect() as connection:
+            test_file_ids = set(
+                connection.execute(
+                    text(
+                        "SELECT id FROM nodes WHERE snapshot_id = :s AND kind = 'file' "
+                        "AND coalesce((meta->>'is_test')::boolean, false)"
+                    ),
+                    {"s": snapshot_id},
+                ).scalars()
+            )
+            route_ids = list(
+                connection.execute(
+                    text(
+                        "SELECT id FROM nodes WHERE snapshot_id = :s AND kind = 'route' "
+                        "ORDER BY symbol_key LIMIT :n"
+                    ),
+                    {"s": snapshot_id, "n": top * 2},
+                ).scalars()
+            )
+            entry_ids = route_ids or list(
+                connection.execute(
+                    text(
+                        "SELECT id FROM nodes WHERE snapshot_id = :s "
+                        "AND kind IN ('class', 'function') "
+                        "AND coalesce((meta->>'public')::boolean, false) "
+                        "ORDER BY symbol_key LIMIT :n"
+                    ),
+                    {"s": snapshot_id, "n": top * 2},
+                ).scalars()
+            )
+            wanted = [graph.node_ids[n] for n, _, _ in core_files + core_symbols]
+            nodes = _nodes_by_id(connection, [*entry_ids, *wanted])
+        source_files = {
+            node
+            for node, code in enumerate(graph.node_kinds)
+            if NODE_KINDS[code] == NodeKind.FILE and graph.node_ids[node] not in test_file_ids
+        }
+        return Overview(
+            counts=counts,
+            entry_points=[nodes[node_id] for node_id in entry_ids],
+            core_files=[
+                Ranked(node=nodes[graph.node_ids[n]], uses=uses, files=files)
+                for n, uses, files in core_files
+            ],
+            core_symbols=[
+                Ranked(node=nodes[graph.node_ids[n]], uses=uses, files=files)
+                for n, uses, files in core_symbols
+            ],
+            tested_files=len(tested_files & source_files),
+            source_files=len(source_files),
         )
 
     def subgraph(self, snapshot_id: int, parent_key: str, level: Level) -> Subgraph:

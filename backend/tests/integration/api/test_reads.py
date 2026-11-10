@@ -282,6 +282,34 @@ async def test_subgraphs_match_the_store(reads: Reads) -> None:
     assert level.status_code == 422
 
 
+async def test_edge_links_match_the_store(reads: Reads) -> None:
+    edges = reads.store.subgraph(reads.py, "dir:.", "file").edges
+    heaviest = max(edges, key=lambda edge: edge.count)
+    params = {"from": heaviest.src, "to": heaviest.dst, "kind": heaviest.kind.value}
+    response = await get(reads, url(reads.py, "/links"), **params, limit=3)
+    assert response.status_code == 200, response.text
+    expected = reads.store.edge_links(reads.py, heaviest.src, heaviest.dst, heaviest.kind, 3)
+    assert response.json() == dump(expected)
+    assert response.json()["total"] == heaviest.count
+    unknown = await get(reads, url(reads.py, "/links"), **{**params, "kind": "owns"})
+    assert unknown.status_code == 422
+    too_many = await get(reads, url(reads.py, "/links"), **params, limit=10_000)
+    assert too_many.status_code == 422
+    missing = await get(reads, url(reads.py, "/links"), **{**params, "from": "dir:nowhere"})
+    assert missing.status_code == 404
+    not_ready = await get(reads, url(reads.pending, "/links"), **params)
+    assert not_ready.status_code == 409
+
+
+async def test_overview_matches_the_store(reads: Reads) -> None:
+    response = await get(reads, url(reads.py, "/overview"))
+    assert response.status_code == 200, response.text
+    assert response.json() == dump(reads.store.overview(reads.py))
+    assert response.json()["entry_points"], "py_small has routes"
+    not_ready = await get(reads, url(reads.pending, "/overview"))
+    assert not_ready.status_code == 409
+
+
 async def test_paths_match_the_store_or_are_not_found(reads: Reads) -> None:
     graph = reads.graphs[reads.tricky]
     route = next(key for key in graph.nodes if key.startswith("route:"))

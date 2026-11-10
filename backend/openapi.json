@@ -390,6 +390,228 @@
         }
       }
     },
+    "/api/v1/snapshots/{snapshot_id}/links": {
+      "get": {
+        "tags": [
+          "snapshots"
+        ],
+        "summary": "The edges behind an aggregated edge",
+        "description": "Edges of ``kind`` from ``from`` (or a node below it) to ``to`` (or a node below it): the\nindividual imports, calls, and links an aggregated edge in ``/subgraph`` counts, strongest\nfirst, with their call sites and both end nodes. ``total`` counts them all.",
+        "operationId": "get_edge_links",
+        "parameters": [
+          {
+            "name": "snapshot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "description": "Snapshot ID.",
+              "title": "Snapshot Id"
+            },
+            "description": "Snapshot ID."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "description": "Symbol key to start from.",
+              "title": "From"
+            },
+            "description": "Symbol key to start from."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "description": "Symbol key to reach.",
+              "title": "To"
+            },
+            "description": "Symbol key to reach."
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EdgeKind",
+              "description": "The aggregated edge's kind."
+            },
+            "description": "The aggregated edge's kind."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdgeLinks"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (see Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/snapshots/{snapshot_id}/overview": {
+      "get": {
+        "tags": [
+          "snapshots"
+        ],
+        "summary": "Where to start reading",
+        "description": "Entry points (routes, else public symbols), the files and symbols most used from other\nfiles (imports and calls; name-matched guesses left out), node counts by kind, and how\nmany source files have linked tests.",
+        "operationId": "get_overview",
+        "parameters": [
+          {
+            "name": "snapshot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "description": "Snapshot ID.",
+              "title": "Snapshot Id"
+            },
+            "description": "Snapshot ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Overview"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (see Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/snapshots/{snapshot_id}/nodes/{key}": {
       "get": {
         "tags": [
@@ -1447,6 +1669,51 @@
         ],
         "title": "EdgeKind"
       },
+      "EdgeLinks": {
+        "properties": {
+          "src": {
+            "type": "string",
+            "title": "Src"
+          },
+          "dst": {
+            "type": "string",
+            "title": "Dst"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/EdgeKind"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/Edge"
+            },
+            "type": "array",
+            "title": "Links"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/Node"
+            },
+            "type": "array",
+            "title": "Nodes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "src",
+          "dst",
+          "kind",
+          "total",
+          "links",
+          "nodes"
+        ],
+        "title": "EdgeLinks",
+        "description": "The edges behind one aggregated edge: edges of ``kind`` from ``src`` or below it to\n``dst`` or below it, strongest first; ``total`` counts all of them."
+      },
       "ErrorBody": {
         "properties": {
           "code": {
@@ -1889,6 +2156,58 @@
         ],
         "title": "NodeKind"
       },
+      "Overview": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Counts"
+          },
+          "entry_points": {
+            "items": {
+              "$ref": "#/components/schemas/Node"
+            },
+            "type": "array",
+            "title": "Entry Points"
+          },
+          "core_files": {
+            "items": {
+              "$ref": "#/components/schemas/Ranked"
+            },
+            "type": "array",
+            "title": "Core Files"
+          },
+          "core_symbols": {
+            "items": {
+              "$ref": "#/components/schemas/Ranked"
+            },
+            "type": "array",
+            "title": "Core Symbols"
+          },
+          "tested_files": {
+            "type": "integer",
+            "title": "Tested Files"
+          },
+          "source_files": {
+            "type": "integer",
+            "title": "Source Files"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "counts",
+          "entry_points",
+          "core_files",
+          "core_symbols",
+          "tested_files",
+          "source_files"
+        ],
+        "title": "Overview",
+        "description": "Where to start reading a snapshot.\n\n``entry_points``: routes, else public symbols · ``core_files`` / ``core_symbols``: the most\nused from other files (imports and calls, guesses left out) · ``tested_files``: source files\nwith at least one ``tested_by`` edge, out of ``source_files`` (test files excluded)."
+      },
       "Owner": {
         "properties": {
           "author_name": {
@@ -1967,6 +2286,30 @@
           "end_col"
         ],
         "title": "Range"
+      },
+      "Ranked": {
+        "properties": {
+          "node": {
+            "$ref": "#/components/schemas/Node"
+          },
+          "uses": {
+            "type": "integer",
+            "title": "Uses"
+          },
+          "files": {
+            "type": "integer",
+            "title": "Files"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node",
+          "uses",
+          "files"
+        ],
+        "title": "Ranked",
+        "description": "A node with how often other files use it, and from how many files."
       },
       "ReadyStatus": {
         "properties": {

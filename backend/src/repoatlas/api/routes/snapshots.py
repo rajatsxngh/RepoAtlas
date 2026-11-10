@@ -1,4 +1,5 @@
-"""Snapshot reads (API-5): metadata, subgraph, node, locate, neighbors, search, path, code.
+"""Snapshot reads (API-5): metadata, subgraph, edge links, overview, node, locate, neighbors,
+search, path, code.
 
 Thin wrappers over ``GraphStore``. Every read except the snapshot's own metadata needs a ready
 snapshot (409 ``snapshot_not_ready`` with the build job otherwise). Nodes are named by symbol
@@ -35,8 +36,15 @@ from repoatlas.graph.model import EdgeKind, Node, NodeKind
 from repoatlas.jobs.build import BUILD_JOB
 from repoatlas.jobs.queue import latest_job
 from repoatlas.store.cache import Direction, Level, SnapshotGraph
-from repoatlas.store.graphstore import MAX_DEPTH
-from repoatlas.store.results import CodeSlice, GraphPath, Neighborhood, Subgraph
+from repoatlas.store.graphstore import MAX_DEPTH, MAX_LINKS
+from repoatlas.store.results import (
+    CodeSlice,
+    EdgeLinks,
+    GraphPath,
+    Neighborhood,
+    Overview,
+    Subgraph,
+)
 
 router = APIRouter(prefix="/snapshots/{snapshot_id}", tags=["snapshots"])
 READ_ERRORS = documented(404, 409)
@@ -78,6 +86,29 @@ def get_subgraph(
     """The children of ``parent`` at ``level`` and the edges between them, aggregated per
     (source child, destination child, kind) with counts and confidence ranges."""
     return store.subgraph(snapshot_id, parent, level)
+
+
+@router.get("/links", summary="The edges behind an aggregated edge", responses=READ_ERRORS)
+def get_edge_links(
+    snapshot_id: ReadySnapshot,
+    store: StoreDep,
+    src: FromKey,
+    dst: ToKey,
+    kind: Annotated[EdgeKind, Query(description="The aggregated edge's kind.")],
+    limit: Annotated[int, Query(ge=1, le=MAX_LINKS)] = 50,
+) -> EdgeLinks:
+    """Edges of ``kind`` from ``from`` (or a node below it) to ``to`` (or a node below it): the
+    individual imports, calls, and links an aggregated edge in ``/subgraph`` counts, strongest
+    first, with their call sites and both end nodes. ``total`` counts them all."""
+    return store.edge_links(snapshot_id, src, dst, kind, limit)
+
+
+@router.get("/overview", summary="Where to start reading", responses=READ_ERRORS)
+def get_overview(snapshot_id: ReadySnapshot, store: StoreDep) -> Overview:
+    """Entry points (routes, else public symbols), the files and symbols most used from other
+    files (imports and calls; name-matched guesses left out), node counts by kind, and how
+    many source files have linked tests."""
+    return store.overview(snapshot_id)
 
 
 @router.get("/nodes/{key}", summary="A node", responses=READ_ERRORS)

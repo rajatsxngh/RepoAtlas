@@ -90,6 +90,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/snapshots/{snapshot_id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The edges behind an aggregated edge
+         * @description Edges of ``kind`` from ``from`` (or a node below it) to ``to`` (or a node below it): the
+         *     individual imports, calls, and links an aggregated edge in ``/subgraph`` counts, strongest
+         *     first, with their call sites and both end nodes. ``total`` counts them all.
+         */
+        get: operations["get_edge_links"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/snapshots/{snapshot_id}/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where to start reading
+         * @description Entry points (routes, else public symbols), the files and symbols most used from other
+         *     files (imports and calls; name-matched guesses left out), node counts by kind, and how
+         *     many source files have linked tests.
+         */
+        get: operations["get_overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/snapshots/{snapshot_id}/nodes/{key}": {
         parameters: {
             query?: never;
@@ -369,6 +413,24 @@ export interface components {
          * @enum {string}
          */
         EdgeKind: "contains" | "imports" | "calls" | "inherits" | "tested_by" | "routes_to";
+        /**
+         * EdgeLinks
+         * @description The edges behind one aggregated edge: edges of ``kind`` from ``src`` or below it to
+         *     ``dst`` or below it, strongest first; ``total`` counts all of them.
+         */
+        EdgeLinks: {
+            /** Src */
+            src: string;
+            /** Dst */
+            dst: string;
+            kind: components["schemas"]["EdgeKind"];
+            /** Total */
+            total: number;
+            /** Links */
+            links: components["schemas"]["Edge"][];
+            /** Nodes */
+            nodes: components["schemas"]["Node"][];
+        };
         /** ErrorBody */
         ErrorBody: {
             code: components["schemas"]["ErrorCode"];
@@ -563,6 +625,30 @@ export interface components {
          */
         NodeKind: "dir" | "file" | "class" | "function" | "method" | "route" | "test";
         /**
+         * Overview
+         * @description Where to start reading a snapshot.
+         *
+         *     ``entry_points``: routes, else public symbols · ``core_files`` / ``core_symbols``: the most
+         *     used from other files (imports and calls, guesses left out) · ``tested_files``: source files
+         *     with at least one ``tested_by`` edge, out of ``source_files`` (test files excluded).
+         */
+        Overview: {
+            /** Counts */
+            counts: {
+                [key: string]: number;
+            };
+            /** Entry Points */
+            entry_points: components["schemas"]["Node"][];
+            /** Core Files */
+            core_files: components["schemas"]["Ranked"][];
+            /** Core Symbols */
+            core_symbols: components["schemas"]["Ranked"][];
+            /** Tested Files */
+            tested_files: number;
+            /** Source Files */
+            source_files: number;
+        };
+        /**
          * Owner
          * @description One author's share of a file's commits. The email is only ever stored hashed.
          */
@@ -596,6 +682,17 @@ export interface components {
             end_line: number;
             /** End Col */
             end_col: number;
+        };
+        /**
+         * Ranked
+         * @description A node with how often other files use it, and from how many files.
+         */
+        Ranked: {
+            node: components["schemas"]["Node"];
+            /** Uses */
+            uses: number;
+            /** Files */
+            files: number;
         };
         /**
          * ReadyStatus
@@ -960,6 +1057,150 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Subgraph"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see Retry-After) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_edge_links: {
+        parameters: {
+            query: {
+                /** @description Symbol key to start from. */
+                from: string;
+                /** @description Symbol key to reach. */
+                to: string;
+                /** @description The aggregated edge's kind. */
+                kind: components["schemas"]["EdgeKind"];
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Snapshot ID. */
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EdgeLinks"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see Retry-After) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Snapshot ID. */
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Overview"];
                 };
             };
             /** @description Not Found */

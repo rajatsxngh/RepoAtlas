@@ -97,6 +97,42 @@ class Subgraph(_Result):
     edges: list[AggregatedEdge]
 
 
+class EdgeLinks(_Result):
+    """The edges behind one aggregated edge: edges of ``kind`` from ``src`` or below it to
+    ``dst`` or below it, strongest first; ``total`` counts all of them."""
+
+    src: str
+    dst: str
+    kind: EdgeKind
+    total: int
+    links: list[Edge]
+    nodes: list[Node]
+
+
+class Ranked(_Result):
+    """A node with how often other files use it, and from how many files."""
+
+    node: Node
+    uses: int
+    files: int
+
+
+class Overview(_Result):
+    """Where to start reading a snapshot.
+
+    ``entry_points``: routes, else public symbols · ``core_files`` / ``core_symbols``: the most
+    used from other files (imports and calls, guesses left out) · ``tested_files``: source files
+    with at least one ``tested_by`` edge, out of ``source_files`` (test files excluded).
+    """
+
+    counts: dict[str, int]
+    entry_points: list[Node]
+    core_files: list[Ranked]
+    core_symbols: list[Ranked]
+    tested_files: int
+    source_files: int
+
+
 class CodeSlice(_Result):
     """Lines ``start`` to ``end`` (1-based, inclusive, after clamping) of a file's stored text,
     joined by ``\\n``; ``line_count`` is the number of lines in the whole file."""
