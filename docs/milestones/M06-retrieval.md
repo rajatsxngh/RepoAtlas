@@ -84,7 +84,7 @@ LIMIT :k;
 - [x] **T3 — Embedders and `embed` stage.** `FastEmbedEmbedder`, `HashEmbedder`, cache lookups, fingerprint includes the model; tests with `HashEmbedder`.
 - [x] **T4 — Keyword index.** Identifier splitting (table-driven tests), `tsvector`, query builder, ranking.
 - [x] **T5 — Vector search.** Exact per-snapshot search; integration test that results never leak across snapshots.
-- [ ] **T6 — Rank fusion and seeds.** Tests with synthetic rankings.
+- [x] **T6 — Rank fusion and seeds.** Tests with synthetic rankings.
 - [ ] **T7 — Graph expansion.** Tests on the fixture graph (hop decay, confidence weighting, deduplication).
 - [ ] **T8 — Rerank and budget packing.**
 - [ ] **T9 — Search CLI.** `--explain` output with per-step scores.
