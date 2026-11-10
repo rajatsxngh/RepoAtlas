@@ -267,7 +267,8 @@ def build_command(
         bool, typer.Option(help="Keep the fetched git data for debugging.")
     ] = False,
 ) -> None:
-    """Build a repository's snapshot into the store: fetch, inventory, parse, graph, store."""
+    """Build a repository's snapshot into the store: fetch, inventory, parse, graph, store,
+    chunk, embed, publish."""
     settings = get_settings()
     started = time.perf_counter()
     engine = create_db_engine(settings.database_url)
@@ -301,11 +302,26 @@ def _build_summary(result: BuildResult, info: SnapshotInfo, elapsed: float) -> l
         f"{graph.get('unresolved_calls', 0):,} unresolved calls",
         f"Text:     {files:,} files, {blobs.get('needed', 0):,} distinct blobs: "
         f"{blobs.get('stored', 0):,} new, {blobs.get('shared', 0):,} already stored",
+        f"Search:   {_search_summary(stats)}",
         f"Digest:   {stats.get('graph_digest', '')}",
         f"Config:   {result.fingerprint}",
         f"Steps:    {steps}",
         f"Time:     {elapsed:.1f} s",
     ]
+
+
+def _search_summary(stats: dict[str, Any]) -> str:
+    chunks: dict[str, Any] = stats.get("chunks", {})
+    embedded: dict[str, Any] = stats.get("embeddings", {})
+    if not chunks:
+        return "no chunks"
+    text = f"{chunks.get('count', 0):,} chunks"
+    if embedded:
+        text += (
+            f"; embeddings {embedded.get('model')} ({embedded.get('dim')} dims): "
+            f"{embedded.get('embedded', 0):,} new, {embedded.get('cached', 0):,} cached"
+        )
+    return text
 
 
 SnapshotOption = Annotated[
@@ -347,6 +363,133 @@ def _query(read: Callable[[GraphStore], QueryResult], missing: str = "Not found.
         _echo_json(pretty_json(result))
     else:
         _echo_json(pretty_json([item.model_dump(mode="json") for item in result]))
+
+
+EXPLAIN_ROWS = 15  # rows per step that --explain prints
+
+
+@app.command("search")
+def search_command(
+    query: Annotated[str, typer.Argument(help="What to look for, in words or identifiers.")],
+    snapshot: SnapshotOption,
+    mode: Annotated[
+        str, typer.Option(help="vector, keyword, or hybrid (vector + keyword + graph).")
+    ] = "hybrid",
+    explain: Annotated[
+        bool, typer.Option("--explain", help="Print every step's candidates and scores.")
+    ] = False,
+    budget: Annotated[int, typer.Option(help="Token budget for the evidence.")] = 12_000,
+    k: Annotated[int, typer.Option("-k", "--k", help="At most this many results.")] = 20,
+    code: Annotated[bool, typer.Option("--code", help="Print each result's code.")] = False,
+    as_json: Annotated[
+        bool, typer.Option("--json", help="Print the full result (with debug) as JSON.")
+    ] = False,
+) -> None:
+    """Find the code for a question in a stored snapshot (no LLM involved)."""
+    from repoatlas.retrieval.retriever import MODES, Retriever
+
+    if mode not in MODES:
+        typer.secho(f"Error: --mode must be one of {', '.join(MODES)}.", err=True, fg="red")
+        raise typer.Exit(code=2)
+    settings = get_settings()
+    engine = create_db_engine(settings.database_url)
+    started = time.perf_counter()
+    try:
+        retriever = Retriever.from_settings(settings, engine)
+        result = retriever.retrieve(
+            snapshot, query, mode=cast(Any, mode), budget_tokens=budget, k=k
+        )
+    except (StoreError, ValueError) as error:
+        typer.secho(f"Error: {error}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from None
+    except OperationalError as error:
+        _connection_failed(settings.database_url, error)
+    finally:
+        engine.dispose()
+    elapsed = time.perf_counter() - started
+    if as_json:
+        _echo_json(pretty_json(result.model_dump(mode="json")))
+        return
+    for line in _search_lines(result, snapshot, elapsed, explain=explain, code=code):
+        typer.echo(line)
+
+
+def _search_lines(
+    result: Any, snapshot: int, elapsed: float, *, explain: bool, code: bool
+) -> list[str]:
+    debug = result.debug
+    model = f" | model {debug.model}" if debug.model else ""
+    lines = [
+        f"Snapshot {snapshot} | {debug.mode}{model} | {len(result.evidence)} results, "
+        f"{debug.tokens:,} of {debug.budget_tokens:,} tokens | {elapsed * 1000:.0f} ms",
+    ]
+    lines.extend(f"Note: {note}" for note in debug.notes)
+    if not result.evidence:
+        lines.append("Nothing found.")
+    for number, item in enumerate(result.evidence, start=1):
+        sources = ", ".join(sorted(item.sources))
+        lines.append(
+            f"{number:>3}. {item.score:.4f}  {item.ref.to_compact()}  {item.node_key}  [{sources}]"
+        )
+        if code:
+            lines.extend(f"       {line}" for line in item.text.splitlines())
+    if explain:
+        lines.extend(_explain_lines(debug))
+    return lines
+
+
+def _explain_lines(debug: Any) -> list[str]:
+    def rows(title: str, items: Sequence[Any], render: Callable[[Any], str]) -> list[str]:
+        out = ["", f"{title} ({len(items)})"]
+        out.extend(f"  {render(item)}" for item in items[:EXPLAIN_ROWS])
+        if len(items) > EXPLAIN_ROWS:
+            out.append(f"  ... {len(items) - EXPLAIN_ROWS} more")
+        return out
+
+    lines = ["", f"Keyword query: {debug.keyword_query or '-'}"]
+    if debug.mode != "keyword":
+        lines += rows(
+            "Vector search (cosine similarity)",
+            debug.vector,
+            lambda h: f"{h.rank:>3}  {h.score:.4f}  {h.ref}  {h.node_key}",
+        )
+    if debug.mode != "vector":
+        lines += rows(
+            "Keyword search (ts_rank_cd)",
+            debug.keyword,
+            lambda h: f"{h.rank:>3}  {h.score:.4f}  {h.ref}  {h.node_key}",
+        )
+    if debug.mode == "hybrid":
+        lines += rows(
+            "Fused (reciprocal rank fusion, 1 / (60 + rank))",
+            debug.fused,
+            lambda h: f"{h.score:.4f}  {_ranks(h.ranks)}  {h.ref}  {h.node_key}",
+        )
+        lines += rows("Seeds", debug.seeds, lambda key: key)
+        lines += rows(
+            "Graph expansion (seed x confidence x 0.5^hops)",
+            debug.expanded,
+            lambda h: (
+                f"{h.score:.4f}  {h.hops} hop(s), {h.via} {h.direction}, "
+                f"confidence {h.confidence:.2f}, from {h.seed}  {h.node_key}"
+            ),
+        )
+    lines += rows(
+        "Ranked (max(fused, expanded) + name bonus)",
+        debug.ranked,
+        lambda h: (
+            f"{h.score:.4f}  fused {h.fused:.4f}  expanded {h.expanded:.4f}  "
+            f"bonus {h.bonus:.4f}  {'selected' if h.selected else 'skipped: ' + str(h.skipped)}  "
+            f"{h.ref}"
+        ),
+    )
+    timings = ", ".join(f"{step} {ms:.1f} ms" for step, ms in debug.timings_ms.items())
+    lines += ["", f"Timings: {timings}"]
+    return lines
+
+
+def _ranks(ranks: dict[str, int]) -> str:
+    return " ".join(f"{source[0]}={rank}" for source, rank in sorted(ranks.items()))
 
 
 @query_app.command("snapshot")
