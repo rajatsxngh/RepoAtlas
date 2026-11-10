@@ -85,7 +85,7 @@ LIMIT :k;
 - [x] **T4 — Keyword index.** Identifier splitting (table-driven tests), `tsvector`, query builder, ranking.
 - [x] **T5 — Vector search.** Exact per-snapshot search; integration test that results never leak across snapshots.
 - [x] **T6 — Rank fusion and seeds.** Tests with synthetic rankings.
-- [ ] **T7 — Graph expansion.** Tests on the fixture graph (hop decay, confidence weighting, deduplication).
+- [x] **T7 — Graph expansion.** Tests on the fixture graph (hop decay, confidence weighting, deduplication).
 - [ ] **T8 — Rerank and budget packing.**
 - [ ] **T9 — Search CLI.** `--explain` output with per-step scores.
 - [ ] **T10 — Retrieval checks and latency.** Fixture queries reach their expected symbols in the top k (with `HashEmbedder` for keyword/graph paths in CI, and the real model locally); latency on a pinned mid-size repo recorded in Results.
