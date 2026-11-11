@@ -73,6 +73,9 @@ def _structured(responses: list[ParsedResponse], error: LLMError | None) -> None
 def _thinking(responses: list[ParsedResponse], error: LLMError | None) -> None:
     assert error is None
     assert len(responses) == 2
+    # The prompt is hard enough that adaptive thinking thinks (at low effort, easy prompts
+    # come back without a thinking block, which would prove nothing here).
+    assert responses[0].thinking_blocks
     for block in responses[0].thinking_blocks:
         assert block.get("signature") or block["type"] == "redacted_thinking"
     assert responses[1].stop_reason == "end_turn"
@@ -85,7 +88,7 @@ def _thinking_next(first: dict[str, Any], response: dict[str, Any]) -> dict[str,
         "messages": [
             *first["messages"],
             {"role": "assistant", "content": response["content"]},
-            {"role": "user", "content": "Now multiply that result by 3. Reply with the number."},
+            {"role": "user", "content": "Now double that number. Reply with just the number."},
         ],
     }
 
@@ -141,9 +144,15 @@ CASES: list[Case] = [
         name="thinking_roundtrip",
         first=build_request(
             LARGE,
-            [{"role": "user", "content": "What is 17 * 23? Reply with the number."}],
-            max_tokens=2048,
-            effort="low",
+            [
+                {
+                    "role": "user",
+                    "content": "How many prime numbers are there between 1000 and 1100? "
+                    "Reply with just the number.",
+                }
+            ],
+            max_tokens=8192,
+            effort="high",
             cache_static=False,
         ),
         next_request=_thinking_next,

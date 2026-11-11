@@ -105,32 +105,40 @@
         ]
       },
       "response": {
+        "container": null,
         "content": [
           {
-            "signature": "EqQBdocs",
-            "thinking": "",
-            "type": "thinking"
-          },
-          {
-            "text": "{\"answer_markdown\": \"`Cart.total` adds up the prices of the items in the cart [c1]. The cart also has a `_discount` method [c2].\", \"claims\": [{\"id\": \"c1\", \"text\": \"Cart.total sums the price of every item in the cart, starting from Decimal(0).\", \"evidence_ids\": [\"E1\"], \"symbol\": \"total\"}, {\"id\": \"c2\", \"text\": \"Cart._discount is a separate method of the cart.\", \"evidence_ids\": [\"E3\"], \"symbol\": \"_discount\"}], \"refused\": false, \"refusal_reason\": null}",
+            "text": "{\"answer_markdown\":\"`Cart.total` is a property that sums the price of each `(name, price)` tuple in `self.items`, starting from `Decimal(0)` [c1][c2]. Items are added by `Cart.add`, which stores each price after passing it through `round_money` [c3]. `total` does not subtract the discount; `describe` does that separately [c4].\",\"claims\":[{\"id\":\"c1\",\"text\":\"Cart.total is a property that returns the sum of the prices of the (name, price) pairs in self.items, using Decimal(0) as the start value.\",\"evidence_ids\":[\"E1\"],\"symbol\":\"total\"},{\"id\":\"c2\",\"text\":\"self.items is a list of (str, Decimal) tuples initialised empty in Cart.__init__.\",\"evidence_ids\":[\"E11\"],\"symbol\":\"items\"},{\"id\":\"c3\",\"text\":\"Cart.add appends (name, round_money(price)) to self.items, so stored prices are rounded.\",\"evidence_ids\":[\"E13\"],\"symbol\":\"add\"},{\"id\":\"c4\",\"text\":\"Cart.describe computes format_price(self.total - self._discount()), so the discount is applied outside total.\",\"evidence_ids\":[\"E10\"],\"symbol\":\"describe\"}],\"refused\":false,\"refusal_reason\":null}",
             "type": "text"
           }
         ],
-        "id": "msg_docs_answer",
+        "diagnostics": null,
+        "id": "msg_011CgwjWKs55Qhq6HiC3pCYx",
         "model": "claude-sonnet-5-5",
         "role": "assistant",
+        "stop_details": null,
         "stop_reason": "end_turn",
         "stop_sequence": null,
         "type": "message",
         "usage": {
-          "cache_creation_input_tokens": 1150,
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 1383
+          },
+          "cache_creation_input_tokens": 1383,
           "cache_read_input_tokens": 0,
-          "input_tokens": 1900,
-          "output_tokens": 420
+          "inference_geo": "global",
+          "input_tokens": 1670,
+          "output_tokens": 421,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "service_tier": "standard",
+          "speed": "standard"
         }
       }
     }
   ],
-  "recorded_at": null,
-  "source": "docs"
+  "recorded_at": "2026-11-11",
+  "source": "live"
 }

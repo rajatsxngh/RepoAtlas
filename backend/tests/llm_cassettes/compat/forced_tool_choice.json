@@ -3,7 +3,7 @@
   "interactions": [
     {
       "error": {
-        "message": "invalid_request_error: tool_choice: type \"tool\" and \"any\" are not supported for this model.",
+        "message": "BadRequestError: litellm.BadRequestError: AnthropicException - {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"tool_choice: type \\\"tool\\\" and \\\"any\\\" are not supported for this model.\"},\"request_id\":\"req_011CgwjaavHizjvwoZJXEVnQ\"}",
         "status": 400
       },
       "request": {
@@ -40,6 +40,6 @@
       "response": null
     }
   ],
-  "recorded_at": null,
-  "source": "docs"
+  "recorded_at": "2026-11-11",
+  "source": "live"
 }

@@ -180,7 +180,6 @@ async def test_the_client_matches_the_recorded_structured_output() -> None:
         "small", case.first["messages"], schema=Capital, max_tokens=1024, cache_static=False
     )
     assert isinstance(result.parsed, Capital)
-    assert result.thinking_blocks
     assert result.assistant_message["content"] == result.blocks
 
 

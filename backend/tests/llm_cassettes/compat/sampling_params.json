@@ -3,7 +3,7 @@
   "interactions": [
     {
       "error": {
-        "message": "invalid_request_error: temperature is not supported for this model.",
+        "message": "UnsupportedParamsError: litellm.UnsupportedParamsError: claude-haiku-5-5 does not support temperature=0.2. Only temperature=1 is supported. To drop unsupported params, set `litellm.drop_params = True`.",
         "status": 400
       },
       "request": {
@@ -20,6 +20,6 @@
       "response": null
     }
   ],
-  "recorded_at": null,
-  "source": "docs"
+  "recorded_at": "2026-11-11",
+  "source": "live"
 }

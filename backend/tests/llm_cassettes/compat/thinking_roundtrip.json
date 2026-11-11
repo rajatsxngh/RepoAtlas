@@ -4,104 +4,125 @@
     {
       "error": null,
       "request": {
-        "max_tokens": 2048,
+        "max_tokens": 8192,
         "messages": [
           {
-            "content": "What is 17 * 23? Reply with the number.",
+            "content": "How many prime numbers are there between 1000 and 1100? Reply with just the number.",
             "role": "user"
           }
         ],
         "model": "claude-sonnet-5-5",
         "output_config": {
-          "effort": "low"
+          "effort": "high"
         }
       },
       "response": {
+        "container": null,
         "content": [
           {
-            "signature": "EqQBCkYIBxgCKkDdocs-signature",
+            "signature": "CAQSmAcKEAgTGAI4AUIIdGhpbmtpbmcSDNomCDz6YRdZi18GDBoMgb06sm6oFkejmjpcIjBiWxaKW1ow9EsmQkEgLtMaxCW/PkNRewzIaXVZTVzB0pBBWbPvi2NRu6pw8e4E5CgqtQZLdYE7qWSwD5MtZ6R3SUkKm7dcIWS9kKItAAO5ffYEgSryLXeJk4etyyADUbcB0xb2rX4Lc6zwtkFUvYKa4pVyoWq1fVV/g5UU4kaWpE9YFmXUT9xJtlIsPPYe0BjVbtbk/3P50Gc/Phw8IzQ4uWd5bsSo8ztPpbTB6SPL/Oh7X6Lad7tQRYPQilY+GMXYWOKpQ7u9/YedTAXnKPK0SpmVn/n/Cajv2Wnoo2rpGu5YZtWoAdnP872tozlgVZSqguK539QY54Ll5P9vFb0JKwKTqiJ/D3VXT4f1dE1an91aQhr9/cmDRSs1NUsXHzX2+5puowMjQxJthQp8cxokJqWdQwWERI0M3Hwgx/2l/yfOdiNtSOPHCYZMHq98kzGq9OZkfmmlQ4TuPxgrV1MkXvXbJ0YKuc+VWREJM5dV8ayIDOCYexpnANv5DJSqU5HVm6aJ4rAIDi7Kgc/WznmPhh3iGtS3XRtaONG4dZd8hjb06YM0RIO0tFGCOEFT0jOiGNJujKAH4UT/wX8N+63siA1dj+K5XGY1FICCH+lqlrkz3vepcbHgmmTO/+bFcyXLzD2vS/0wLrd76AV7oF3ni0qF1kvHtBmH2w9vWqg9XhC36Gp7fwRAP6ldDDwVKCqJUM0zQWb6mxf5SCRLgf35uTB1AdMlX3fHDSEWFPajmasNAv0NZOlJHIJQXN4Epyw/dlzXmcgKzKlR0H4QfMrj5Gs9y3Do541rILNcfGon7hqSQzjwlOmbmgBCelj5+ct9zfsMC5y1ntf23KUN9rJTI++mqItlt1bs/1oRkuIDzmfOQQqWdRwaFbDiAtPxYmel/NAn5PlNPEfpsWPOUCQOSG7JXUlbQigU5UVB7LvJnkklTG22Wpx09jVFxeEMPPv1WUur7ZG7d00wcDxiNuWvRlMr75CCPmTJXELIw0+kQm79OgufNKZm+naAAkgzaWWiHaoV9fOppQaq842XTOt3atkfuMUeN7UDPbxbWwj1I0VIE7E7udJ2BHwBhLQfsc6XSO2O3gJy3+s3CkF+nnLE8L9W371iSlXZeiuPjUV4D+ALxtLc74BPFWT5OtvtpvxhrpmvRKQgjxgB",
             "thinking": "",
             "type": "thinking"
           },
           {
-            "text": "391",
+            "text": "16",
             "type": "text"
           }
         ],
-        "id": "msg_docs_end_turn",
+        "diagnostics": null,
+        "id": "msg_011CgwjfEJTJAz2tyyrjLQQ3",
         "model": "claude-sonnet-5-5",
         "role": "assistant",
+        "stop_details": null,
         "stop_reason": "end_turn",
         "stop_sequence": null,
         "type": "message",
         "usage": {
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 0
+          },
           "cache_creation_input_tokens": 0,
           "cache_read_input_tokens": 0,
-          "input_tokens": 25,
-          "output_tokens": 80
+          "inference_geo": "global",
+          "input_tokens": 35,
+          "output_tokens": 178,
+          "output_tokens_details": {
+            "thinking_tokens": 175
+          },
+          "service_tier": "standard",
+          "speed": "standard"
         }
       }
     },
     {
       "error": null,
       "request": {
-        "max_tokens": 2048,
+        "max_tokens": 8192,
         "messages": [
           {
-            "content": "What is 17 * 23? Reply with the number.",
+            "content": "How many prime numbers are there between 1000 and 1100? Reply with just the number.",
             "role": "user"
           },
           {
             "content": [
               {
-                "signature": "EqQBCkYIBxgCKkDdocs-signature",
+                "signature": "CAQSmAcKEAgTGAI4AUIIdGhpbmtpbmcSDNomCDz6YRdZi18GDBoMgb06sm6oFkejmjpcIjBiWxaKW1ow9EsmQkEgLtMaxCW/PkNRewzIaXVZTVzB0pBBWbPvi2NRu6pw8e4E5CgqtQZLdYE7qWSwD5MtZ6R3SUkKm7dcIWS9kKItAAO5ffYEgSryLXeJk4etyyADUbcB0xb2rX4Lc6zwtkFUvYKa4pVyoWq1fVV/g5UU4kaWpE9YFmXUT9xJtlIsPPYe0BjVbtbk/3P50Gc/Phw8IzQ4uWd5bsSo8ztPpbTB6SPL/Oh7X6Lad7tQRYPQilY+GMXYWOKpQ7u9/YedTAXnKPK0SpmVn/n/Cajv2Wnoo2rpGu5YZtWoAdnP872tozlgVZSqguK539QY54Ll5P9vFb0JKwKTqiJ/D3VXT4f1dE1an91aQhr9/cmDRSs1NUsXHzX2+5puowMjQxJthQp8cxokJqWdQwWERI0M3Hwgx/2l/yfOdiNtSOPHCYZMHq98kzGq9OZkfmmlQ4TuPxgrV1MkXvXbJ0YKuc+VWREJM5dV8ayIDOCYexpnANv5DJSqU5HVm6aJ4rAIDi7Kgc/WznmPhh3iGtS3XRtaONG4dZd8hjb06YM0RIO0tFGCOEFT0jOiGNJujKAH4UT/wX8N+63siA1dj+K5XGY1FICCH+lqlrkz3vepcbHgmmTO/+bFcyXLzD2vS/0wLrd76AV7oF3ni0qF1kvHtBmH2w9vWqg9XhC36Gp7fwRAP6ldDDwVKCqJUM0zQWb6mxf5SCRLgf35uTB1AdMlX3fHDSEWFPajmasNAv0NZOlJHIJQXN4Epyw/dlzXmcgKzKlR0H4QfMrj5Gs9y3Do541rILNcfGon7hqSQzjwlOmbmgBCelj5+ct9zfsMC5y1ntf23KUN9rJTI++mqItlt1bs/1oRkuIDzmfOQQqWdRwaFbDiAtPxYmel/NAn5PlNPEfpsWPOUCQOSG7JXUlbQigU5UVB7LvJnkklTG22Wpx09jVFxeEMPPv1WUur7ZG7d00wcDxiNuWvRlMr75CCPmTJXELIw0+kQm79OgufNKZm+naAAkgzaWWiHaoV9fOppQaq842XTOt3atkfuMUeN7UDPbxbWwj1I0VIE7E7udJ2BHwBhLQfsc6XSO2O3gJy3+s3CkF+nnLE8L9W371iSlXZeiuPjUV4D+ALxtLc74BPFWT5OtvtpvxhrpmvRKQgjxgB",
                 "thinking": "",
                 "type": "thinking"
               },
               {
-                "text": "391",
+                "text": "16",
                 "type": "text"
               }
             ],
             "role": "assistant"
           },
           {
-            "content": "Now multiply that result by 3. Reply with the number.",
+            "content": "Now double that number. Reply with just the number.",
             "role": "user"
           }
         ],
         "model": "claude-sonnet-5-5",
         "output_config": {
-          "effort": "low"
+          "effort": "high"
         }
       },
       "response": {
+        "container": null,
         "content": [
           {
-            "signature": "EqQBCkYIBxgCKkDdocs-signature",
-            "thinking": "",
-            "type": "thinking"
-          },
-          {
-            "text": "1173",
+            "text": "32",
             "type": "text"
           }
         ],
-        "id": "msg_docs_end_turn",
+        "diagnostics": null,
+        "id": "msg_011CgwjfPLRK3d7xXjbL6RLz",
         "model": "claude-sonnet-5-5",
         "role": "assistant",
+        "stop_details": null,
         "stop_reason": "end_turn",
         "stop_sequence": null,
         "type": "message",
         "usage": {
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 0
+          },
           "cache_creation_input_tokens": 0,
           "cache_read_input_tokens": 0,
-          "input_tokens": 140,
-          "output_tokens": 70
+          "inference_geo": "global",
+          "input_tokens": 231,
+          "output_tokens": 3,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "service_tier": "standard",
+          "speed": "standard"
         }
       }
     }
   ],
-  "recorded_at": null,
-  "source": "docs"
+  "recorded_at": "2026-11-11",
+  "source": "live"
 }

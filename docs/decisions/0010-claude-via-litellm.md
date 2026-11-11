@@ -35,3 +35,10 @@ Checked against the current Claude documentation (claude-api skill, models cache
 - **Pricing (per million tokens, settings defaults).** Claude Sonnet 5.5: input $2.00, output $10.00, cache read $0.10, cache write $2.50. Claude Haiku 5.5: input $0.10, output $0.50, cache read $0.01, cache write $0.125 (prompts up to 100K tokens; answers stay far below that).
 
 Cassettes marked `"source": "docs"` were written from the documented shapes and are replaced when the live tests run; `refusal.json` stays docs-shaped because a refusal is never triggered on purpose.
+
+**Live check (2026-11-12, `uv run poe record-cassettes`, $0.014 in all).** Every case re-recorded from the API, with these refinements:
+- Forced `tool_choice: any` on Claude Sonnet 5.5: the API's 400 (`tool_choice: type "tool" and "any" are not supported`), as documented.
+- `temperature: 0.2` on Claude Haiku 5.5 is refused by LiteLLM before sending (`UnsupportedParamsError`, mapped to a 400 here): only the default is accepted. Same outcome; nothing sends it.
+- Adaptive thinking is truly adaptive: at effort `low`, simple prompts (arithmetic, a short JSON answer, a tool call) came back with no thinking block at all. The round-trip case uses effort `high` and a harder prompt; its thinking block had empty text (display omitted by default) and a signature, and passing it back unchanged was accepted on the next turn.
+- Caching: the second identical call read the whole 1,872-token static prefix from the cache (Haiku 5.5). The recorded answer on `py_small` wrote 1,383 cached tokens for the answer system prompt.
+- LiteLLM's Anthropic pass-through routes any request with tools through its MCP-gateway check, which imports the optional `mcp` package. The transport passes `_skip_mcp_handler=True` (our tools are never LiteLLM proxy references), so tool calls go straight to the API.

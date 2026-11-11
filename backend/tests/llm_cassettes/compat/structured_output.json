@@ -43,32 +43,40 @@
         }
       },
       "response": {
+        "container": null,
         "content": [
           {
-            "signature": "EqQBCkYIBxgCKkDdocs-signature",
-            "thinking": "",
-            "type": "thinking"
-          },
-          {
-            "text": "{\"country\": \"France\", \"capital\": \"Paris\", \"neighbours\": [\"Spain\", \"Belgium\", \"Germany\"]}",
+            "text": "{\"country\": \"France\", \"capital\": \"Paris\", \"neighbours\": [\"Belgium\", \"Germany\", \"Switzerland\"]}",
             "type": "text"
           }
         ],
-        "id": "msg_docs_end_turn",
+        "diagnostics": null,
+        "id": "msg_011CgwjWqo8Rino1yJay2CbH",
         "model": "claude-haiku-5-5",
         "role": "assistant",
+        "stop_details": null,
         "stop_reason": "end_turn",
         "stop_sequence": null,
         "type": "message",
         "usage": {
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 0
+          },
           "cache_creation_input_tokens": 0,
           "cache_read_input_tokens": 0,
-          "input_tokens": 40,
-          "output_tokens": 60
+          "inference_geo": "global",
+          "input_tokens": 278,
+          "output_tokens": 45,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "service_tier": "standard",
+          "speed": "standard"
         }
       }
     }
   ],
-  "recorded_at": null,
-  "source": "docs"
+  "recorded_at": "2026-11-11",
+  "source": "live"
 }

@@ -26,23 +26,36 @@
         ]
       },
       "response": {
+        "container": null,
         "content": [
           {
-            "text": "Hello.",
+            "text": "Hello!",
             "type": "text"
           }
         ],
-        "id": "msg_docs_end_turn",
+        "diagnostics": null,
+        "id": "msg_011CgwjXAQZj53e5d2XaahW7",
         "model": "claude-haiku-5-5",
         "role": "assistant",
+        "stop_details": null,
         "stop_reason": "end_turn",
         "stop_sequence": null,
         "type": "message",
         "usage": {
-          "cache_creation_input_tokens": 1210,
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 1872
+          },
+          "cache_creation_input_tokens": 1872,
           "cache_read_input_tokens": 0,
-          "input_tokens": 4,
-          "output_tokens": 5
+          "inference_geo": "global",
+          "input_tokens": 11,
+          "output_tokens": 6,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "service_tier": "standard",
+          "speed": "standard"
         }
       }
     },
@@ -71,27 +84,40 @@
         ]
       },
       "response": {
+        "container": null,
         "content": [
           {
-            "text": "Hello.",
+            "text": "Hello!",
             "type": "text"
           }
         ],
-        "id": "msg_docs_end_turn",
+        "diagnostics": null,
+        "id": "msg_011CgwjXDReR7z5MEEaVgTHY",
         "model": "claude-haiku-5-5",
         "role": "assistant",
+        "stop_details": null,
         "stop_reason": "end_turn",
         "stop_sequence": null,
         "type": "message",
         "usage": {
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 0
+          },
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 1210,
-          "input_tokens": 4,
-          "output_tokens": 5
+          "cache_read_input_tokens": 1872,
+          "inference_geo": "global",
+          "input_tokens": 11,
+          "output_tokens": 6,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "service_tier": "standard",
+          "speed": "standard"
         }
       }
     }
   ],
-  "recorded_at": null,
-  "source": "docs"
+  "recorded_at": "2026-11-11",
+  "source": "live"
 }
