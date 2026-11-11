@@ -1,6 +1,6 @@
 # M07 — LLM client & cited answers
 
-**Type of work:** AI application · **Size:** L (12 tasks) · **Status:** In progress
+**Type of work:** AI application · **Size:** L (12 tasks) · **Status:** Done
 
 ## Goal
 
@@ -133,7 +133,7 @@ cd ../frontend && npx playwright test ask
 
 Gate checked on 2026-11-12 on branch `m07-llm-cited-answers`.
 
-**Tests.** In `backend/`: `uv run poe check` passes on Windows: 1,051 passed, 1 skipped (creating symlinks needs extra privileges on Windows), 7 deselected (the `live` tests); ruff, mypy (247 files), and the docs lint pass. In `frontend/`: lint, typecheck, 249 unit tests, and all 9 Playwright tests (mock and real-API projects) pass. The OpenAPI spec and TypeScript types were regenerated with the ask, run, and trace endpoints; the spec test checks they are current.
+**Tests.** In `backend/`: `uv run poe check` passes on Windows: 1,051 passed, 1 skipped (creating symlinks needs extra privileges on Windows), 7 deselected (the `live` tests); ruff, mypy (247 files), and the docs lint pass. In `frontend/`: lint, typecheck, 249 unit tests, and all 10 Playwright tests (mock and real-API projects) pass. The OpenAPI spec and TypeScript types were regenerated with the ask, run, and trace endpoints; the spec test checks they are current.
 
 **Exit criteria**
 - *Unit and recorded-response tests pass with no network access.* The whole suite (`tests/`, unit and integration, 1,051 passed) ran under a guard that refused every connection outside localhost and recorded each attempt: zero attempts. The first guarded run caught two real leaks, fixed in `0ac194b`: LiteLLM in its default mode loads `.env` into `os.environ` at import (so a test after it saw the real API key and tried a real call, which the guard blocked) and fetches its price map and beta-header config from GitHub. `repoatlas.llm` now sets production mode and the bundled copies before LiteLLM can be imported; `tests/unit/llm/test_litellm_env.py` checks both in a subprocess.
@@ -163,3 +163,5 @@ Gate checked on 2026-11-12 on branch `m07-llm-cited-answers`.
 - Questions get their own rate limit (20 per hour per client), since each one costs money.
 
 **Cost of the milestone's live runs.** $0.666 in all (recordings $0.014, smoke run $0.652).
+
+**CI.** Run [43107555940](https://github.com/rajatsxngh/RepoAtlas/actions/runs/43107555940) failed on Linux: the Ask button widened the map header's button group past its box, so the Path button sat under the theme toggle and couldn't be clicked. `fa8d1fe` lets the search box shrink instead and adds a mock e2e test that every header button ends before the toggle. Run [43109928361](https://github.com/rajatsxngh/RepoAtlas/actions/runs/43109928361) on `fa8d1fe` then passed all five jobs: the Linux full check, the Windows unit tests, the API types job, the docs lint, and the frontend job (lint, typecheck, unit tests, and all 10 Playwright tests).
