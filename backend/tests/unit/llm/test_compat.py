@@ -234,3 +234,4 @@ async def test_recording_writes_bodies_only(tmp_path: Path) -> None:
     recorder.save()
     replayed = await CassetteTransport(path).send({"model": "m", "messages": USER}, timeout_s=1)
     assert replayed["stop_reason"] == "end_turn"
+    assert b"\r\n" not in path.read_bytes()

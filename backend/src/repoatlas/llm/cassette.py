@@ -109,4 +109,5 @@ class CassetteTransport:
             raise ValueError("Only a recording cassette can be saved.")
         self.path.parent.mkdir(parents=True, exist_ok=True)
         data = self.cassette.model_dump(mode="json")
-        self.path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        text = json.dumps(data, indent=2, sort_keys=True) + "\n"
+        self.path.write_text(text, encoding="utf-8", newline="\n")  # LF on every OS
