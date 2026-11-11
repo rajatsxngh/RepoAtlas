@@ -42,10 +42,14 @@ async def test_build_follow_and_read_a_repository_over_http(
         pending = (await client.get(base)).json()
         assert (pending["status"], pending["job"]["id"]) == ("pending", job_id)
 
+        # The first poll comes before the worker starts, so it always sees the job queued.
+        first = (await client.get(f"{API_PREFIX}/jobs/{job_id}")).json()
+        seen: list[tuple[str, str | None, float]] = [
+            (first["status"], first["stage"], first["progress"])
+        ]
         worker = Worker(settings, engine=pg_engine, worker_id="e2e", poll_s=0.05)
         thread = threading.Thread(target=worker.run, kwargs={"max_jobs": 1}, daemon=True)
         thread.start()
-        seen: list[tuple[str, str | None, float]] = []
         loop = asyncio.get_running_loop()
         deadline = loop.time() + TIMEOUT_S
         while True:
