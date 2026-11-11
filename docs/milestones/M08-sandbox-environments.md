@@ -1,6 +1,6 @@
 # M08 — Sandbox & benchmark environments
 
-**Type of work:** Test infrastructure · **Size:** L (11 tasks) · **Status:** Not started
+**Type of work:** Test infrastructure · **Size:** L (11 tasks) · **Status:** In progress
 
 ## Goal
 
@@ -106,7 +106,7 @@ Test runs use:
 
 ## Tasks
 
-- [ ] **T1 — Recipe schema.** Pydantic model, loader, validation errors with line numbers.
+- [x] **T1 — Recipe schema.** Pydantic model, loader, validation errors with line numbers.
 - [ ] **T2 — Proxy and internal network.** Proxy config and setup command; test that an allowlisted registry works and any other host (and the Docker host) is blocked.
 - [ ] **T3 — Base images and image builds.** Source baked in from `fetch_source`; digests recorded.
 - [ ] **T4 — Hardened runner.** `hardened_run_args`; tests that a container has no network, can't reach the host, has a read-only root, respects memory/pids limits, and is killed at the timeout.
