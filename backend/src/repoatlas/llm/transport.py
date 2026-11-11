@@ -11,7 +11,6 @@ error messages are scrubbed of anything that looks like an API key.
 
 from __future__ import annotations
 
-import os
 import re
 from typing import Any, Protocol
 
@@ -88,9 +87,8 @@ class LiteLLMTransport:
 
 
 def _litellm() -> Any:
-    """Import LiteLLM on first use (it is slow to import) with its network features off."""
-    # Use the bundled model map instead of fetching one at import; prices come from settings.
-    os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
+    """Import LiteLLM on first use (it is slow to import); ``repoatlas.llm`` has already turned
+    off its ``.env`` loading and network fetches."""
     import litellm
 
     litellm.suppress_debug_info = True
