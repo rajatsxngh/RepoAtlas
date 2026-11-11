@@ -85,7 +85,7 @@ class Settings(BaseSettings):
     llm_retry_max_s: float = 30.0
     llm_prices: dict[str, ModelPrice] = Field(default_factory=lambda: dict(DEFAULT_PRICES))
 
-    # Answers (decision 0011). The score threshold is provisional, set from the smoke run.
+    # Answers (decision 0011). The score threshold was checked on the smoke run (see policy.py).
     refusal_min_retrieval_score: float = 0.02
     answer_max_cost_usd: float = 0.25  # per answer
     answer_max_output_tokens: int = 4_096

@@ -1,6 +1,6 @@
 # M07 — LLM client & cited answers
 
-**Type of work:** AI application · **Size:** L (12 tasks) · **Status:** Not started
+**Type of work:** AI application · **Size:** L (12 tasks) · **Status:** In progress
 
 ## Goal
 
@@ -103,15 +103,15 @@ Invalid citations are removed; a claim with no remaining valid citation is dropp
 - [x] **T9 — Ask API.** `qa_runs` migration; SSE endpoint; `GET /qa/{id}`; `GET /traces/{id}`; regenerate OpenAPI and TypeScript types.
 - [x] **T10 — Ask panel.** Question box, status, answer rendering, citation chips → code viewer and highlight layer; Playwright test with mock mode.
 - [x] **T11 — Cassette workflow.** `live` marker, recording command, documentation in `CLAUDE.md`.
-- [ ] **T12 — Smoke run.** Run the 20 questions live with a cost cap; record pre-filter validity, dropped-claim rate, refusals, cost, and latency in Results.
+- [x] **T12 — Smoke run.** Run the 20 questions live with a cost cap; record pre-filter validity, dropped-claim rate, refusals, cost, and latency in Results.
 
 ## Exit criteria
 
-- [ ] Unit and recorded-response tests pass with no network access.
-- [ ] The smoke run records pre-filter citation validity and dropped-claim rate for all 20 questions.
-- [ ] All 5 unanswerable smoke questions are refused for evidence reasons.
-- [ ] Every LLM call in the smoke run has a span with tokens, cost, and latency, and every answer has a trace ID.
-- [ ] Playwright: asking in the UI shows an answer whose citation opens the code viewer and highlights the map.
+- [x] Unit and recorded-response tests pass with no network access.
+- [x] The smoke run records pre-filter citation validity and dropped-claim rate for all 20 questions.
+- [x] All 5 unanswerable smoke questions are refused for evidence reasons.
+- [x] Every LLM call in the smoke run has a span with tokens, cost, and latency, and every answer has a trace ID.
+- [x] Playwright: asking in the UI shows an answer whose citation opens the code viewer and highlights the map.
 
 ## Verification
 
@@ -131,4 +131,35 @@ cd ../frontend && npx playwright test ask
 
 ## Results
 
-_Filled in at the gate._
+Gate checked on 2026-11-12 on branch `m07-llm-cited-answers`.
+
+**Tests.** In `backend/`: `uv run poe check` passes on Windows: 1,051 passed, 1 skipped (creating symlinks needs extra privileges on Windows), 7 deselected (the `live` tests); ruff, mypy (247 files), and the docs lint pass. In `frontend/`: lint, typecheck, 249 unit tests, and all 9 Playwright tests (mock and real-API projects) pass. The OpenAPI spec and TypeScript types were regenerated with the ask, run, and trace endpoints; the spec test checks they are current.
+
+**Exit criteria**
+- *Unit and recorded-response tests pass with no network access.* The whole suite (`tests/`, unit and integration, 1,051 passed) ran under a guard that refused every connection outside localhost and recorded each attempt: zero attempts. The first guarded run caught two real leaks, fixed in `0ac194b`: LiteLLM in its default mode loads `.env` into `os.environ` at import (so a test after it saw the real API key and tried a real call, which the guard blocked) and fetches its price map and beta-header config from GitHub. `repoatlas.llm` now sets production mode and the bundled copies before LiteLLM can be imported; `tests/unit/llm/test_litellm_env.py` checks both in a subprocess.
+- *The smoke run records pre-filter citation validity and dropped-claim rate for all 20 questions.* `uv run repoatlas ask-smoke --snapshot 13 --max-cost 2.00` on `colinhacks/zod` @ `19c40d2` (the M06 snapshot with `jinaai/jina-embeddings-v2-base-code` vectors); summary in [`eval/smoke/results/2026-11-12-snapshot13.json`](../../eval/smoke/results/2026-11-12-snapshot13.json). Every question has both numbers or, where the answer made no claims, a recorded "nothing to measure" (`null`): the three refusals made before or without claims.
+
+  | | Questions | Result | Pre-filter citation validity | Dropped-claim rate |
+  |---|---|---|---|---|
+  | Answerable | 15 | 15 answered; an expected symbol cited in 14 | mean 97.1% (pooled 96.5%); a01 89%, a12 88%, a14 75%, the rest 100% | 0% for all 15 |
+  | Unanswerable | 5 | 5 refused for evidence | u03, u05 100%; u01, u02, u04 none | 0% where measured |
+
+  a11 ("how does catch supply a fallback in v3?") was answered from `v3/tests/catch.test.ts` without citing `ZodType.catch` itself. No claim was dropped anywhere: the invalid citations sat on claims that also had a valid one.
+- *All 5 unanswerable smoke questions are refused for evidence reasons.* u01 (Redis sessions) and u02 (HTTP server port) scored 0.0164 (top in the vector list only) and were refused before any LLM call, at no cost. u03 (bcrypt), u04 (PostgreSQL pool), and u05 (S3 uploads) scored 0.032 to 0.048 and were refused by the model after reading the evidence (for example: "No PostgreSQL or database connection pool code appears in the evidence; 'pool' refers only to…").
+- *Every LLM call in the smoke run has a span with tokens, cost, and latency, and every answer has a trace ID.* The run checks each stored trace: all 20 answers have a trace, and each of the 18 answers that called the model has exactly one `llm` span with input and output tokens, cache reads, cost, and `latency_ms` (`every_llm_call_has_a_span: true`).
+- *Playwright: asking in the UI shows an answer whose citation opens the code viewer and highlights the map.* `frontend/e2e/mock/ask.spec.ts`: asks about `create_app` in mock mode, clicks the `app.py:22–23` chip, sees lines 22–23 marked in the code viewer, and the `create_app` node revealed with a `primary` highlight; a second test checks an evidence refusal.
+
+**Smoke run numbers.** Total cost $0.652 (cap $2.00; no question skipped), about $0.033 per answered question. Latency: median 6.5 s, max 23.8 s (the first question, which also paid for loading the embedding model and the graph); evidence refusals before the call took 0.4 s. Input was 5,500 to 25,000 tokens per answer, and every call read the 1,383-token system prompt from the cache.
+
+**Refusal threshold.** `refusal_min_retrieval_score` stays at 0.02. The lowest answerable question scored 0.0285; two unanswerable ones scored 0.0164 and were refused for free. The other three unanswerable ones (0.032 to 0.048) overlap the answerable range, so no score threshold separates them on this set; the model's own evidence refusal caught all three. Tuning on the dev split is still to come (PRD §9.5).
+
+**Live compatibility check.** `uv run poe record-cassettes` recorded every compat case and one end-to-end answer from the API ($0.014). Findings beyond the docs (decision 0010 addendum): `temperature` is refused by LiteLLM before sending; at effort `low` adaptive thinking skipped thinking on simple prompts, so the round-trip case uses effort `high`; LiteLLM's pass-through needed `_skip_mcp_handler=True` for requests with tools (`a2de113`). `refusal.json` stays docs-shaped: refusals are never triggered on purpose.
+
+**Deviations from the design notes**
+- Calls go through LiteLLM's Anthropic-format interface (`litellm.anthropic.messages.acreate`), not its OpenAI-format `completion`, so request bodies reach the API as written (decision 0010 addendum).
+- The API's server-side refusal `fallbacks` are off: a fallback model would answer instead of surfacing an `api` refusal (backlog).
+- The validator also removes the `[cN]` markers of dropped claims from the answer, and `qa_runs` stores the full result as JSON (draft included) next to the queryable columns; `spans` has a `seq` column because Windows clocks tie.
+- A worst-case cost check (the call and its repair attempt) turns a possible budget overrun into a `budget` refusal before calling; `ask-smoke` uses the same bound to stop before the cap.
+- Questions get their own rate limit (20 per hour per client), since each one costs money.
+
+**Cost of the milestone's live runs.** $0.666 in all (recordings $0.014, smoke run $0.652).

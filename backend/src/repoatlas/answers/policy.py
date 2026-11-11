@@ -10,10 +10,13 @@ Refusals have kinds, recorded separately:
 - ``api``: the model stopped with a refusal stop reason.
 - ``budget``: the call could exceed the answer's cost budget, so it isn't made.
 
-The score threshold is provisional (set from the smoke run; PRD §9.5 has it tuned on the dev
-split's unanswerable questions later). With reciprocal-rank fusion (k = 60), a chunk first in
-one list scores about 0.0164 and first in both about 0.033, so the default 0.02 asks that the
-best chunk was found by both searches or named exactly.
+The score threshold is provisional (PRD §9.5 has it tuned on the dev split's unanswerable
+questions later). With reciprocal-rank fusion (k = 60), a chunk first in one list scores about
+0.0164 and first in both about 0.033, so the default 0.02 asks that the best chunk was found by
+both searches or named exactly. The M07 smoke run on zod kept it: the lowest answerable question
+scored 0.0285, two unanswerable ones scored 0.0164 (refused with no call), and the other three
+(0.032 to 0.048) overlapped the answerable range, so no threshold could separate them; the
+model refused those for lack of evidence after reading it.
 """
 
 from __future__ import annotations
