@@ -67,12 +67,25 @@ def test_only_the_most_recent_clients_are_kept() -> None:
 
 def test_settings_configure_the_limits() -> None:
     limiter = RateLimiter.from_settings(
-        api_settings(builds_per_hour=7, reads_per_minute=9, rate_limit_salt=SecretStr("pepper"))
+        api_settings(
+            builds_per_hour=7,
+            asks_per_hour=4,
+            reads_per_minute=9,
+            rate_limit_salt=SecretStr("pepper"),
+        )
     )
-    assert limiter.limits == {"build": Limit(7, 3600.0), "read": Limit(9, 60.0)}
+    assert limiter.limits == {
+        "build": Limit(7, 3600.0),
+        "ask": Limit(4, 3600.0),
+        "read": Limit(9, 60.0),
+    }
     assert limiter.client_key("x") == RateLimiter(limiter.limits, salt=b"pepper").client_key("x")
     defaults = RateLimiter.from_settings(api_settings())
-    assert defaults.limits == {"build": Limit(5, 3600.0), "read": Limit(120, 60.0)}
+    assert defaults.limits == {
+        "build": Limit(5, 3600.0),
+        "ask": Limit(20, 3600.0),
+        "read": Limit(120, 60.0),
+    }
     with pytest.raises(ValueError):
         Limit(0, 60.0)
 
@@ -83,6 +96,8 @@ def test_settings_configure_the_limits() -> None:
         ("POST", "/api/v1/repos", "build"),
         ("POST", "/api/v1/repos/", "build"),
         ("GET", "/api/v1/repos", "read"),
+        ("POST", "/api/v1/snapshots/1/ask", "ask"),
+        ("GET", "/api/v1/qa/4", "read"),
         ("GET", "/api/v1/snapshots/1/subgraph", "read"),
         ("GET", "/api/v1/jobs/3", "read"),
         ("GET", "/api/v1/nothing", "read"),

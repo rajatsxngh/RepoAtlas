@@ -19,6 +19,8 @@ Blob text is read through the store's ``blobs`` table (``StoreBlobs``), never fr
 from __future__ import annotations
 
 import re
+import threading
+from collections import OrderedDict
 from typing import Literal, Protocol
 
 from pydantic import BaseModel
@@ -35,19 +37,28 @@ class BlobSource(Protocol):
 
 
 class StoreBlobs:
-    """Blob text from the store's ``blobs`` table, cached per instance."""
+    """Blob text from the store's ``blobs`` table, keeping the most recent ``cache_size``."""
 
-    def __init__(self, engine: Engine) -> None:
+    def __init__(self, engine: Engine, cache_size: int = 64) -> None:
         self.engine = engine
-        self._cache: dict[str, str | None] = {}
+        self.cache_size = cache_size
+        self._cache: OrderedDict[str, str | None] = OrderedDict()
+        self._lock = threading.Lock()
 
     def text(self, blob_oid: str) -> str | None:
-        if blob_oid not in self._cache:
-            with self.engine.connect() as connection:
-                self._cache[blob_oid] = connection.execute(
-                    text("SELECT text FROM blobs WHERE oid = :oid"), {"oid": blob_oid}
-                ).scalar_one_or_none()
-        return self._cache[blob_oid]
+        with self._lock:
+            if blob_oid in self._cache:
+                self._cache.move_to_end(blob_oid)
+                return self._cache[blob_oid]
+        with self.engine.connect() as connection:
+            value: str | None = connection.execute(
+                text("SELECT text FROM blobs WHERE oid = :oid"), {"oid": blob_oid}
+            ).scalar_one_or_none()
+        with self._lock:
+            self._cache[blob_oid] = value
+            while len(self._cache) > self.cache_size:
+                self._cache.popitem(last=False)
+        return value
 
 
 class CitationCheck(BaseModel):

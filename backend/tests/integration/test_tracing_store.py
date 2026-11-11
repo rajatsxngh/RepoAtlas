@@ -18,7 +18,7 @@ from repoatlas.tracing.store import SqlTraceSink, load_trace
 def clean_traces(pg_engine: Engine) -> Iterator[None]:
     yield
     with pg_engine.begin() as connection:
-        connection.execute(text("TRUNCATE traces, spans"))
+        connection.execute(text("TRUNCATE traces, spans CASCADE"))
 
 
 def test_tables_exist(pg_engine: Engine) -> None:

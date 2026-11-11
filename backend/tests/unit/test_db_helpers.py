@@ -8,7 +8,7 @@ from repoatlas.db.engine import redact_url
 
 
 def test_head_revision_is_the_job_queue() -> None:
-    assert migrate.head_revision() == "0005_tracing"
+    assert migrate.head_revision() == "0006_qa_runs"
 
 
 def test_alembic_config_keeps_percent_encoded_passwords() -> None:

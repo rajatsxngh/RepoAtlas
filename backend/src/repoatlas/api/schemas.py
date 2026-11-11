@@ -4,15 +4,24 @@ models (``repoatlas.store.results``), so nodes and edges look the same everywher
 from __future__ import annotations
 
 import re
+import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
 from fastapi import Path, Query
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, JsonValue
 
+from repoatlas.answers.schema import (
+    AnswerMetrics,
+    AnswerResult,
+    Citation,
+    Claim,
+    RefusalKind,
+)
 from repoatlas.graph.model import Node, Owner
 from repoatlas.jobs.models import JobStatus
 from repoatlas.jobs.queue import Job
+from repoatlas.llm.types import Usage
 from repoatlas.store.models import SnapshotStatus
 from repoatlas.store.results import RepoInfo, SnapshotInfo, SymbolMatch
 
@@ -231,3 +240,37 @@ class SearchResults(_Schema):
 
     query: str
     results: list[SymbolMatch]
+
+
+# --- answers ----------------------------------------------------------------------------
+
+
+class AnswerView(BaseModel):
+    """A validated answer: only claims with a valid citation, each citation an evidence
+    reference. ``metrics`` were measured before invalid citations were removed."""
+
+    run_id: int | None = None
+    answer_markdown: str
+    claims: list[Claim]
+    citations: list[Citation]
+    refused: bool
+    refusal_kind: RefusalKind | None
+    refusal_reason: str | None
+    usage: Usage
+    cost_usd: float
+    trace_id: uuid.UUID | None
+    metrics: AnswerMetrics
+
+
+def answer_view(result: AnswerResult, *, run_id: int | None = None) -> AnswerView:
+    """The public part of a result (the model's draft stays in the database)."""
+    return AnswerView.model_validate({**result.model_dump(exclude={"draft"}), "run_id": run_id})
+
+
+class QaRunView(BaseModel):
+    id: int
+    snapshot_id: int
+    mode: str
+    question: str
+    created_at: datetime
+    answer: AnswerView

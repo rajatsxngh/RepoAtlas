@@ -1,9 +1,10 @@
 """Per-client rate limits (API-6): token buckets kept in this process (one API instance in v1).
 
 A client is the sha256 of its IP address with a salt, so addresses are never kept (NFR-9).
-Build requests (``POST /repos``) and reads (every other route under ``/api/v1`` except the
-probes and the API docs) have separate buckets: by default 5 builds per hour and 120 reads per
-minute. A bucket holds up to its limit and refills continuously; when it is empty the request
+Build requests (``POST /repos``), questions (``POST /snapshots/{id}/ask``, which cost money),
+and reads (every other route under ``/api/v1`` except the probes and the API docs) have separate
+buckets: by default 5 builds and 20 questions per hour, and 120 reads per minute. A bucket
+holds up to its limit and refills continuously; when it is empty the request
 gets 429 ``rate_limited`` with ``Retry-After``, the seconds until a token is back.
 
 Behind a reverse proxy, run uvicorn with ``--proxy-headers`` and ``--forwarded-allow-ips`` so
@@ -27,7 +28,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from repoatlas.api.errors import ErrorCode, error_response
 from repoatlas.config import Settings
 
-Group = Literal["build", "read"]
+Group = Literal["build", "ask", "read"]
 MAX_CLIENTS = 10_000  # buckets kept per group; the least recently seen are dropped first
 
 
@@ -87,6 +88,7 @@ class RateLimiter:
         return cls(
             {
                 "build": Limit(settings.builds_per_hour, 3600.0),
+                "ask": Limit(settings.asks_per_hour, 3600.0),
                 "read": Limit(settings.reads_per_minute, 60.0),
             },
             salt=salt.get_secret_value().encode("utf-8") if salt is not None else None,
@@ -133,6 +135,8 @@ class RateLimitMiddleware:
             return None
         if method == "POST" and path.rstrip("/") == f"{self.prefix}/repos":
             return "build"
+        if method == "POST" and path.rstrip("/").endswith("/ask"):
+            return "ask"
         return "read"
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

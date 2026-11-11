@@ -1376,6 +1376,260 @@
         }
       }
     },
+    "/api/v1/snapshots/{snapshot_id}/ask": {
+      "post": {
+        "tags": [
+          "answers"
+        ],
+        "summary": "Ask",
+        "description": "Answer a question about the snapshot with cited code, streaming each step.",
+        "operationId": "ask",
+        "parameters": [
+          {
+            "name": "snapshot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "description": "Snapshot ID.",
+              "title": "Snapshot Id"
+            },
+            "description": "Snapshot ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server-sent events: `status` (`{step}`), `answer` (an `AnswerView`), `done` (`{run_id, trace_id}`), or `error` (the error model).",
+            "content": {
+              "text/event-stream": {}
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/qa/{run_id}": {
+      "get": {
+        "tags": [
+          "answers"
+        ],
+        "summary": "Get Qa Run",
+        "description": "A stored answer with its citations and metrics.",
+        "operationId": "get_qa_run",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "description": "The run's ID.",
+              "title": "Run Id"
+            },
+            "description": "The run's ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QaRunView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (see Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/traces/{trace_id}": {
+      "get": {
+        "tags": [
+          "answers"
+        ],
+        "summary": "Get Trace",
+        "description": "A trace with its spans: steps, models, tokens, cost, and time.",
+        "operationId": "get_trace",
+        "parameters": [
+          {
+            "name": "trace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Trace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraceView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (see Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -1472,6 +1726,196 @@
         "title": "AggregatedEdge",
         "description": "Edges of one kind between two children: how many, and their confidence range."
       },
+      "AnswerMetrics": {
+        "properties": {
+          "prefilter_citation_validity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prefilter Citation Validity"
+          },
+          "dropped_claim_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dropped Claim Rate"
+          },
+          "citations_total": {
+            "type": "integer",
+            "title": "Citations Total",
+            "default": 0
+          },
+          "citations_valid": {
+            "type": "integer",
+            "title": "Citations Valid",
+            "default": 0
+          },
+          "claims_total": {
+            "type": "integer",
+            "title": "Claims Total",
+            "default": 0
+          },
+          "claims_dropped": {
+            "type": "integer",
+            "title": "Claims Dropped",
+            "default": 0
+          },
+          "evidence_count": {
+            "type": "integer",
+            "title": "Evidence Count",
+            "default": 0
+          },
+          "retrieval_top_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieval Top Score"
+          }
+        },
+        "type": "object",
+        "title": "AnswerMetrics",
+        "description": "Measured before invalid citations are removed (decision 0011). Rates are ``None`` when\nthere was nothing to measure (no claims, no citations)."
+      },
+      "AnswerView": {
+        "properties": {
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "answer_markdown": {
+            "type": "string",
+            "title": "Answer Markdown"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "type": "array",
+            "title": "Claims"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "title": "Citations"
+          },
+          "refused": {
+            "type": "boolean",
+            "title": "Refused"
+          },
+          "refusal_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "evidence",
+                  "api",
+                  "budget"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal Kind"
+          },
+          "refusal_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal Reason"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/AnswerMetrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer_markdown",
+          "claims",
+          "citations",
+          "refused",
+          "refusal_kind",
+          "refusal_reason",
+          "usage",
+          "cost_usd",
+          "trace_id",
+          "metrics"
+        ],
+        "title": "AnswerView",
+        "description": "A validated answer: only claims with a valid citation, each citation an evidence\nreference. ``metrics`` were measured before invalid citations were removed."
+      },
+      "AskRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Question",
+            "description": "The question, in plain language."
+          },
+          "mode": {
+            "type": "string",
+            "const": "oneshot",
+            "title": "Mode",
+            "description": "The answering mode.",
+            "default": "oneshot"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest"
+      },
       "BuildAccepted": {
         "properties": {
           "snapshot_id": {
@@ -1537,6 +1981,72 @@
           "url"
         ],
         "title": "BuildRequestBody"
+      },
+      "Citation": {
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "evidence_id": {
+            "type": "string",
+            "title": "Evidence Id"
+          },
+          "ref": {
+            "$ref": "#/components/schemas/EvidenceRef"
+          }
+        },
+        "type": "object",
+        "required": [
+          "claim_id",
+          "evidence_id",
+          "ref"
+        ],
+        "title": "Citation"
+      },
+      "Claim": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "title": "Evidence Ids"
+          },
+          "symbol": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbol"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "evidence_ids"
+        ],
+        "title": "Claim",
+        "description": "One statement in the answer, citing the evidence that supports it. ``symbol`` names the\nidentifier the claim is about, when there is one (it must appear in a cited range)."
       },
       "CodeSlice": {
         "properties": {
@@ -1751,6 +2261,8 @@
           "rate_limited",
           "snapshot_not_ready",
           "upstream_unavailable",
+          "llm_unavailable",
+          "answer_failed",
           "internal"
         ],
         "title": "ErrorCode",
@@ -1768,6 +2280,51 @@
         ],
         "title": "ErrorResponse",
         "description": "The body of every error response."
+      },
+      "EvidenceRef": {
+        "properties": {
+          "blob_oid": {
+            "type": "string",
+            "pattern": "[0-9a-f]{7,40}",
+            "title": "Blob Oid"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Path"
+          },
+          "start_line": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Start Line"
+          },
+          "end_line": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "End Line"
+          },
+          "symbol_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbol Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "blob_oid",
+          "path",
+          "start_line",
+          "end_line"
+        ],
+        "title": "EvidenceRef",
+        "description": "Lines ``start_line`` to ``end_line`` of blob ``blob_oid`` at ``path``."
       },
       "GraphPath": {
         "properties": {
@@ -2266,6 +2823,44 @@
         ],
         "title": "Provenance"
       },
+      "QaRunView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "snapshot_id": {
+            "type": "integer",
+            "title": "Snapshot Id"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "answer": {
+            "$ref": "#/components/schemas/AnswerView"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "snapshot_id",
+          "mode",
+          "question",
+          "created_at",
+          "answer"
+        ],
+        "title": "QaRunView"
+      },
       "Range": {
         "properties": {
           "start_line": {
@@ -2533,6 +3128,138 @@
         "title": "SnapshotView",
         "description": "A snapshot (any status): the repository, commit, configuration, and build stats."
       },
+      "SpanView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "ok",
+              "error"
+            ],
+            "title": "Status"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "tokens_in": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens In"
+          },
+          "tokens_out": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens Out"
+          },
+          "cache_read_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Read Tokens"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "attrs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Attrs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "parent_id",
+          "name",
+          "kind",
+          "model",
+          "status",
+          "started_at",
+          "ended_at",
+          "tokens_in",
+          "tokens_out",
+          "cache_read_tokens",
+          "cost_usd",
+          "attrs"
+        ],
+        "title": "SpanView"
+      },
       "Subgraph": {
         "properties": {
           "parent": {
@@ -2601,6 +3328,116 @@
         ],
         "title": "SymbolMatch",
         "description": "A search hit: ``exact`` (key, name, or qualified name, ignoring case), ``prefix``, or\n``fuzzy`` (trigram similarity); ``score`` is the best trigram similarity (0 to 1)."
+      },
+      "TraceView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "ok",
+              "error"
+            ],
+            "title": "Status"
+          },
+          "tokens_in": {
+            "type": "integer",
+            "title": "Tokens In"
+          },
+          "tokens_out": {
+            "type": "integer",
+            "title": "Tokens Out"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          },
+          "spans": {
+            "items": {
+              "$ref": "#/components/schemas/SpanView"
+            },
+            "type": "array",
+            "title": "Spans"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "snapshot_id",
+          "started_at",
+          "ended_at",
+          "status",
+          "tokens_in",
+          "tokens_out",
+          "cost_usd",
+          "spans"
+        ],
+        "title": "TraceView"
+      },
+      "Usage": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens",
+            "default": 0
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens",
+            "default": 0
+          },
+          "cache_read_tokens": {
+            "type": "integer",
+            "title": "Cache Read Tokens",
+            "default": 0
+          },
+          "cache_write_tokens": {
+            "type": "integer",
+            "title": "Cache Write Tokens",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "Usage",
+        "description": "Tokens of one call (or a sum of calls). ``input_tokens`` excludes cached tokens."
       }
     }
   }

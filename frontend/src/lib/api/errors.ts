@@ -15,6 +15,8 @@ const SERVER_CODES: ReadonlySet<string> = new Set<ErrorCode>([
   "rate_limited",
   "snapshot_not_ready",
   "upstream_unavailable",
+  "llm_unavailable",
+  "answer_failed",
   "internal",
 ]);
 
@@ -138,6 +140,10 @@ export function describeError(error: unknown): ErrorDescription {
           };
     case "upstream_unavailable":
       return { title: "GitHub didn't answer", detail: error.message };
+    case "llm_unavailable":
+      return { title: "Answers aren't set up", detail: error.message };
+    case "answer_failed":
+      return { title: "No answer this time", detail: error.message };
     case "snapshot_not_ready":
       return { title: "The map is still being built", detail: error.message };
     case "network":

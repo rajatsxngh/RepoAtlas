@@ -97,6 +97,7 @@ class Settings(BaseSettings):
     max_body_bytes: int = 65_536  # request bodies (build requests are tiny)
     rate_limit_enabled: bool = True
     builds_per_hour: int = 5  # build requests per client
+    asks_per_hour: int = 20  # questions per client (each one calls the LLM)
     reads_per_minute: int = 120  # other API requests per client
     rate_limit_salt: SecretStr | None = None  # hashes client addresses; random per process if unset
 

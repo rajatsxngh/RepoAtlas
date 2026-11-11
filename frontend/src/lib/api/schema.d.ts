@@ -258,6 +258,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/snapshots/{snapshot_id}/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask
+         * @description Answer a question about the snapshot with cited code, streaming each step.
+         */
+        post: operations["ask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/qa/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Qa Run
+         * @description A stored answer with its citations and metrics.
+         */
+        get: operations["get_qa_run"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/traces/{trace_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Trace
+         * @description A trace with its spans: steps, models, tokens, cost, and time.
+         */
+        get: operations["get_trace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -320,6 +380,86 @@ export interface components {
             max_confidence: number;
         };
         /**
+         * AnswerMetrics
+         * @description Measured before invalid citations are removed (decision 0011). Rates are ``None`` when
+         *     there was nothing to measure (no claims, no citations).
+         */
+        AnswerMetrics: {
+            /** Prefilter Citation Validity */
+            prefilter_citation_validity?: number | null;
+            /** Dropped Claim Rate */
+            dropped_claim_rate?: number | null;
+            /**
+             * Citations Total
+             * @default 0
+             */
+            citations_total: number;
+            /**
+             * Citations Valid
+             * @default 0
+             */
+            citations_valid: number;
+            /**
+             * Claims Total
+             * @default 0
+             */
+            claims_total: number;
+            /**
+             * Claims Dropped
+             * @default 0
+             */
+            claims_dropped: number;
+            /**
+             * Evidence Count
+             * @default 0
+             */
+            evidence_count: number;
+            /** Retrieval Top Score */
+            retrieval_top_score?: number | null;
+        };
+        /**
+         * AnswerView
+         * @description A validated answer: only claims with a valid citation, each citation an evidence
+         *     reference. ``metrics`` were measured before invalid citations were removed.
+         */
+        AnswerView: {
+            /** Run Id */
+            run_id?: number | null;
+            /** Answer Markdown */
+            answer_markdown: string;
+            /** Claims */
+            claims: components["schemas"]["Claim"][];
+            /** Citations */
+            citations: components["schemas"]["Citation"][];
+            /** Refused */
+            refused: boolean;
+            /** Refusal Kind */
+            refusal_kind: ("evidence" | "api" | "budget") | null;
+            /** Refusal Reason */
+            refusal_reason: string | null;
+            usage: components["schemas"]["Usage"];
+            /** Cost Usd */
+            cost_usd: number;
+            /** Trace Id */
+            trace_id: string | null;
+            metrics: components["schemas"]["AnswerMetrics"];
+        };
+        /** AskRequest */
+        AskRequest: {
+            /**
+             * Question
+             * @description The question, in plain language.
+             */
+            question: string;
+            /**
+             * Mode
+             * @description The answering mode.
+             * @default oneshot
+             * @constant
+             */
+            mode: "oneshot";
+        };
+        /**
          * BuildAccepted
          * @description A build request's answer. Follow ``job_id`` (or the snapshot) until ``ready``.
          */
@@ -351,6 +491,29 @@ export interface components {
              * @example https://github.com/pallets/flask
              */
             url: string;
+        };
+        /** Citation */
+        Citation: {
+            /** Claim Id */
+            claim_id: string;
+            /** Evidence Id */
+            evidence_id: string;
+            ref: components["schemas"]["EvidenceRef"];
+        };
+        /**
+         * Claim
+         * @description One statement in the answer, citing the evidence that supports it. ``symbol`` names the
+         *     identifier the claim is about, when there is one (it must appear in a cited range).
+         */
+        Claim: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+            /** Evidence Ids */
+            evidence_ids: string[];
+            /** Symbol */
+            symbol?: string | null;
         };
         /**
          * CodeSlice
@@ -449,13 +612,29 @@ export interface components {
          * @description Every ``error.code`` the API returns. Codes are stable: clients may branch on them.
          * @enum {string}
          */
-        ErrorCode: "invalid_request" | "invalid_url" | "repo_private" | "repo_too_large" | "repo_empty" | "not_found" | "rate_limited" | "snapshot_not_ready" | "upstream_unavailable" | "internal";
+        ErrorCode: "invalid_request" | "invalid_url" | "repo_private" | "repo_too_large" | "repo_empty" | "not_found" | "rate_limited" | "snapshot_not_ready" | "upstream_unavailable" | "llm_unavailable" | "answer_failed" | "internal";
         /**
          * ErrorResponse
          * @description The body of every error response.
          */
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
+        };
+        /**
+         * EvidenceRef
+         * @description Lines ``start_line`` to ``end_line`` of blob ``blob_oid`` at ``path``.
+         */
+        EvidenceRef: {
+            /** Blob Oid */
+            blob_oid: string;
+            /** Path */
+            path: string;
+            /** Start Line */
+            start_line: number;
+            /** End Line */
+            end_line: number;
+            /** Symbol Key */
+            symbol_key?: string | null;
         };
         /**
          * GraphPath
@@ -676,6 +855,23 @@ export interface components {
          * @enum {string}
          */
         Provenance: "tree_sitter" | "import_resolver" | "name_match" | "convention" | "git";
+        /** QaRunView */
+        QaRunView: {
+            /** Id */
+            id: number;
+            /** Snapshot Id */
+            snapshot_id: number;
+            /** Mode */
+            mode: string;
+            /** Question */
+            question: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            answer: components["schemas"]["AnswerView"];
+        };
         /** Range */
         Range: {
             /** Start Line */
@@ -783,6 +979,46 @@ export interface components {
             /** @description The snapshot's latest build job, if any. */
             job: components["schemas"]["JobView"] | null;
         };
+        /** SpanView */
+        SpanView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Parent Id */
+            parent_id: string | null;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Model */
+            model: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "ok" | "error";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Ended At */
+            ended_at: string | null;
+            /** Tokens In */
+            tokens_in: number | null;
+            /** Tokens Out */
+            tokens_out: number | null;
+            /** Cache Read Tokens */
+            cache_read_tokens: number | null;
+            /** Cost Usd */
+            cost_usd: number | null;
+            /** Attrs */
+            attrs: {
+                [key: string]: unknown;
+            };
+        };
         /**
          * Subgraph
          * @description The children of ``parent`` at ``level`` (key order) and the edges between them.
@@ -813,6 +1049,64 @@ export interface components {
             match: "exact" | "prefix" | "fuzzy";
             /** Score */
             score: number;
+        };
+        /** TraceView */
+        TraceView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Snapshot Id */
+            snapshot_id: number | null;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Ended At */
+            ended_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "ok" | "error";
+            /** Tokens In */
+            tokens_in: number;
+            /** Tokens Out */
+            tokens_out: number;
+            /** Cost Usd */
+            cost_usd: number;
+            /** Spans */
+            spans: components["schemas"]["SpanView"][];
+        };
+        /**
+         * Usage
+         * @description Tokens of one call (or a sum of calls). ``input_tokens`` excludes cached tokens.
+         */
+        Usage: {
+            /**
+             * Input Tokens
+             * @default 0
+             */
+            input_tokens: number;
+            /**
+             * Output Tokens
+             * @default 0
+             */
+            output_tokens: number;
+            /**
+             * Cache Read Tokens
+             * @default 0
+             */
+            cache_read_tokens: number;
+            /**
+             * Cache Write Tokens
+             * @default 0
+             */
+            cache_write_tokens: number;
         };
     };
     responses: never;
@@ -1662,6 +1956,204 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see Retry-After) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Snapshot ID. */
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskRequest"];
+            };
+        };
+        responses: {
+            /** @description Server-sent events: `status` (`{step}`), `answer` (an `AnswerView`), `done` (`{run_id, trace_id}`), or `error` (the error model). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_qa_run: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The run's ID. */
+                run_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QaRunView"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see Retry-After) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_trace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraceView"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

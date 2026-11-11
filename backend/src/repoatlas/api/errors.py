@@ -55,6 +55,8 @@ class ErrorCode(StrEnum):
     RATE_LIMITED = "rate_limited"  # by this API (429) or by GitHub (503); see Retry-After
     SNAPSHOT_NOT_READY = "snapshot_not_ready"  # details: snapshot_id, status, job_id
     UPSTREAM_UNAVAILABLE = "upstream_unavailable"  # GitHub could not be reached or failed
+    LLM_UNAVAILABLE = "llm_unavailable"  # answers are not configured (no API key)
+    ANSWER_FAILED = "answer_failed"  # the model could not be reached or gave unusable output
     INTERNAL = "internal"  # a bug or outage on our side; details.request_id identifies it
 
 

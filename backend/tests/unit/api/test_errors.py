@@ -49,6 +49,8 @@ def test_error_codes_are_the_documented_stable_set() -> None:
         "rate_limited",
         "snapshot_not_ready",
         "upstream_unavailable",
+        "llm_unavailable",
+        "answer_failed",
         "internal",
     }
 
