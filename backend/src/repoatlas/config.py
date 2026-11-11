@@ -85,6 +85,12 @@ class Settings(BaseSettings):
     llm_retry_max_s: float = 30.0
     llm_prices: dict[str, ModelPrice] = Field(default_factory=lambda: dict(DEFAULT_PRICES))
 
+    # Answers (decision 0011). The score threshold is provisional, set from the smoke run.
+    refusal_min_retrieval_score: float = 0.02
+    answer_max_cost_usd: float = 0.25  # per answer
+    answer_max_output_tokens: int = 4_096
+    answer_evidence_tokens: int = 12_000  # evidence packed into the prompt
+
     # API
     web_origins: str = "http://localhost:3000"  # comma-separated origins allowed by CORS
     db_connect_timeout_s: float = 10.0  # opening one database connection, in the API and worker
