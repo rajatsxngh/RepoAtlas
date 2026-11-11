@@ -1,0 +1,142 @@
+# Labeled retrieval queries for the fixture repos (M06, T10).
+#
+# Each query lists the symbol keys that answer it; a query is found when any expected key is
+# among the top results. `style` says how the query is phrased: `natural` questions use words
+# that are not identifiers in the code (they need embeddings or the graph), `identifier`
+# queries name code directly. Keep keys in sync with tests/fixtures/golden/*.graph.json.
+
+queries:
+  # --- py_small -----------------------------------------------------------------------------
+  - id: py-round-money
+    repo: py_small
+    style: natural
+    query: how are prices rounded to cents
+    expected: [py:src/shop/utils/helpers.py:round_money:function]
+  - id: py-format-price
+    repo: py_small
+    style: natural
+    query: show a price with a dollar sign
+    expected:
+      - py:src/shop/utils/helpers.py:format_price:function
+      - py:src/shop/utils/helpers.py:format_price.with_symbol:function
+  - id: py-routes
+    repo: py_small
+    style: natural
+    query: where are the HTTP routes registered
+    expected:
+      - py:src/shop/app.py:get_cart:function
+      - py:src/shop/app.py:add_item:function
+      - file:src/shop/app.py
+  - id: py-add-item-endpoint
+    repo: py_small
+    style: natural
+    query: which endpoint adds an item to a cart
+    expected: [py:src/shop/app.py:add_item:function]
+  - id: py-cart-total
+    repo: py_small
+    style: natural
+    query: compute the sum of everything in the cart
+    expected: [py:src/shop/cart.py:Cart.total:method]
+  - id: py-gift-free
+    repo: py_small
+    style: natural
+    query: why do gift carts cost nothing
+    expected:
+      - py:src/shop/cart.py:GiftCart.add:method
+      - py:src/shop/cart.py:GiftCart:class
+      - py:tests/test_cart.py:TestGiftCart.test_gifts_are_free:test
+  - id: py-batches
+    repo: py_small
+    style: natural
+    query: split a list into batches of a fixed size
+    expected: [py:src/shop/utils/helpers.py:chunks:function]
+  - id: py-json
+    repo: py_small
+    style: natural
+    query: serialize an object to JSON bytes
+    expected: [py:src/shop/utils/helpers.py:dumps:function, file:src/shop/utils/helpers.py]
+  - id: py-create-app
+    repo: py_small
+    style: identifier
+    query: create_app
+    expected: [py:src/shop/app.py:create_app:function]
+  - id: py-cart-describe
+    repo: py_small
+    style: identifier
+    query: Cart.describe
+    expected: [py:src/shop/cart.py:Cart.describe:method]
+  - id: py-test-rounding
+    repo: py_small
+    style: natural
+    query: test that adding an item rounds its price
+    expected: [py:tests/test_cart.py:test_add_rounds_prices:test]
+  - id: py-fixture
+    repo: py_small
+    style: natural
+    query: pytest fixture that provides an empty cart
+    expected: [py:tests/conftest.py:cart:function]
+
+  # --- ts_small -----------------------------------------------------------------------------
+  - id: ts-format-price
+    repo: ts_small
+    style: natural
+    query: format a number as dollars with two decimals
+    expected: [ts:src/cart.ts:formatPrice:function]
+  - id: ts-sum
+    repo: ts_small
+    style: natural
+    query: add up a list of numbers
+    expected: [ts:src/cart.ts:sum:function]
+  - id: ts-cart-total
+    repo: ts_small
+    style: natural
+    query: total price of all items in the cart
+    expected: [ts:src/cart.ts:Cart.total:method]
+  - id: ts-clear
+    repo: ts_small
+    style: natural
+    query: remove every item from a cart
+    expected: [ts:src/cart.ts:Cart.clear:method]
+  - id: ts-routes
+    repo: ts_small
+    style: natural
+    query: where are the express routes defined
+    expected:
+      - file:src/server.ts
+      - ts:src/server.ts:getCart:function
+      - ts:src/server.ts:<anon>:function
+  - id: ts-get-cart
+    repo: ts_small
+    style: natural
+    query: handler that returns a cart's total as JSON
+    expected: [ts:src/server.ts:getCart:function]
+  - id: ts-ids
+    repo: ts_small
+    style: natural
+    query: generate an endless sequence of ids
+    expected: [ts:src/cart.ts:ids:function]
+  - id: ts-toolbar
+    repo: ts_small
+    style: natural
+    query: toolbar with a save button
+    expected: [ts:src/components/Button.tsx:Toolbar:function]
+  - id: ts-describe-path
+    repo: ts_small
+    style: natural
+    query: describe a file path with its extension
+    expected: [js:src/legacy.js:describePath:function]
+  - id: ts-create-server
+    repo: ts_small
+    style: identifier
+    query: createServer
+    expected: [ts:src/server.ts:createServer:function]
+  - id: ts-empty
+    repo: ts_small
+    style: identifier
+    query: Cart.empty
+    expected: [ts:src/cart.ts:Cart.empty:method]
+  - id: ts-empty-test
+    repo: ts_small
+    style: natural
+    query: test that an empty cart has no total
+    expected: ["ts:src/__tests__/cart.test.ts:Cart > empty > has no total:test"]
