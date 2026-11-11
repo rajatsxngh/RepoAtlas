@@ -4,12 +4,15 @@
 ``FastEmbedEmbedder`` runs a fastembed model on CPU; the model is downloaded on first use into
 ``data_dir/models`` (a one-time download of about 0.6 GB for the default). Documents and
 queries go through fastembed's passage and query paths, so models with query/document
-conventions get them. ``HashEmbedder`` hashes words into a fixed number of dimensions: it is
-deterministic, needs no download, and is what tests use (``REPOATLAS_EMBEDDING_MODEL=hash-256``).
+conventions get them. Texts are truncated at ``MAX_EMBED_TOKENS`` and embedded in groups of
+similar length within ``BATCH_TOKEN_BUDGET``, so memory stays bounded on CPU.
+``HashEmbedder`` hashes words into a fixed number of dimensions: it is deterministic, needs no
+download, and is what tests use (``REPOATLAS_EMBEDDING_MODEL=hash-256``).
 
 ``embed_chunks`` embeds a snapshot's chunks through the ``embeddings`` cache: only chunk hashes
-with no vector for the model yet are embedded (in batches of ``BATCH_SIZE``), and the snapshot
-records the model and dimension it was embedded with.
+with no vector for the model yet are embedded (longest first, in batches of ``BATCH_SIZE``, so
+each batch holds chunks of similar length), and the snapshot records the model and dimension
+it was embedded with.
 """
 
 from __future__ import annotations
@@ -31,8 +34,10 @@ from repoatlas.logging import get_logger
 if TYPE_CHECKING:
     from fastembed import TextEmbedding
 
-EMBED_VERSION = 1
+EMBED_VERSION = 2  # 2: documents truncated at MAX_EMBED_TOKENS
 BATCH_SIZE = 64
+MAX_EMBED_TOKENS = 2_048  # chunks stay near 1,200 estimated tokens; this bounds the outliers
+BATCH_TOKEN_BUDGET = 8_192  # texts per model batch x longest estimated tokens in the batch
 DEFAULT_MODEL = "jinaai/jina-embeddings-v2-base-code"
 HASH_PREFIX = "hash-"
 
@@ -139,22 +144,56 @@ class FastEmbedEmbedder:
             from fastembed import TextEmbedding
 
             log.info("loading the embedding model", model=self._model_name)
-            self._model = TextEmbedding(
+            model = TextEmbedding(
                 self._model_name,
                 cache_dir=None if self._cache_dir is None else str(self._cache_dir),
                 threads=self._threads,
             )
+            tokenizer = getattr(model.model, "tokenizer", None)
+            limit = (getattr(tokenizer, "truncation", None) or {}).get("max_length")
+            if tokenizer is not None and (limit is None or limit > MAX_EMBED_TOKENS):
+                tokenizer.enable_truncation(max_length=MAX_EMBED_TOKENS)
+            self._model = model
         return self._model
 
     def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
+        """Embed ``texts`` in groups of similar length whose padded size stays within
+        ``BATCH_TOKEN_BUDGET`` (attention memory grows with batch x length squared)."""
         if not texts:
             return []
-        vectors = self._load().passage_embed(list(texts), batch_size=self._batch_size)
-        return [_normalize(vector.tolist()) for vector in vectors]
+        model = self._load()
+        vectors: list[list[float]] = [[] for _ in texts]
+        for group in token_batches(texts, max_items=self._batch_size):
+            embedded = model.passage_embed([texts[i] for i in group], batch_size=len(group))
+            for index, vector in zip(group, embedded, strict=True):
+                vectors[index] = _normalize(vector.tolist())
+        return vectors
 
     def embed_query(self, text: str) -> list[float]:
         [vector] = list(self._load().query_embed(text))
         return _normalize(vector.tolist())
+
+
+def estimated_model_tokens(value: str) -> int:
+    """A generous token estimate for code (about 3 characters per token), capped where the
+    model truncates."""
+    return min(MAX_EMBED_TOKENS, max(1, -(-len(value) // 3)))
+
+
+def token_batches(texts: Sequence[str], *, max_items: int = BATCH_SIZE) -> list[list[int]]:
+    """Indices of ``texts``, longest first, grouped so that each group's size times its
+    longest estimate stays within ``BATCH_TOKEN_BUDGET`` (and at most ``max_items``)."""
+    order = sorted(range(len(texts)), key=lambda i: (-len(texts[i]), i))
+    groups: list[list[int]] = []
+    for index in order:
+        if groups:
+            group = groups[-1]
+            longest = estimated_model_tokens(texts[group[0]])
+            if len(group) < max_items and (len(group) + 1) * longest <= BATCH_TOKEN_BUDGET:
+                group.append(index)
+                continue
+        groups.append([index])
+    return groups
 
 
 def _fastembed_dim(model_name: str) -> int:
@@ -227,6 +266,9 @@ def embed_chunks(
             text("SELECT count(DISTINCT chunk_hash) FROM chunks WHERE snapshot_id = :s"),
             {"s": snapshot_id},
         ).scalar_one()
+    # Longest first: batches of similar length waste less padding, and a batch too large for
+    # memory fails at the start rather than after most of the work.
+    missing = sorted(missing, key=lambda row: (-len(row.header) - len(row.text), row.chunk_hash))
     insert = text(
         "INSERT INTO embeddings (chunk_hash, model, dim, vector) "
         "VALUES (:h, :m, :d, CAST(:v AS vector)) ON CONFLICT DO NOTHING"
