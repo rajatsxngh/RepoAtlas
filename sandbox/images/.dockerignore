@@ -1,0 +1,5 @@
+*
+!scip-python/package.json
+!scip-python/package-lock.json
+!scip-typescript/package.json
+!scip-typescript/package-lock.json

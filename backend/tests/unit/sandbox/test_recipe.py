@@ -39,6 +39,11 @@ def test_digest_changes_with_content() -> None:
     assert parse_recipe(VALID).digest() != parse_recipe(VALID.replace("900", "901")).digest()
 
 
+def test_unquoted_numeric_commit_gets_a_hint() -> None:
+    with pytest.raises(RecipeError, match="quoted string"):
+        parse_recipe(VALID.replace(f"commit: {SHA}", "commit: " + "1" * 40))
+
+
 def test_json_reporter_selects_files() -> None:
     recipe = parse_recipe(VALID.replace("reporter: junit", "reporter: vitest-json"))
     assert recipe.test.selection == "files"

@@ -1,0 +1,8 @@
+{
+  "name": "repoatlas-scip-typescript",
+  "private": true,
+  "description": "Pinned scip-typescript for the sandbox node base image.",
+  "dependencies": {
+    "@sourcegraph/scip-typescript": "0.6.2"
+  }
+}

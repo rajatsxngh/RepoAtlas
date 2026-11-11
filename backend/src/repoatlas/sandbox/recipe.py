@@ -86,9 +86,11 @@ class Recipe(_Model):
             raise ValueError("url must be https://github.com/<owner>/<repo>")
         return value
 
-    @field_validator("commit")
+    @field_validator("commit", mode="before")
     @classmethod
-    def _pinned_commit(cls, value: str) -> str:
+    def _pinned_commit(cls, value: object) -> object:
+        if not isinstance(value, str):
+            raise ValueError("commit must be a quoted string (YAML reads some SHAs as numbers)")
         if not _SHA_RE.fullmatch(value):
             raise ValueError("commit must be a full 40-character lowercase hex SHA")
         return value

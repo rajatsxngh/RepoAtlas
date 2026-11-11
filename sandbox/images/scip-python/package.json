@@ -1,0 +1,8 @@
+{
+  "name": "repoatlas-scip-python",
+  "private": true,
+  "description": "Pinned scip-python for the sandbox python base image.",
+  "dependencies": {
+    "@sourcegraph/scip-python": "0.6.8"
+  }
+}
