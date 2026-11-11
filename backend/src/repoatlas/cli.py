@@ -414,6 +414,109 @@ def search_command(
         typer.echo(line)
 
 
+DEFAULT_SMOKE = Path("eval") / "smoke" / "questions.yaml"
+
+
+def _find_upward(relative: Path) -> Path:
+    """``relative`` under the working directory or the nearest parent that has it."""
+    for directory in (Path.cwd(), *Path.cwd().parents):
+        if (directory / relative).is_file():
+            return directory / relative
+    return relative
+
+
+@app.command("ask-smoke")
+def ask_smoke_command(
+    snapshot: SnapshotOption,
+    max_cost: Annotated[
+        float,
+        typer.Option("--max-cost", min=0.01, help="Stop before the total could pass this (USD)."),
+    ],
+    questions: Annotated[
+        Path | None, typer.Option(help="The question set (default: eval/smoke/questions.yaml).")
+    ] = None,
+    out: Annotated[
+        Path | None,
+        typer.Option(help="Write the summary JSON here (default: eval/smoke/results/...)."),
+    ] = None,
+) -> None:
+    """Answer the smoke questions live on a snapshot (costs money; capped by --max-cost)."""
+    import anyio
+
+    from repoatlas.answers.factory import oneshot_from_settings
+    from repoatlas.answers.prompting import SYSTEM_PROMPT, estimate_tokens
+    from repoatlas.answers.schema import Budget
+    from repoatlas.answers.smoke import SmokeItem, load_questions, run_smoke, summary_lines
+    from repoatlas.answers.system import REPAIR_FACTOR
+    from repoatlas.llm.client import LLMNotConfigured
+    from repoatlas.llm.pricing import PriceTable
+
+    settings = get_settings()
+    configure(settings)
+    path = questions or _find_upward(DEFAULT_SMOKE)
+    smoke = load_questions(path)
+    engine = create_db_engine(settings.database_url)
+    try:
+        store = GraphStore.from_settings(settings, engine)
+        info = store.snapshot(snapshot)
+        repo = f"{info.repo.owner}/{info.repo.name}"
+        if repo != smoke.repo or not info.commit_sha.startswith(smoke.commit):
+            typer.secho(
+                f"Error: snapshot {snapshot} is {repo} @ {info.commit_sha[:7]}, but the questions "
+                f"are for {smoke.repo} @ {smoke.commit[:7]}.",
+                err=True,
+                fg=typer.colors.RED,
+            )
+            raise typer.Exit(code=2)
+        try:
+            system = oneshot_from_settings(settings, engine, store)
+        except LLMNotConfigured as error:
+            typer.secho(f"Error: {error}", err=True, fg=typer.colors.RED)
+            raise typer.Exit(code=2) from None
+        budget = Budget(
+            max_cost_usd=settings.answer_max_cost_usd,
+            max_output_tokens=settings.answer_max_output_tokens,
+        )
+        # The most one answer can cost: the evidence budget and the system prompt, uncached,
+        # with every output token used, twice (the repair attempt).
+        input_tokens = settings.answer_evidence_tokens + estimate_tokens(SYSTEM_PROMPT) + 500
+        worst = REPAIR_FACTOR * PriceTable(settings.llm_prices).max_cost(
+            settings.llm_large_model, input_tokens, budget.max_output_tokens
+        )
+
+        def progress(item: SmokeItem) -> None:
+            kind = f"/{item.refusal_kind}" if item.refusal_kind else ""
+            typer.echo(f"{item.id}: {item.status}{kind} ${item.cost_usd:.4f} {item.latency_s:.1f}s")
+
+        summary = anyio.run(
+            lambda: run_smoke(
+                system,
+                smoke,
+                snapshot_id=snapshot,
+                engine=engine,
+                max_cost_usd=max_cost,
+                budget=budget,
+                worst_case_usd=worst,
+                progress=progress,
+            )
+        )
+    except StoreError as error:
+        typer.secho(f"Error: {error}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from None
+    except OperationalError as error:
+        _connection_failed(settings.database_url, error)
+    finally:
+        engine.dispose()
+    target = out or path.parent / "results" / f"{time.strftime('%Y-%m-%d')}-snapshot{snapshot}.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    write_text_lf(target, pretty_json(summary.model_dump(mode="json")))
+    typer.echo("")
+    for line in summary_lines(summary):
+        typer.echo(line)
+    typer.echo("")
+    typer.echo(f"Summary written to {target}.")
+
+
 def _search_lines(
     result: Any, snapshot: int, elapsed: float, *, explain: bool, code: bool
 ) -> list[str]:

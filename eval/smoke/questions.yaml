@@ -1,0 +1,111 @@
+# M07 smoke run: 20 questions on one pinned repo, answered live with a cost cap.
+#   cd backend && uv run repoatlas ask-smoke --snapshot <id> --max-cost 2.00
+# Answerable questions name the symbols a good answer cites (noted by hand from the snapshot's
+# graph); a run counts whether any of them was cited, but doesn't require it. Unanswerable
+# questions ask about things the repository doesn't do; they must be refused for evidence.
+repo: colinhacks/zod
+commit: 19c40d2072288b4cafec851e9d056a72a88e5973
+questions:
+  - id: a01
+    question: How does ZodError.flatten group issues into form errors and field errors?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v3/ZodError.ts:ZodError.flatten:method"
+  - id: a02
+    question: What does treeifyError return for issues on nested paths?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v4/core/errors.ts:treeifyError:function"
+  - id: a03
+    question: How does prettifyError turn a ZodError into a readable string?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v4/core/errors.ts:prettifyError:function"
+  - id: a04
+    question: In the v3 API, how does safeParse report a failure without throwing?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v3/types.ts:ZodType.safeParse:method"
+  - id: a05
+    question: How does superRefine let a schema add its own issues?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v3/types.ts:ZodType.superRefine:method"
+      - "ts:packages/zod/src/v4/classic/schemas.ts:superRefine:function"
+      - "ts:packages/zod/src/v4/mini/schemas.ts:superRefine:function"
+  - id: a06
+    question: How does discriminatedUnion decide which option to validate against?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v4/classic/schemas.ts:discriminatedUnion:function"
+      - "ts:packages/zod/src/v4/mini/schemas.ts:discriminatedUnion:function"
+  - id: a07
+    question: What does strictObject do with keys that aren't in the shape?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v4/classic/schemas.ts:strictObject:function"
+      - "ts:packages/zod/src/v4/mini/schemas.ts:strictObject:function"
+  - id: a08
+    question: How does extending an object schema add new keys to its shape?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v4/core/util.ts:extend:function"
+      - "ts:packages/zod/src/v3/types.ts:ZodObject.extend:method"
+      - "ts:packages/zod/src/v4/mini/schemas.ts:extend:function"
+  - id: a09
+    question: How does the partial utility make an object's fields optional?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v4/core/util.ts:partial:function"
+      - "ts:packages/zod/src/v3/types.ts:ZodObject.partial:method"
+      - "ts:packages/zod/src/v4/mini/schemas.ts:partial:function"
+  - id: a10
+    question: What does brand do to a v3 schema?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v3/types.ts:ZodType.brand:method"
+  - id: a11
+    question: How does catch supply a fallback value when parsing fails in v3?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v3/types.ts:ZodType.catch:method"
+  - id: a12
+    question: How does toJSONSchema convert a Zod schema to JSON Schema?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v4/core/json-schema-processors.ts:toJSONSchema:function"
+  - id: a13
+    question: What does $constructor do when it defines a Zod class?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v4/core/core.ts:$constructor:function"
+  - id: a14
+    question: How is the regular expression for UUIDs built, and what versions does it accept?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v4/core/regexes.ts:uuid:function"
+  - id: a15
+    question: How does lazy support recursive schemas?
+    answerable: true
+    expected_symbols:
+      - "ts:packages/zod/src/v4/classic/schemas.ts:lazy:function"
+  - id: u01
+    question: How does Zod store user sessions in Redis?
+    answerable: false
+    note: Zod has no session storage or Redis client.
+  - id: u02
+    question: Which port does Zod's HTTP server listen on?
+    answerable: false
+    note: Zod is a library; it runs no server.
+  - id: u03
+    question: How does Zod hash user passwords with bcrypt before saving them?
+    answerable: false
+    note: No password hashing anywhere.
+  - id: u04
+    question: How is the PostgreSQL connection pool configured?
+    answerable: false
+    note: Zod has no database code.
+  - id: u05
+    question: How does Zod upload files to an S3 bucket?
+    answerable: false
+    note: No cloud storage code.

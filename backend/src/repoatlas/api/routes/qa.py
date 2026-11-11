@@ -28,21 +28,17 @@ from fastapi import APIRouter, Path, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
-from repoatlas.answers.policy import RefusalPolicy
+from repoatlas.answers.factory import oneshot_from_settings
 from repoatlas.answers.runs import load_run, save_run
 from repoatlas.answers.schema import AnswerResult, Budget
-from repoatlas.answers.system import AnswerSystem, OneShotAnswerSystem
-from repoatlas.answers.validate import CitationValidator, StoreBlobs
+from repoatlas.answers.system import AnswerSystem
 from repoatlas.api.deps import EngineDep, ReadySnapshot, SettingsDep
 from repoatlas.api.errors import ApiError, ErrorCode, documented, from_store_error, not_found
 from repoatlas.api.schemas import QaRunView, answer_view
-from repoatlas.llm.client import LLMClient, LLMNotConfigured
-from repoatlas.llm.pricing import PriceTable
+from repoatlas.llm.client import LLMNotConfigured
 from repoatlas.llm.types import LLMError, TransientLLMError
-from repoatlas.retrieval.embed import embedder_for
-from repoatlas.retrieval.retriever import Retriever
 from repoatlas.store.errors import StoreError
-from repoatlas.tracing.store import SqlTraceSink, TraceView, load_trace
+from repoatlas.tracing.store import TraceView, load_trace
 
 log = structlog.get_logger(__name__)
 router = APIRouter(tags=["answers"])
@@ -72,25 +68,14 @@ def answer_system(request: Request, mode: str) -> AnswerSystem:
 
 
 def _build(state: Any) -> AnswerSystem:
-    settings = state.settings
     try:
-        llm = LLMClient.from_settings(settings)
+        return oneshot_from_settings(state.settings, state.engine, state.store)
     except LLMNotConfigured:
         raise ApiError(
             503,
             ErrorCode.LLM_UNAVAILABLE,
             "Answers are not set up on this server: it has no Anthropic API key.",
         ) from None
-    engine = state.engine
-    return OneShotAnswerSystem(
-        Retriever(state.store, embedder_for(settings)),
-        llm,
-        CitationValidator(StoreBlobs(engine)),
-        RefusalPolicy.from_settings(settings),
-        prices=PriceTable(settings.llm_prices),
-        sink=SqlTraceSink(engine),
-        evidence_tokens=settings.answer_evidence_tokens,
-    )
 
 
 def sse(event: str, data: Any) -> str:

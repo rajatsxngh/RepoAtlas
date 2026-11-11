@@ -24,6 +24,7 @@ Work only on the current milestone. Don't start the next one until every exit cr
 | Format and autofix | `cd backend && uv run poe fmt` |
 | Live LLM tests (opt-in, costs money) | `cd backend && uv run pytest -m live` |
 | Re-record LLM cassettes (live, costs money; Postgres and `REPOATLAS_ANTHROPIC_API_KEY`) | `cd backend && uv run poe record-cassettes` |
+| Answer smoke run on the pinned zod snapshot (live, stops before passing the cap) | `cd backend && uv run repoatlas ask-smoke --snapshot <id> --max-cost 2.00` |
 | Run the API (dev, reloads on change) | `cd backend && uv run uvicorn repoatlas.api.app:create_app --factory --reload` |
 | Run a worker (stop: Ctrl+C, or create `.repoatlas/worker.stop`) | `cd backend && uv run repoatlas worker` |
 | Run everything locally: Postgres, migrations, API, worker, web app (next free ports when 8000/3000 are taken; Ctrl+C stops all) | `node scripts/dev.mjs` |
