@@ -25,6 +25,7 @@ from repoatlas.logging import configure
 from repoatlas.pipeline.build import BuildResult, run_build
 from repoatlas.pipeline.graph import GraphOutput, run_graph
 from repoatlas.pipeline.parse import ParseOutput, run_parse
+from repoatlas.sandbox.cli import sandbox_app
 from repoatlas.store.cache import Direction, Level
 from repoatlas.store.errors import StoreError
 from repoatlas.store.graphstore import GraphStore
@@ -46,6 +47,7 @@ query_app = typer.Typer(
 app.add_typer(query_app, name="query")
 api_app = typer.Typer(help="The HTTP API.", no_args_is_help=True)
 app.add_typer(api_app, name="api")
+app.add_typer(sandbox_app, name="sandbox")
 
 
 def _show_version(value: bool) -> None:

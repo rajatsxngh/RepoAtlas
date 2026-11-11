@@ -107,7 +107,7 @@ Test runs use:
 ## Tasks
 
 - [x] **T1 — Recipe schema.** Pydantic model, loader, validation errors with line numbers.
-- [ ] **T2 — Proxy and internal network.** Proxy config and setup command; test that an allowlisted registry works and any other host (and the Docker host) is blocked.
+- [x] **T2 — Proxy and internal network.** Proxy config and setup command; test that an allowlisted registry works and any other host (and the Docker host) is blocked.
 - [ ] **T3 — Base images and image builds.** Source baked in from `fetch_source`; digests recorded.
 - [ ] **T4 — Hardened runner.** `hardened_run_args`; tests that a container has no network, can't reach the host, has a read-only root, respects memory/pids limits, and is killed at the timeout.
 - [ ] **T5 — Result parsing and test mapping.** JUnit and Vitest/Jest JSON parsers; test ID → symbol key mapping with fixtures.
