@@ -94,7 +94,7 @@ Invalid citations are removed; a claim with no remaining valid citation is dropp
 
 - [x] **T1 — Compatibility spike.** Checks above; decision addendum; recorded-response tests per behavior.
 - [x] **T2 — LLM client and pricing.** Routing, retries, timeouts, usage and cost; cassette tests.
-- [ ] **T3 — Tracing core.** Tables, `trace_span`, automatic LLM span attributes, trace totals; tests (nested spans, async tasks, errors).
+- [x] **T3 — Tracing core.** Tables, `trace_span`, automatic LLM span attributes, trace totals; tests (nested spans, async tasks, errors).
 - [ ] **T4 — Answer schemas.** Pydantic models; JSON schema export kept flat; evidence numbering helper.
 - [ ] **T5 — Prompt builder.** Snapshot tests of the message layout (evidence after system, question last, delimiters intact).
 - [ ] **T6 — Citation validator.** Tests: unknown IDs, out-of-range lines, symbol not in range, partially valid claims.

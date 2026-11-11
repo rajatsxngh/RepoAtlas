@@ -17,12 +17,12 @@ def test_baseline_enables_the_extensions(pg_engine: Engine) -> None:
 
 
 def test_database_is_at_the_latest_revision(pg_url: str) -> None:
-    assert migrate.current_revision(pg_url) == migrate.head_revision() == "0004_retrieval"
+    assert migrate.current_revision(pg_url) == migrate.head_revision() == "0005_tracing"
 
 
 def test_upgrade_is_idempotent(pg_url: str) -> None:
     migrate.upgrade(pg_url)
-    assert migrate.current_revision(pg_url) == "0004_retrieval"
+    assert migrate.current_revision(pg_url) == "0005_tracing"
 
 
 def test_vector_nearest_neighbor_query(db_session: Session) -> None:
@@ -59,4 +59,4 @@ def test_cli_reports_the_revision(
     finally:
         get_settings.cache_clear()
     assert result.exit_code == 0, result.output
-    assert "0004_retrieval" in result.output
+    assert "0005_tracing" in result.output

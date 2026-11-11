@@ -7,7 +7,8 @@ from sqlalchemy import Connection, create_engine, pool
 
 import repoatlas.jobs.models
 import repoatlas.retrieval.models
-import repoatlas.store.models  # noqa: F401  (registers the store tables on Base.metadata)
+import repoatlas.store.models
+import repoatlas.tracing.models  # noqa: F401  (registers the tables on Base.metadata)
 from repoatlas.config import get_settings
 from repoatlas.db.base import Base
 

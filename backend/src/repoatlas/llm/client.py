@@ -35,6 +35,7 @@ from repoatlas.llm.types import (
     TransientLLMError,
     Usage,
 )
+from repoatlas.tracing.core import trace_span
 
 REPAIR_PROMPT = (
     "Your previous reply did not match the required JSON schema:\n{errors}\n"
@@ -133,7 +134,7 @@ class LLMClient:
             "effort": self.efforts.get(role),
             "cache_static": cache_static,
         }
-        result = await self.send(model, build_request(model, messages, **options))
+        result = await self.send(model, build_request(model, messages, **options), role=role)
         if schema is None or result.refused:
             return result
         error = _validate(schema, result)
@@ -145,7 +146,7 @@ class LLMClient:
             result.assistant_message,
             {"role": "user", "content": REPAIR_PROMPT.format(errors=error)},
         ]
-        second = await self.send(model, build_request(model, repair, **options))
+        second = await self.send(model, build_request(model, repair, **options), role=role)
         combined = _combine(result, second)
         if combined.refused:
             return combined
@@ -156,8 +157,17 @@ class LLMClient:
             )
         return combined
 
-    async def send(self, model: str, request: dict[str, Any]) -> LLMResult:
-        """Send one built request with retries; usage, cost, and latency in the result."""
+    async def send(
+        self, model: str, request: dict[str, Any], *, role: Role | None = None
+    ) -> LLMResult:
+        """Send one built request with retries; usage, cost, and latency in the result and on
+        an ``llm`` span of the current trace."""
+        with trace_span("llm.call", "llm", role=role, requested_model=model) as span:
+            result = await self._send(model, request)
+            span.record_llm(result)
+            return result
+
+    async def _send(self, model: str, request: dict[str, Any]) -> LLMResult:
         attempt = 0
         started = time.perf_counter()
         while True:
