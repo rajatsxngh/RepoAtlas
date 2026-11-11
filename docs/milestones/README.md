@@ -57,7 +57,7 @@ The arrows show build order. The exact dependencies of each milestone are in the
 | M03 | [Graph store & queries](M03-graph-store.md) | Data and persistence | M | M00, M01, M02 | Done |
 | M04 | [API & background jobs](M04-api-jobs.md) | Backend service | M | M00, M01, M03 | Done |
 | M05 | [Interactive map](M05-interactive-map.md) | Frontend | L | M04 | Done |
-| M06 | [Retrieval](M06-retrieval.md) | Search | L | M00, M03, M04 | In progress |
+| M06 | [Retrieval](M06-retrieval.md) | Search | L | M00, M03, M04 | Done |
 | M07 | [LLM client & cited answers](M07-llm-cited-answers.md) | AI application | L | M03, M04, M05, M06 | Not started |
 | M08 | [Sandbox & benchmark environments](M08-sandbox-environments.md) | Test infrastructure | L | M00, M01 | Not started |
 | M09 | [Benchmark & ground truth](M09-benchmark-ground-truth.md) | Measurement dataset | M | M01, M08 | Not started |

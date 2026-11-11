@@ -1,6 +1,6 @@
 # M06 — Retrieval
 
-**Type of work:** Search · **Size:** L (10 tasks) · **Status:** In progress
+**Type of work:** Search · **Size:** L (10 tasks) · **Status:** Done
 
 ## Goal
 
@@ -165,5 +165,7 @@ Gate checked on 2026-11-11 on branch `m06-retrieval`.
 **Found and fixed at the gate**
 - The first real build (zod) grew to 10.7 GB and stalled in `embed`: fastembed pads each batch of 64 to its longest text, and attention memory grows with batch size times length squared. Fixed in `b398774`: chunks are embedded longest first, model batches stay within 8,192 estimated tokens, and documents are truncated at 2,048 tokens. The same build then peaked at about 4.1 GB.
 - `test_build_follow_and_read_a_repository_over_http` (M04) failed again in one full run, as at the M05 gate: it polled only after starting the worker. It now polls once first (`2e2136a`).
+
+**CI.** Run [43075079131](https://github.com/rajatsxngh/RepoAtlas/actions/runs/43075079131) on `3df6d98` passed all five jobs: the Linux full check (939 passed, with the symlink test and every Postgres suite, using the hash embedder, so no model download), the Windows unit tests (686 passed), the API types job, the docs lint, and the frontend job (lint, typecheck, unit tests, and all 7 Playwright tests, whose real-API builds now run `chunk` and `embed`).
 
 **Left as is.** The local development database still has snapshot 12 (zod, `building`), left by the build that was stopped before the memory fix; its fingerprint is no longer requested, so nothing reuses it.
