@@ -135,8 +135,11 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
         <span className="hidden rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-fg-muted sm:inline">
           {snapshot.commit_sha.slice(0, 7)}
         </span>
-        <div className="ml-auto flex w-full max-w-lg items-center gap-2">
-          <SearchBox snapshotId={snapshot.id} onPick={(node) => pick(node.key)} slashShortcut />
+        {/* The search box takes what's left, so the buttons never spill under the theme toggle. */}
+        <div className="ml-auto flex max-w-2xl min-w-0 flex-1 items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <SearchBox snapshotId={snapshot.id} onPick={(node) => pick(node.key)} slashShortcut />
+          </div>
           <Button
             variant={overviewOpen && !selected && !edge ? "primary" : "secondary"}
             aria-pressed={overviewOpen && !selected && !edge}

@@ -51,3 +51,20 @@ test("a question the code can't answer is refused for lack of evidence", async (
   await expect(answer).toContainText("Not enough evidence");
   await expect(answer.getByRole("list", { name: "Claims" })).toHaveCount(0);
 });
+
+test("the map header's buttons stay clear of the theme toggle", async ({ page }) => {
+  for (const width of [1440, 1024]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/s/1");
+    await waitForMap(page);
+    const toggle = await page.getByRole("button", { name: /^Theme:/ }).boundingBox();
+    expect(toggle).not.toBeNull();
+    for (const name of ["Overview", "Ask", "Path"]) {
+      const box = await page.getByRole("button", { name, exact: true }).boundingBox();
+      expect(box, name).not.toBeNull();
+      // Every button ends before the toggle starts, so nothing covers it.
+      expect(box!.x + box!.width, `${name} at ${width}px`).toBeLessThanOrEqual(toggle!.x);
+    }
+    await page.getByRole("button", { name: "Path", exact: true }).click({ trial: true });
+  }
+});
