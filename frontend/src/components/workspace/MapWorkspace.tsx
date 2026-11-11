@@ -1,8 +1,9 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Compass, Route } from "lucide-react";
+import { Compass, MessageSquareText, Route } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AskPanel, citationLayer } from "@/components/ask/AskPanel";
 import {
   GraphCanvas,
   type GraphCanvasHandle,
@@ -17,7 +18,13 @@ import { SearchBox } from "@/components/search/SearchBox";
 import { Button } from "@/components/ui/Button";
 import { SiteHeader } from "@/components/ui/SiteHeader";
 import { useApi } from "@/lib/api/context";
-import { NODE_KINDS, type ApiNode, type GraphPath, type SnapshotView } from "@/lib/api/types";
+import {
+  NODE_KINDS,
+  type ApiNode,
+  type Citation,
+  type GraphPath,
+  type SnapshotView,
+} from "@/lib/api/types";
 import { queryKeys } from "@/lib/query";
 
 export interface MapWorkspaceProps {
@@ -54,7 +61,12 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
   const [from, setFrom] = useState<ApiNode | null>(null);
   const [to, setTo] = useState<ApiNode | null>(null);
   const [path, setPath] = useState<GraphPath | null>(null);
-  const layers = useMemo(() => (path ? [pathLayer(path)] : []), [path]);
+  const [askOpen, setAskOpen] = useState(false);
+  const [citation, setCitation] = useState<Citation | null>(null);
+  const layers = useMemo(
+    () => [...(path ? [pathLayer(path)] : []), ...(citation ? [citationLayer(citation)] : [])],
+    [path, citation],
+  );
 
   useEffect(() => {
     document.title = `${repo} · RepoAtlas`;
@@ -102,6 +114,14 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
     canvas.current?.fitView(keys);
   }, []);
 
+  const onCite = useCallback(
+    (cited: Citation) => {
+      setCitation(cited);
+      void show(citationLayer(cited).nodeKeys[0]!);
+    },
+    [show],
+  );
+
   const clearPath = useCallback(() => {
     setPath(null);
     setFrom(null);
@@ -128,6 +148,18 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
             icon={<Compass className="h-4 w-4" aria-hidden="true" />}
           >
             Overview
+          </Button>
+          <Button
+            variant={askOpen && !selected && !edge ? "primary" : "secondary"}
+            aria-pressed={askOpen && !selected && !edge}
+            onClick={() => {
+              setSelected(null);
+              setEdge(null);
+              setAskOpen(true);
+            }}
+            icon={<MessageSquareText className="h-4 w-4" aria-hidden="true" />}
+          >
+            Ask
           </Button>
           <Button
             variant={pathOpen ? "primary" : "secondary"}
@@ -174,6 +206,19 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
             </div>
           ) : null}
         </main>
+        {askOpen ? (
+          // Stays mounted while a node or edge panel is shown, so the answer isn't lost.
+          <div className={`w-[min(440px,42vw)] shrink-0 ${selected || edge ? "hidden" : ""}`}>
+            <AskPanel
+              snapshotId={snapshot.id}
+              onCite={onCite}
+              onClose={() => {
+                setAskOpen(false);
+                setCitation(null);
+              }}
+            />
+          </div>
+        ) : null}
         {selected ? (
           <div className="w-[min(420px,40vw)] shrink-0">
             <NodePanel
@@ -196,7 +241,7 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
               onClose={() => setEdge(null)}
             />
           </div>
-        ) : overviewOpen ? (
+        ) : overviewOpen && !askOpen ? (
           <div className="w-[min(380px,36vw)] shrink-0">
             <OverviewPanel
               snapshotId={snapshot.id}

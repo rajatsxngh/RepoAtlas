@@ -33,6 +33,26 @@ export type JobView = Schemas["JobView"];
 export type JobStatus = JobView["status"];
 export type BuildAccepted = Schemas["BuildAccepted"];
 export type ErrorCode = Schemas["ErrorCode"];
+export type AskRequest = Schemas["AskRequest"];
+export type AnswerView = Schemas["AnswerView"];
+export type AnswerMetrics = Schemas["AnswerMetrics"];
+export type Claim = Schemas["Claim"];
+export type Citation = Schemas["Citation"];
+export type EvidenceRef = Schemas["EvidenceRef"];
+export type RefusalKind = NonNullable<AnswerView["refusal_kind"]>;
+export type QaRunView = Schemas["QaRunView"];
+export type TraceView = Schemas["TraceView"];
+export type SpanView = Schemas["SpanView"];
+
+/** The steps `POST /snapshots/{id}/ask` reports in its `status` events, in order. */
+export type AskStep = "retrieving" | "answering" | "validating";
+export const ASK_STEPS: readonly AskStep[] = ["retrieving", "answering", "validating"];
+
+/** The `done` event: where the run and its trace are stored. */
+export interface AskDone {
+  run_id: number;
+  trace_id: string | null;
+}
 export type ErrorResponse = Schemas["ErrorResponse"];
 
 export const NODE_KINDS: readonly NodeKind[] = [

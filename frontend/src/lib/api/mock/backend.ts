@@ -22,12 +22,15 @@ import {
   fixtureByName,
   type MockFixture,
 } from "./fixtures";
+import { mockAnswer, sseBody } from "./ask";
 import { MockApiError, MockGraph } from "./graph";
 
 export interface MockResponse {
   status: number;
   body: unknown;
   headers?: Record<string, string>;
+  /** Sent as is instead of JSON (the ask endpoint's event stream). */
+  raw?: string;
 }
 
 export interface MockBackendOptions {
@@ -354,6 +357,40 @@ export class MockBackend {
     return this.graph(snapshotId);
   }
 
+  private askRuns = 0;
+
+  /** `POST /snapshots/{id}/ask`: the status steps, then a mock answer (see `./ask`). */
+  private async ask(snapshotId: number, body: unknown): Promise<MockResponse> {
+    const graph = await this.ready(snapshotId);
+    const question =
+      body && typeof body === "object" && "question" in body
+        ? String((body as { question: unknown }).question).trim()
+        : "";
+    if (!question || question.length > 2000) {
+      throw new MockApiError(
+        422,
+        "invalid_request",
+        "The question must have 1 to 2000 characters.",
+      );
+    }
+    this.askRuns += 1;
+    const answer = mockAnswer(graph, question, this.askRuns);
+    const steps =
+      answer.refused && answer.metrics.claims_total === 0
+        ? ["retrieving"]
+        : ["retrieving", "answering", "validating"];
+    return {
+      status: 200,
+      body: null,
+      headers: { "Content-Type": "text/event-stream" },
+      raw: sseBody([
+        ...steps.map((step) => ["status", { step }] as const),
+        ["answer", answer],
+        ["done", { run_id: answer.run_id, trace_id: answer.trace_id }],
+      ]),
+    };
+  }
+
   /** Answers one request (method, URL under `/api/v1`, parsed JSON body). */
   async handle(method: string, url: URL, body: unknown): Promise<MockResponse> {
     try {
@@ -385,6 +422,8 @@ export class MockBackend {
     const path = url.pathname.slice(prefix.length);
     const query = url.searchParams;
     if (method === "POST" && path === "/repos") return { status: 202, body: this.buildRepo(body) };
+    const ask = /^\/snapshots\/(\d+)\/ask$/.exec(path);
+    if (method === "POST" && ask) return this.ask(Number(ask[1]), body);
     if (method !== "GET") throw new MockApiError(405, "invalid_request", "Method Not Allowed");
     if (path === "/health") return { status: 200, body: { status: "ok", version: "mock" } };
     if (path === "/ready") {

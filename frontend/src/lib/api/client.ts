@@ -6,7 +6,12 @@
 
 import { encodeKeySegment } from "@/lib/graph/keys";
 import { ApiError, errorFromResponse } from "./errors";
+import { readEvents } from "./sse";
 import type {
+  AnswerView,
+  AskDone,
+  AskRequest,
+  AskStep,
   BuildAccepted,
   CodeQuery,
   CodeSlice,
@@ -21,12 +26,25 @@ import type {
   NodeDetail,
   Overview,
   PathQuery,
+  QaRunView,
   SearchQuery,
   SearchResults,
   SnapshotView,
   SubgraphBody,
   SubgraphQuery,
+  TraceView,
 } from "./types";
+
+export interface AskOptions {
+  signal?: AbortSignal;
+  /** Told as each step starts. */
+  onStatus?: (step: AskStep) => void;
+}
+
+export interface AskOutcome {
+  answer: AnswerView;
+  done: AskDone | null;
+}
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 export type Sleep = (ms: number, signal?: AbortSignal) => Promise<void>;
@@ -228,5 +246,63 @@ export class ApiClient {
 
   readCode(snapshotId: number, query: CodeQuery, signal?: AbortSignal): Promise<CodeSlice> {
     return this.request("GET", this.snapshotPath(snapshotId, "/code"), { query, signal });
+  }
+
+  /**
+   * Ask a question. The answer streams as server-sent events: `status` steps, then the validated
+   * `answer` and `done`, or an `error` (thrown as an `ApiError`). Never retried: each question
+   * costs money.
+   */
+  async ask(
+    snapshotId: number,
+    request: AskRequest,
+    { signal, onStatus }: AskOptions = {},
+  ): Promise<AskOutcome> {
+    let response: Response;
+    try {
+      response = await this.fetchImpl(`${this.baseUrl}${this.snapshotPath(snapshotId, "/ask")}`, {
+        method: "POST",
+        headers: { Accept: "text/event-stream", "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        signal,
+      });
+    } catch (error) {
+      if (isAbort(error) || signal?.aborted) throw error;
+      throw new ApiError(
+        0,
+        "network",
+        "The RepoAtlas API can't be reached. Check that it is running and try again.",
+      );
+    }
+    if (!response.ok) throw await errorFromResponse(response);
+    if (!response.body)
+      throw new ApiError(response.status, "bad_response", "The answer was empty.");
+    let answer: AnswerView | null = null;
+    let done: AskDone | null = null;
+    for await (const { event, data } of readEvents(response.body)) {
+      if (event === "status") {
+        onStatus?.((data as { step: AskStep }).step);
+      } else if (event === "answer") {
+        answer = data as AnswerView;
+      } else if (event === "done") {
+        done = data as AskDone;
+      } else if (event === "error") {
+        const body = new Response(JSON.stringify(data), { status: 500 });
+        const error = await errorFromResponse(body);
+        throw new ApiError(0, error.code, error.message, error.details);
+      }
+    }
+    if (!answer) {
+      throw new ApiError(response.status, "bad_response", "The answer stream ended early.");
+    }
+    return { answer, done };
+  }
+
+  getQaRun(runId: number, signal?: AbortSignal): Promise<QaRunView> {
+    return this.request("GET", `/qa/${encodeURIComponent(String(runId))}`, { signal });
+  }
+
+  getTrace(traceId: string, signal?: AbortSignal): Promise<TraceView> {
+    return this.request("GET", `/traces/${encodeURIComponent(traceId)}`, { signal });
   }
 }

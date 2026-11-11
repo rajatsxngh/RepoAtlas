@@ -101,7 +101,7 @@ Invalid citations are removed; a claim with no remaining valid citation is dropp
 - [x] **T7 — Refusal policy.** Tests for each refusal kind.
 - [x] **T8 — One-shot answer system.** Wiring and registry; tests with `FakeLLM`.
 - [x] **T9 — Ask API.** `qa_runs` migration; SSE endpoint; `GET /qa/{id}`; `GET /traces/{id}`; regenerate OpenAPI and TypeScript types.
-- [ ] **T10 — Ask panel.** Question box, status, answer rendering, citation chips → code viewer and highlight layer; Playwright test with mock mode.
+- [x] **T10 — Ask panel.** Question box, status, answer rendering, citation chips → code viewer and highlight layer; Playwright test with mock mode.
 - [ ] **T11 — Cassette workflow.** `live` marker, recording command, documentation in `CLAUDE.md`.
 - [ ] **T12 — Smoke run.** Run the 20 questions live with a cost cap; record pre-filter validity, dropped-claim rate, refusals, cost, and latency in Results.
 

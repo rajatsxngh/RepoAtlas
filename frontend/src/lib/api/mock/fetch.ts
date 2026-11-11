@@ -48,6 +48,12 @@ export function createMockFetch(
     const answer = await backend.handle(method, url, body);
     if (init?.signal?.aborted) throw abortError(init.signal);
     requests += 1;
+    if (answer.raw !== undefined) {
+      return new Response(answer.raw, {
+        status: answer.status,
+        headers: { "X-Request-ID": `mock-${requests}`, ...answer.headers },
+      });
+    }
     return new Response(JSON.stringify(answer.body), {
       status: answer.status,
       headers: {
