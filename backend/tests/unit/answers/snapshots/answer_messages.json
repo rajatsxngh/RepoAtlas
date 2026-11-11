@@ -8,7 +8,7 @@
     "content": [
       {
         "type": "text",
-        "text": "Evidence from the repository:\n\n<evidence id=\"E1\" path=\"src/app.py\" lines=\"4-9\">\ndef create_app(config):\n    \"\"\"Build the app.\"\"\"\n    app = App(config)\n    app.register(routes)\n    return app\n\n</evidence>\n\n<evidence id=\"E2\" path=\"src/app.py\" lines=\"12-18\">\n    def __init__(self, config):\n        self.config = config\n\n    def register(self, routes):\n        for route in routes:\n            self.add_route(route)\n</evidence>\n\n<evidence id=\"E3\" path=\"src/util.py\" lines=\"1-2\">\ndef slugify(text):\n    return text.lower().replace(\" \", \"-\")\n</evidence>"
+        "text": "Evidence from the repository:\n\n<evidence id=\"E1\" path=\"src/app.py\" lines=\"4-8\">\ndef create_app(config):\n    \"\"\"Build the app.\"\"\"\n    app = App(config)\n    app.register(routes)\n    return app\n</evidence>\n\n<evidence id=\"E2\" path=\"src/app.py\" lines=\"11-17\">\nclass App:\n    def __init__(self, config):\n        self.config = config\n\n    def register(self, routes):\n        for route in routes:\n            self.add_route(route)\n</evidence>\n\n<evidence id=\"E3\" path=\"src/util.py\" lines=\"1-2\">\ndef slugify(text):\n    return text.lower().replace(\" \", \"-\")\n</evidence>"
       },
       {
         "type": "text",

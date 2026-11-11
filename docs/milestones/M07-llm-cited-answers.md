@@ -97,7 +97,7 @@ Invalid citations are removed; a claim with no remaining valid citation is dropp
 - [x] **T3 — Tracing core.** Tables, `trace_span`, automatic LLM span attributes, trace totals; tests (nested spans, async tasks, errors).
 - [x] **T4 — Answer schemas.** Pydantic models; JSON schema export kept flat; evidence numbering helper.
 - [x] **T5 — Prompt builder.** Snapshot tests of the message layout (evidence after system, question last, delimiters intact).
-- [ ] **T6 — Citation validator.** Tests: unknown IDs, out-of-range lines, symbol not in range, partially valid claims.
+- [x] **T6 — Citation validator.** Tests: unknown IDs, out-of-range lines, symbol not in range, partially valid claims.
 - [ ] **T7 — Refusal policy.** Tests for each refusal kind.
 - [ ] **T8 — One-shot answer system.** Wiring and registry; tests with `FakeLLM`.
 - [ ] **T9 — Ask API.** `qa_runs` migration; SSE endpoint; `GET /qa/{id}`; `GET /traces/{id}`; regenerate OpenAPI and TypeScript types.

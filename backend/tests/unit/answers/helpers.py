@@ -6,7 +6,7 @@ import hashlib
 
 from repoatlas.retrieval.evidence import EvidenceRef
 from repoatlas.retrieval.retriever import EvidenceItem
-from repoatlas.store.blobs import line_count, split_lines
+from repoatlas.store.blobs import split_lines
 
 APP = '''"""A tiny app."""
 
@@ -58,23 +58,16 @@ def item(
 
 
 class FakeBlobs:
-    """Blob line counts and text by OID, like the store's blobs table."""
+    """Blob text by OID, like the store's blobs table."""
 
     def __init__(self, blobs: dict[str, str] | None = None) -> None:
         self.blobs = dict(BLOBS if blobs is None else blobs)
 
-    def line_count(self, blob_oid: str) -> int | None:
-        text = self.blobs.get(blob_oid)
-        return None if text is None else line_count(text)
-
-    def read_lines(self, blob_oid: str, start: int, end: int) -> str | None:
-        text = self.blobs.get(blob_oid)
-        if text is None:
-            return None
-        return "\n".join(split_lines(text)[start - 1 : end])
+    def text(self, blob_oid: str) -> str | None:
+        return self.blobs.get(blob_oid)
 
 
-CREATE_APP = item("src/app.py", 4, 9, score=0.9, key="py:src/app.py:create_app:function")
-APP_CLASS = item("src/app.py", 12, 18, score=0.6, key="py:src/app.py:App:class")
+CREATE_APP = item("src/app.py", 4, 8, score=0.9, key="py:src/app.py:create_app:function")
+APP_CLASS = item("src/app.py", 11, 17, score=0.6, key="py:src/app.py:App:class")
 SLUGIFY = item("src/util.py", 1, 2, score=0.3, key="py:src/util.py:slugify:function")
 EVIDENCE = [CREATE_APP, APP_CLASS, SLUGIFY]

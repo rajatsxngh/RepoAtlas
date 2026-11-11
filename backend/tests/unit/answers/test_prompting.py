@@ -39,7 +39,7 @@ def test_system_first_evidence_next_question_last() -> None:
     text = evidence["text"]
     positions = [text.index(f'<evidence id="E{n}"') for n in (1, 2, 3)]
     assert positions == sorted(positions)
-    assert '<evidence id="E1" path="src/app.py" lines="4-9">' in text
+    assert '<evidence id="E1" path="src/app.py" lines="4-8">' in text
     assert text.count("<evidence ") == text.count("</evidence>") == 3
 
 
