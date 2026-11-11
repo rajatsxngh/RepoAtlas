@@ -69,6 +69,9 @@ class LiteLLMTransport:
                 api_key=self._api_key.get_secret_value(),
                 timeout=timeout_s,
                 num_retries=0,
+                # Tools are ours, never LiteLLM-proxy MCP references; without this LiteLLM
+                # imports its MCP gateway (and the optional `mcp` package) for any tool call.
+                _skip_mcp_handler=True,
                 **body,
             )
         except (litellm.Timeout, litellm.APIConnectionError) as exc:
