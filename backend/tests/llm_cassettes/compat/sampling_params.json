@@ -1,0 +1,25 @@
+{
+  "description": "non-default temperature returns 400; build_request never sends it",
+  "interactions": [
+    {
+      "error": {
+        "message": "invalid_request_error: temperature is not supported for this model.",
+        "status": 400
+      },
+      "request": {
+        "max_tokens": 64,
+        "messages": [
+          {
+            "content": "Say hi.",
+            "role": "user"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "temperature": 0.2
+      },
+      "response": null
+    }
+  ],
+  "recorded_at": null,
+  "source": "docs"
+}

@@ -1,0 +1,73 @@
+{
+  "description": "auto + naming the tool in the prompt gets a tool_use block",
+  "interactions": [
+    {
+      "error": null,
+      "request": {
+        "max_tokens": 512,
+        "messages": [
+          {
+            "content": "Use the get_weather tool for Paris.",
+            "role": "user"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "output_config": {
+          "effort": "low"
+        },
+        "tool_choice": {
+          "type": "auto"
+        },
+        "tools": [
+          {
+            "description": "Current weather for a city.",
+            "input_schema": {
+              "additionalProperties": false,
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            },
+            "name": "get_weather"
+          }
+        ]
+      },
+      "response": {
+        "content": [
+          {
+            "signature": "EqQBCkYIBxgCKkDdocs-signature",
+            "thinking": "",
+            "type": "thinking"
+          },
+          {
+            "id": "toolu_docs_1",
+            "input": {
+              "city": "Paris"
+            },
+            "name": "get_weather",
+            "type": "tool_use"
+          }
+        ],
+        "id": "msg_docs_tool_use",
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "tool_use",
+        "stop_sequence": null,
+        "type": "message",
+        "usage": {
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "input_tokens": 380,
+          "output_tokens": 50
+        }
+      }
+    }
+  ],
+  "recorded_at": null,
+  "source": "docs"
+}

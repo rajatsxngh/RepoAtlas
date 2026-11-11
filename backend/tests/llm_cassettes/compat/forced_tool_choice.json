@@ -1,0 +1,45 @@
+{
+  "description": "tool_choice any/tool return 400; build_request refuses them",
+  "interactions": [
+    {
+      "error": {
+        "message": "invalid_request_error: tool_choice: type \"tool\" and \"any\" are not supported for this model.",
+        "status": 400
+      },
+      "request": {
+        "max_tokens": 256,
+        "messages": [
+          {
+            "content": "Weather in Paris?",
+            "role": "user"
+          }
+        ],
+        "model": "claude-sonnet-5-5",
+        "tool_choice": {
+          "type": "any"
+        },
+        "tools": [
+          {
+            "description": "Current weather for a city.",
+            "input_schema": {
+              "additionalProperties": false,
+              "properties": {
+                "city": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city"
+              ],
+              "type": "object"
+            },
+            "name": "get_weather"
+          }
+        ]
+      },
+      "response": null
+    }
+  ],
+  "recorded_at": null,
+  "source": "docs"
+}

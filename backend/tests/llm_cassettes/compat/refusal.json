@@ -1,0 +1,40 @@
+{
+  "description": "stop_reason refusal with stop_details; never triggered on purpose",
+  "interactions": [
+    {
+      "error": null,
+      "request": {
+        "max_tokens": 256,
+        "messages": [
+          {
+            "content": "<a request the safety classifiers decline>",
+            "role": "user"
+          }
+        ],
+        "model": "claude-sonnet-5-5"
+      },
+      "response": {
+        "content": [],
+        "id": "msg_docs_refusal",
+        "model": "claude-sonnet-5-5",
+        "role": "assistant",
+        "stop_details": {
+          "category": "cyber",
+          "explanation": "The request was declined.",
+          "type": "refusal"
+        },
+        "stop_reason": "refusal",
+        "stop_sequence": null,
+        "type": "message",
+        "usage": {
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "input_tokens": 20,
+          "output_tokens": 0
+        }
+      }
+    }
+  ],
+  "recorded_at": null,
+  "source": "docs"
+}

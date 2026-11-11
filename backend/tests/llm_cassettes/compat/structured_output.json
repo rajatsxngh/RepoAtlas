@@ -1,0 +1,74 @@
+{
+  "description": "output_config.format with a flat schema; maxItems stripped, checked by Pydantic",
+  "interactions": [
+    {
+      "error": null,
+      "request": {
+        "max_tokens": 1024,
+        "messages": [
+          {
+            "content": "Give France's capital and up to 3 neighbours.",
+            "role": "user"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "output_config": {
+          "effort": "low",
+          "format": {
+            "schema": {
+              "additionalProperties": false,
+              "properties": {
+                "capital": {
+                  "type": "string"
+                },
+                "country": {
+                  "type": "string"
+                },
+                "neighbours": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "country",
+                "capital",
+                "neighbours"
+              ],
+              "type": "object"
+            },
+            "type": "json_schema"
+          }
+        }
+      },
+      "response": {
+        "content": [
+          {
+            "signature": "EqQBCkYIBxgCKkDdocs-signature",
+            "thinking": "",
+            "type": "thinking"
+          },
+          {
+            "text": "{\"country\": \"France\", \"capital\": \"Paris\", \"neighbours\": [\"Spain\", \"Belgium\", \"Germany\"]}",
+            "type": "text"
+          }
+        ],
+        "id": "msg_docs_end_turn",
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "end_turn",
+        "stop_sequence": null,
+        "type": "message",
+        "usage": {
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "input_tokens": 40,
+          "output_tokens": 60
+        }
+      }
+    }
+  ],
+  "recorded_at": null,
+  "source": "docs"
+}

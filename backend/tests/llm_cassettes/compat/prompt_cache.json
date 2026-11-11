@@ -1,0 +1,97 @@
+{
+  "description": "breakpoint on the last system block; a second identical call reads the cache",
+  "interactions": [
+    {
+      "error": null,
+      "request": {
+        "max_tokens": 256,
+        "messages": [
+          {
+            "content": "Say hello.",
+            "role": "user"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "output_config": {
+          "effort": "low"
+        },
+        "system": [
+          {
+            "cache_control": {
+              "type": "ephemeral"
+            },
+            "text": "Rule 1: answer in one short sentence and never invent facts. Rule 2: answer in one short sentence and never invent facts. Rule 3: answer in one short sentence and never invent facts. Rule 4: answer in one short sentence and never invent facts. Rule 5: answer in one short sentence and never invent facts. Rule 6: answer in one short sentence and never invent facts. Rule 7: answer in one short sentence and never invent facts. Rule 8: answer in one short sentence and never invent facts. Rule 9: answer in one short sentence and never invent facts. Rule 10: answer in one short sentence and never invent facts. Rule 11: answer in one short sentence and never invent facts. Rule 12: answer in one short sentence and never invent facts. Rule 13: answer in one short sentence and never invent facts. Rule 14: answer in one short sentence and never invent facts. Rule 15: answer in one short sentence and never invent facts. Rule 16: answer in one short sentence and never invent facts. Rule 17: answer in one short sentence and never invent facts. Rule 18: answer in one short sentence and never invent facts. Rule 19: answer in one short sentence and never invent facts. Rule 20: answer in one short sentence and never invent facts. Rule 21: answer in one short sentence and never invent facts. Rule 22: answer in one short sentence and never invent facts. Rule 23: answer in one short sentence and never invent facts. Rule 24: answer in one short sentence and never invent facts. Rule 25: answer in one short sentence and never invent facts. Rule 26: answer in one short sentence and never invent facts. Rule 27: answer in one short sentence and never invent facts. Rule 28: answer in one short sentence and never invent facts. Rule 29: answer in one short sentence and never invent facts. Rule 30: answer in one short sentence and never invent facts. Rule 31: answer in one short sentence and never invent facts. Rule 32: answer in one short sentence and never invent facts. Rule 33: answer in one short sentence and never invent facts. Rule 34: answer in one short sentence and never invent facts. Rule 35: answer in one short sentence and never invent facts. Rule 36: answer in one short sentence and never invent facts. Rule 37: answer in one short sentence and never invent facts. Rule 38: answer in one short sentence and never invent facts. Rule 39: answer in one short sentence and never invent facts. Rule 40: answer in one short sentence and never invent facts. Rule 41: answer in one short sentence and never invent facts. Rule 42: answer in one short sentence and never invent facts. Rule 43: answer in one short sentence and never invent facts. Rule 44: answer in one short sentence and never invent facts. Rule 45: answer in one short sentence and never invent facts. Rule 46: answer in one short sentence and never invent facts. Rule 47: answer in one short sentence and never invent facts. Rule 48: answer in one short sentence and never invent facts. Rule 49: answer in one short sentence and never invent facts. Rule 50: answer in one short sentence and never invent facts. Rule 51: answer in one short sentence and never invent facts. Rule 52: answer in one short sentence and never invent facts. Rule 53: answer in one short sentence and never invent facts. Rule 54: answer in one short sentence and never invent facts. Rule 55: answer in one short sentence and never invent facts. Rule 56: answer in one short sentence and never invent facts. Rule 57: answer in one short sentence and never invent facts. Rule 58: answer in one short sentence and never invent facts. Rule 59: answer in one short sentence and never invent facts. Rule 60: answer in one short sentence and never invent facts. Rule 61: answer in one short sentence and never invent facts. Rule 62: answer in one short sentence and never invent facts. Rule 63: answer in one short sentence and never invent facts. Rule 64: answer in one short sentence and never invent facts. Rule 65: answer in one short sentence and never invent facts. Rule 66: answer in one short sentence and never invent facts. Rule 67: answer in one short sentence and never invent facts. Rule 68: answer in one short sentence and never invent facts. Rule 69: answer in one short sentence and never invent facts. Rule 70: answer in one short sentence and never invent facts. Rule 71: answer in one short sentence and never invent facts. Rule 72: answer in one short sentence and never invent facts. Rule 73: answer in one short sentence and never invent facts. Rule 74: answer in one short sentence and never invent facts. Rule 75: answer in one short sentence and never invent facts. Rule 76: answer in one short sentence and never invent facts. Rule 77: answer in one short sentence and never invent facts. Rule 78: answer in one short sentence and never invent facts. Rule 79: answer in one short sentence and never invent facts. Rule 80: answer in one short sentence and never invent facts. Rule 81: answer in one short sentence and never invent facts. Rule 82: answer in one short sentence and never invent facts. Rule 83: answer in one short sentence and never invent facts. Rule 84: answer in one short sentence and never invent facts. Rule 85: answer in one short sentence and never invent facts. Rule 86: answer in one short sentence and never invent facts. Rule 87: answer in one short sentence and never invent facts. Rule 88: answer in one short sentence and never invent facts. Rule 89: answer in one short sentence and never invent facts.",
+            "type": "text"
+          }
+        ]
+      },
+      "response": {
+        "content": [
+          {
+            "text": "Hello.",
+            "type": "text"
+          }
+        ],
+        "id": "msg_docs_end_turn",
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "end_turn",
+        "stop_sequence": null,
+        "type": "message",
+        "usage": {
+          "cache_creation_input_tokens": 1210,
+          "cache_read_input_tokens": 0,
+          "input_tokens": 4,
+          "output_tokens": 5
+        }
+      }
+    },
+    {
+      "error": null,
+      "request": {
+        "max_tokens": 256,
+        "messages": [
+          {
+            "content": "Say hello.",
+            "role": "user"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "output_config": {
+          "effort": "low"
+        },
+        "system": [
+          {
+            "cache_control": {
+              "type": "ephemeral"
+            },
+            "text": "Rule 1: answer in one short sentence and never invent facts. Rule 2: answer in one short sentence and never invent facts. Rule 3: answer in one short sentence and never invent facts. Rule 4: answer in one short sentence and never invent facts. Rule 5: answer in one short sentence and never invent facts. Rule 6: answer in one short sentence and never invent facts. Rule 7: answer in one short sentence and never invent facts. Rule 8: answer in one short sentence and never invent facts. Rule 9: answer in one short sentence and never invent facts. Rule 10: answer in one short sentence and never invent facts. Rule 11: answer in one short sentence and never invent facts. Rule 12: answer in one short sentence and never invent facts. Rule 13: answer in one short sentence and never invent facts. Rule 14: answer in one short sentence and never invent facts. Rule 15: answer in one short sentence and never invent facts. Rule 16: answer in one short sentence and never invent facts. Rule 17: answer in one short sentence and never invent facts. Rule 18: answer in one short sentence and never invent facts. Rule 19: answer in one short sentence and never invent facts. Rule 20: answer in one short sentence and never invent facts. Rule 21: answer in one short sentence and never invent facts. Rule 22: answer in one short sentence and never invent facts. Rule 23: answer in one short sentence and never invent facts. Rule 24: answer in one short sentence and never invent facts. Rule 25: answer in one short sentence and never invent facts. Rule 26: answer in one short sentence and never invent facts. Rule 27: answer in one short sentence and never invent facts. Rule 28: answer in one short sentence and never invent facts. Rule 29: answer in one short sentence and never invent facts. Rule 30: answer in one short sentence and never invent facts. Rule 31: answer in one short sentence and never invent facts. Rule 32: answer in one short sentence and never invent facts. Rule 33: answer in one short sentence and never invent facts. Rule 34: answer in one short sentence and never invent facts. Rule 35: answer in one short sentence and never invent facts. Rule 36: answer in one short sentence and never invent facts. Rule 37: answer in one short sentence and never invent facts. Rule 38: answer in one short sentence and never invent facts. Rule 39: answer in one short sentence and never invent facts. Rule 40: answer in one short sentence and never invent facts. Rule 41: answer in one short sentence and never invent facts. Rule 42: answer in one short sentence and never invent facts. Rule 43: answer in one short sentence and never invent facts. Rule 44: answer in one short sentence and never invent facts. Rule 45: answer in one short sentence and never invent facts. Rule 46: answer in one short sentence and never invent facts. Rule 47: answer in one short sentence and never invent facts. Rule 48: answer in one short sentence and never invent facts. Rule 49: answer in one short sentence and never invent facts. Rule 50: answer in one short sentence and never invent facts. Rule 51: answer in one short sentence and never invent facts. Rule 52: answer in one short sentence and never invent facts. Rule 53: answer in one short sentence and never invent facts. Rule 54: answer in one short sentence and never invent facts. Rule 55: answer in one short sentence and never invent facts. Rule 56: answer in one short sentence and never invent facts. Rule 57: answer in one short sentence and never invent facts. Rule 58: answer in one short sentence and never invent facts. Rule 59: answer in one short sentence and never invent facts. Rule 60: answer in one short sentence and never invent facts. Rule 61: answer in one short sentence and never invent facts. Rule 62: answer in one short sentence and never invent facts. Rule 63: answer in one short sentence and never invent facts. Rule 64: answer in one short sentence and never invent facts. Rule 65: answer in one short sentence and never invent facts. Rule 66: answer in one short sentence and never invent facts. Rule 67: answer in one short sentence and never invent facts. Rule 68: answer in one short sentence and never invent facts. Rule 69: answer in one short sentence and never invent facts. Rule 70: answer in one short sentence and never invent facts. Rule 71: answer in one short sentence and never invent facts. Rule 72: answer in one short sentence and never invent facts. Rule 73: answer in one short sentence and never invent facts. Rule 74: answer in one short sentence and never invent facts. Rule 75: answer in one short sentence and never invent facts. Rule 76: answer in one short sentence and never invent facts. Rule 77: answer in one short sentence and never invent facts. Rule 78: answer in one short sentence and never invent facts. Rule 79: answer in one short sentence and never invent facts. Rule 80: answer in one short sentence and never invent facts. Rule 81: answer in one short sentence and never invent facts. Rule 82: answer in one short sentence and never invent facts. Rule 83: answer in one short sentence and never invent facts. Rule 84: answer in one short sentence and never invent facts. Rule 85: answer in one short sentence and never invent facts. Rule 86: answer in one short sentence and never invent facts. Rule 87: answer in one short sentence and never invent facts. Rule 88: answer in one short sentence and never invent facts. Rule 89: answer in one short sentence and never invent facts.",
+            "type": "text"
+          }
+        ]
+      },
+      "response": {
+        "content": [
+          {
+            "text": "Hello.",
+            "type": "text"
+          }
+        ],
+        "id": "msg_docs_end_turn",
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "end_turn",
+        "stop_sequence": null,
+        "type": "message",
+        "usage": {
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 1210,
+          "input_tokens": 4,
+          "output_tokens": 5
+        }
+      }
+    }
+  ],
+  "recorded_at": null,
+  "source": "docs"
+}
