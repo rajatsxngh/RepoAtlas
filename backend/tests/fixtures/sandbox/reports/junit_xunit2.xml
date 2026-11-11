@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="0.041"><testcase classname="tests.test_calc.TestCounter" name="test_bump" time="0.002"><failure message="boom">trace</failure></testcase><testcase classname="tests.test_calc" name="test_add" time="0.001" /></testsuite></testsuites>

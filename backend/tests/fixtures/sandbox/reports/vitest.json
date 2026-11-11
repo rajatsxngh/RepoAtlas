@@ -1,0 +1,22 @@
+{
+  "numTotalTests": 4,
+  "success": false,
+  "testResults": [
+    {
+      "name": "/src/src/math.test.ts",
+      "status": "failed",
+      "message": "",
+      "assertionResults": [
+        {"ancestorTitles": ["math", "add"], "title": "adds numbers", "fullName": "math add adds numbers", "status": "passed", "duration": 2.5, "failureMessages": []},
+        {"ancestorTitles": ["math"], "title": "doubles 3", "fullName": "math doubles 3", "status": "failed", "duration": 1, "failureMessages": ["Error: repoatlas-mutation"]},
+        {"ancestorTitles": [], "title": "later", "fullName": "later", "status": "todo", "duration": null, "failureMessages": []}
+      ]
+    },
+    {
+      "name": "/tmp/work/src/broken.test.ts",
+      "status": "failed",
+      "message": "Error: repoatlas-mutation\n    at /src/src/math.ts:3:9",
+      "assertionResults": []
+    }
+  ]
+}
