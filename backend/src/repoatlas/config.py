@@ -7,8 +7,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from repoatlas.llm.compat import Effort
+from repoatlas.llm.pricing import DEFAULT_PRICES, ModelPrice
 
 ENV_PREFIX = "REPOATLAS_"
 DEFAULT_DATABASE_URL = "postgresql+psycopg://repoatlas:repoatlas@localhost:5433/repoatlas"
@@ -70,6 +73,17 @@ class Settings(BaseSettings):
     # A fastembed model, or hash-<dim> for the deterministic test embedder (no download).
     embedding_model: str = "jinaai/jina-embeddings-v2-base-code"
     embedding_threads: int | None = None  # CPU threads for embedding; fastembed's default if unset
+
+    # LLM (decision 0010): roles map to models; prices in dollars per million tokens.
+    llm_small_model: str = "claude-haiku-5-5"
+    llm_large_model: str = "claude-sonnet-5-5"
+    llm_small_effort: Effort | None = "low"
+    llm_large_effort: Effort | None = "medium"
+    llm_timeout_s: float = 120.0  # one attempt of one call
+    llm_max_retries: int = Field(default=3, ge=0)  # after the first attempt, on transient errors
+    llm_retry_base_s: float = 1.0  # backoff doubles from here
+    llm_retry_max_s: float = 30.0
+    llm_prices: dict[str, ModelPrice] = Field(default_factory=lambda: dict(DEFAULT_PRICES))
 
     # API
     web_origins: str = "http://localhost:3000"  # comma-separated origins allowed by CORS

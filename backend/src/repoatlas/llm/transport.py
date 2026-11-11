@@ -32,11 +32,25 @@ def scrub(message: str) -> str:
     return _KEY.sub("<redacted>", message)
 
 
-def error_response(status: int, message: str) -> TransientLLMError | LLMRequestError:
+def error_response(
+    status: int, message: str, retry_after_s: float | None = None
+) -> TransientLLMError | LLMRequestError:
     """The error a response with HTTP ``status`` raises."""
     if status in TRANSIENT_STATUSES:
-        return TransientLLMError(scrub(message), status=status)
+        return TransientLLMError(scrub(message), status=status, retry_after_s=retry_after_s)
     return LLMRequestError(scrub(message), status=status)
+
+
+def retry_after(exc: Exception) -> float | None:
+    """Seconds from the ``retry-after`` header of the error's HTTP response, if any."""
+    headers = getattr(exc, "litellm_response_headers", None)  # LiteLLM keeps them here
+    if headers is None:
+        headers = getattr(getattr(exc, "response", None), "headers", None)
+    value = headers.get("retry-after") if headers is not None else None
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
 
 
 class LiteLLMTransport:
@@ -63,7 +77,8 @@ class LiteLLMTransport:
             status = getattr(exc, "status_code", None)  # litellm's errors carry the HTTP status
             if not isinstance(status, int):
                 raise
-            raise error_response(status, f"{type(exc).__name__}: {exc}") from None
+            message = f"{type(exc).__name__}: {exc}"
+            raise error_response(status, message, retry_after(exc)) from None
         if not isinstance(response, dict):
             raise LLMRequestError("LiteLLM returned a stream for a non-streaming request.")
         return dict(response)
