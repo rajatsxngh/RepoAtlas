@@ -116,5 +116,6 @@ fmt = { sequence = [{ cmd = "ruff format ." }, { cmd = "ruff check --fix ." }], 
 typecheck = { cmd = "mypy", help = "Type-check src and tests with mypy" }
 test = { cmd = "pytest", help = "Run unit and integration tests (integration needs Postgres)" }
 test-unit = { cmd = "pytest -m unit", help = "Run unit tests only (no services needed)" }
+record-cassettes = { cmd = "pytest -m live tests/live", help = "Re-record the LLM cassettes from the real API (costs money; needs Postgres and the API key)" }
 docs-lint = { cmd = "python ../scripts/check_milestones.py", help = "Check the milestone docs" }
 check = { sequence = ["lint", "typecheck", "test", "docs-lint"], help = "Everything CI runs on Linux" }

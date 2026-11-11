@@ -23,6 +23,7 @@ Work only on the current milestone. Don't start the next one until every exit cr
 | Unit tests only (no services) | `cd backend && uv run poe test-unit` |
 | Format and autofix | `cd backend && uv run poe fmt` |
 | Live LLM tests (opt-in, costs money) | `cd backend && uv run pytest -m live` |
+| Re-record LLM cassettes (live, costs money; Postgres and `REPOATLAS_ANTHROPIC_API_KEY`) | `cd backend && uv run poe record-cassettes` |
 | Run the API (dev, reloads on change) | `cd backend && uv run uvicorn repoatlas.api.app:create_app --factory --reload` |
 | Run a worker (stop: Ctrl+C, or create `.repoatlas/worker.stop`) | `cd backend && uv run repoatlas worker` |
 | Run everything locally: Postgres, migrations, API, worker, web app (next free ports when 8000/3000 are taken; Ctrl+C stops all) | `node scripts/dev.mjs` |
@@ -42,6 +43,7 @@ Commits run pre-commit hooks automatically (whitespace, YAML/TOML, ruff check an
 - **Code reads:** always through the store's `blobs` table, never from a checkout or the local filesystem.
 - **Determinism:** outputs that are compared (parse results, graphs, benchmarks) use canonical JSON and sha256 digests.
 - **Tests:** every change ships with tests. Markers: `unit`, `integration` (needs Postgres), `live` (needs API keys, never in CI). Unit tests never call a live LLM; use `FakeLLM` or recorded responses.
+- **Recorded LLM responses (cassettes):** `backend/tests/llm_cassettes/` holds request and response bodies, never headers or keys. Tests replay them with `tests.cassettes.use_cassette` and fail when a request no longer matches, so a prompt or request-rule change means re-recording: `uv run poe record-cassettes` runs the `live` tests in `tests/live/`, which call the API and rewrite their cassettes (`"source": "live"`). Hand-written cassettes say `"source": "docs"`. Review the diff before committing a recording.
 - **Commits:** one commit per task, conventional commit messages (`feat:`, `fix:`, `test:`, `docs:`, `chore:`). One branch per milestone (`mNN-short-name`); tag `mNN-done` at the gate.
 - **Progress:** tick a task's checkbox in the milestone file when its commit lands; at the gate, fill in Results and update the status table.
 
