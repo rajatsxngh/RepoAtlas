@@ -57,6 +57,7 @@ class RepoStats(BaseModel):
 
     repo_id: str
     definitions: int
+    misresolved_references: int  # ignored: the text does not name SCIP's target
     history_commits: int
     owned_files: int
     real_impact: RealImpactStats
@@ -163,6 +164,7 @@ def build_repo(recipe: Recipe, seed: int) -> RepoBuild:
     stats = RepoStats(
         repo_id=recipe.id,
         definitions=len(facts.definitions),
+        misresolved_references=sum(facts.misresolved.values()),
         history_commits=ownership.commits,
         owned_files=len(ownership.owners),
         real_impact=real,

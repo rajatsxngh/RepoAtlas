@@ -113,6 +113,23 @@ def _askable(definition: Definition) -> bool:
     )
 
 
+def _trusted(facts: Facts, definition: Definition) -> bool:
+    """False when the definition or its class is named at a mis-resolved reference: values
+    typed through that name may have mis-resolved members as well, so its references are not
+    trustworthy ground truth."""
+    tainted = facts.tainted_names()
+    return (
+        definition.name not in tainted
+        and definition.qualname.split(".")[0] not in tainted
+        and definition.key not in facts.type_merged
+    )
+
+
+def _trusted_key(facts: Facts, key: str) -> bool:
+    found = facts.definitions.get(key)
+    return found is None or _trusted(facts, found)
+
+
 def display_names(facts: Facts) -> dict[str, str]:
     """Key → the shortest unambiguous name: the bare name when the repo defines it once,
     otherwise ``Class.method`` when that is unique. Keys with neither are left out."""
@@ -165,6 +182,7 @@ def gen_callers(facts: Facts, seed: int, count: int = 6) -> list[Question]:
         if _askable(d)
         and d.kind in ("function", "method")
         and d.key in names
+        and _trusted(facts, d)
         and CALLERS_MIN <= len(facts.callers.get(d.key, ())) <= CALLERS_MAX
     ]
     order = stratified_order(
@@ -229,6 +247,8 @@ def gen_multihop(
         if _askable(d)
         and d.kind in ("function", "method")
         and d.key in names
+        and _trusted(facts, d)
+        and all(_trusted_key(facts, c) for c in facts.callers.get(d.key, ()))
         and REACH_MIN <= len(reaching_tests(facts, d.key)) <= REACH_MAX
         # at least one answer must need the intermediate hop
         and any(not facts.is_test(c) for c in facts.callers.get(d.key, ()))
@@ -327,6 +347,7 @@ def gen_static_impact(
             for d in facts.definitions.values()
             if _askable(d) and d.kind in ("function", "method") and facts.callers.get(d.key)
         ]
+    pool = [d for d in pool if _trusted(facts, d)]
     order = stratified_order(
         pool,
         lambda d: len(transitive_callers(facts, d.key)),
@@ -387,9 +408,13 @@ def import_real_impact(
         joined += 1
         failing += len(tests)
         unmapped += missing
+        static = {s.symbol_key for s in truth.static}
+        outside = sum(t.symbol_key is not None and t.symbol_key not in static for t in tests)
         notes = (
             f"{q.notes} real: {len(tests)} confirmed failing tests from the sandbox mutation "
-            f"({record.kind}, seed {record.seed}); {missing} unmapped."
+            f"({record.kind}, seed {record.seed}); {missing} unmapped; {outside} are not in the "
+            "static set (SCIP does not see references through untyped values such as pytest "
+            "fixtures)."
         ).strip()
         new_truth = truth.model_copy(update={"real_failing_tests": tests})
         out.append(

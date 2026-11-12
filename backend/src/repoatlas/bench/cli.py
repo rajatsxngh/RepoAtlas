@@ -118,7 +118,8 @@ def generate_command(
         stats = built.stats
         typer.echo(
             f"{repo_id}: {len(built.questions)} questions; {stats.definitions} SCIP definitions "
-            f"with keys; {stats.history_commits} commits, {stats.owned_files} owned files; "
+            f"with keys; {stats.misresolved_references} mis-resolved references ignored; "
+            f"{stats.history_commits} commits, {stats.owned_files} owned files; "
             f"real impact {stats.real_impact.joined} questions, "
             f"{stats.real_impact.failing_tests} failing tests "
             f"({stats.real_impact.unmapped_tests} unmapped); flow reviewed: {stats.flow_reviewed}"

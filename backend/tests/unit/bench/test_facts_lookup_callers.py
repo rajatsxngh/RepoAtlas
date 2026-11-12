@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from repoatlas.bench.facts import Facts, import_lines
 from repoatlas.bench.generate import display_names, gen_callers, gen_lookup, stratified_order
 from repoatlas.bench.schema import AnswerSetTruth, LookupTruth
@@ -178,3 +180,113 @@ def test_library_paths() -> None:
     assert _is_library("packages/remeda/src/pipe.ts")
     assert not _is_library("examples/aliases/aliases.py")
     assert not _is_library("packages/docs/scripts/x.ts")
+
+
+def test_names_target_accepts_names_constructors_and_aliases(minipy: Facts) -> None:
+    from repoatlas.bench.facts import _names_target
+
+    helper = minipy.definitions[UTIL + "helper:function"]
+    init = minipy.definitions[CORE + "Base.__init__:method"]
+    assert _names_target("helper", helper, "", minipy)
+    assert _names_target("Base", init, "", minipy)  # new Base( → constructor
+    assert _names_target("h", helper, "from mini.util import helper as h\n", minipy)
+    assert not _names_target("Response", helper, "", minipy)
+
+
+def test_misresolved_references_are_ignored_and_taint_their_names(tmp_path: Path) -> None:
+    import shutil
+
+    from repoatlas.bench.facts import build_facts
+    from repoatlas.bench.generate import _trusted
+    from repoatlas.bench.repos import RepoFiles
+    from repoatlas.bench.scip import ScipIndex
+    from repoatlas.ingest.source import DirectorySourceTree
+    from repoatlas.sandbox.parsed import parse_tree
+    from tests.unit.bench.fixture_indexes import FIXTURES, MINIPY, PY, build, r
+
+    root = tmp_path / "minipy"
+    shutil.copytree(FIXTURES / "minipy", root)
+    test_file = root / "tests" / "test_core.py"
+    test_file.write_text(
+        test_file.read_text(encoding="utf-8") + "\n\ndef test_wrong():\n    Child(1)\n",
+        encoding="utf-8",
+    )
+    specs = {k: list(v) for k, v in MINIPY.items()}
+    # The indexer resolves the text `Child` on line 22 to Base (like httpx's off-by-one).
+    specs["tests/test_core.py"] += [r(22, "Child", PY + "`mini.core`/Base#")]
+    data = build(root, specs, tool="scip-python", version="0.6.8", project_root="file:///src")
+    files = RepoFiles("minipy", "1" * 40, DirectorySourceTree(root))
+    facts = build_facts(ScipIndex.from_bytes(data), parse_tree(files.tree), files)
+    assert facts.misresolved == {("Child", CORE + "Base:class"): 1}
+    assert "py:tests/test_core.py:test_wrong:test" not in facts.callers[CORE + "Base:class"]
+    # Both sides are tainted: the text written (Child) and the target SCIP chose (Base).
+    assert facts.tainted_names() == {"Child", "Base"}
+    assert not _trusted(facts, facts.definitions[CORE + "Child.run:method"])
+    assert not _trusted(facts, facts.definitions[CORE + "Base.run:method"])
+    assert _trusted(facts, facts.definitions[UTIL + "helper:function"])
+
+
+def test_names_target_accepts_import_spans_quotes_and_default_imports(minipy: Facts) -> None:
+    from repoatlas.bench.facts import _names_target
+
+    helper = minipy.definitions[UTIL + "helper:function"]
+    assert _names_target("helper as h", helper, "", minipy)
+    assert _names_target('"helper"', helper, "", minipy)
+    assert _names_target("defaultHelper", helper, 'import defaultHelper from "./util";\n', minipy)
+    assert not _names_target("other", helper, 'import defaultHelper from "./util";\n', minipy)
+
+
+def test_property_setters_are_callers_scip_has_no_definition_for(tmp_path: Path) -> None:
+    import shutil
+
+    from repoatlas.bench.facts import build_facts
+    from repoatlas.bench.repos import RepoFiles
+    from repoatlas.bench.scip import ScipIndex
+    from repoatlas.ingest.source import DirectorySourceTree
+    from repoatlas.sandbox.parsed import parse_tree
+    from tests.unit.bench.fixture_indexes import FIXTURES, MINIPY, PY, build, r
+
+    root = tmp_path / "minipy"
+    shutil.copytree(FIXTURES / "minipy", root)
+    util = root / "src" / "mini" / "util.py"
+    box = [
+        "",
+        "",
+        "class Box:",
+        "    @property",
+        "    def size(self):",
+        "        return 1",
+        "",
+        "    @size.setter",
+        "    def size(self, value):",
+        "        helper(value)",
+        "",
+    ]
+    util.write_text(util.read_text(encoding="utf-8") + "\n".join(box), encoding="utf-8")
+    specs = {k: list(v) for k, v in MINIPY.items()}
+    from tests.unit.bench.fixture_indexes import d
+
+    specs["src/mini/util.py"] += [
+        d(13, "Box", PY + "`mini.util`/Box#", (13, 20)),
+        d(15, "size", PY + "`mini.util`/Box#size().", (15, 16)),
+        r(19, "size", PY + "`mini.util`/Box#size()."),  # the setter's def, listed as a reference
+        r(20, "helper", PY + "`mini.util`/helper()."),
+    ]
+    data = build(root, specs, tool="scip-python", version="0.6.8", project_root="file:///src")
+    files = RepoFiles("minipy", "1" * 40, DirectorySourceTree(root))
+    facts = build_facts(ScipIndex.from_bytes(data), parse_tree(files.tree), files)
+    setter = UTIL + "Box.size:method~2"
+    assert setter in facts.callers[UTIL + "helper:function"]
+    assert UTIL + "Box:class" not in facts.callers[UTIL + "helper:function"]
+    location = facts.location(setter)
+    assert (location.path, location.line) == ("src/mini/util.py", 19)
+
+
+def test_declares_type() -> None:
+    from repoatlas.bench.facts import _declares_type
+
+    text = "export interface $ZodBigInt<T> {}\nexport const $ZodBigInt = make();\ntype Box = 1;\n"
+    assert _declares_type(text, "$ZodBigInt")
+    assert _declares_type(text, "Box")
+    assert not _declares_type(text, "$ZodBig")
+    assert not _declares_type("const x = 1;\n", "x")

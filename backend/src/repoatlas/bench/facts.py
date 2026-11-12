@@ -10,10 +10,13 @@ of the parsed function, method, class, or test case around it).
 - The enclosing definition is found by position containment in SCIP's enclosing ranges. If the
   innermost one is not a function, method, class, or test (a variable, a property), the next
   one out is used.
-- When no SCIP definition with an enclosing range is a function, method, class, or test, the
-  caller is the innermost parsed one whose span contains the reference. scip-typescript gives
-  no enclosing range to test callbacks (``it("…", () => …)``) or to object-literal methods in
-  ``const X = make(…, { m() { … } })`` (zod's style); the reference itself is still SCIP's.
+- When no SCIP definition with an enclosing range is a function, method, class, or test, or a
+  parsed one lies strictly inside SCIP's innermost scope, the caller is the innermost parsed
+  one whose span contains the reference. SCIP gives no definition to property setters and
+  ``@overload`` stubs (scip-python lists them as references to the first definition), and
+  scip-typescript gives no enclosing range to test callbacks (``it("…", () => …)``) or to
+  object-literal methods in ``const X = make(…, { m() { … } })`` (zod's style). The reference
+  itself is always SCIP's.
 - References inside an ``import`` statement are not calls. The indexers do not set SCIP's
   import role, so import statements are found in the source: Python's ``ast`` and, for
   TypeScript, the lines of top-level ``import``/``export … from`` statements.
@@ -22,6 +25,10 @@ of the parsed function, method, class, or test case around it).
   ``@overload`` or conditional definitions of a name that way) is a redefinition, not a call.
 - A reference to a class followed by ``(`` (a constructor call, ``new C(`` in TypeScript) also
   counts as a call to the class's constructor (``__init__`` or ``constructor``).
+- A reference whose text does not name its target (not the target's name, its class's name
+  for a constructor, or a local import alias) is an indexer mis-resolution: it is ignored and
+  counted in ``misresolved``. scip-python 0.6.8 resolves many ``httpx.<Name>`` references in
+  httpx's tests to a neighbouring name in the package's export list.
 - Overrides: callers of a method that SCIP links to a base method through an
   ``is_implementation`` relationship are kept separately (``override_callers``) so questions can
   list them in ``notes`` without mixing them into the answer.
@@ -31,8 +38,8 @@ from __future__ import annotations
 
 import ast
 import re
-from collections import defaultdict
-from collections.abc import Callable, Mapping
+from collections import Counter, defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from repoatlas.bench.repos import RepoFiles
@@ -70,11 +77,32 @@ class Facts:
     # file → keys of definitions in other files it references (imports included)
     file_references: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
     test_symbols: dict[str, Symbol] = field(default_factory=dict)  # parsed test cases by key
+    # parsed callables SCIP has no definition for (property setters, @overload stubs) that are
+    # the innermost enclosing definition of some reference
+    redefinitions: dict[str, Symbol] = field(default_factory=dict)
+    # TypeScript definitions whose name is also an interface or type in the same file: SCIP
+    # merges the declarations, so type-only uses count as references to them
+    type_merged: set[str] = field(default_factory=set)
     # (callee, caller) → 1-based (path, line) of each reference that made the caller a caller
     call_sites: dict[tuple[str, str], list[tuple[str, int]]] = field(
         default_factory=lambda: defaultdict(list)
     )
     unmatched_definitions: int = 0
+    # (text written at the reference, key SCIP resolved it to) for references whose text does
+    # not name the target: indexer mis-resolutions, ignored and counted
+    misresolved: Counter[tuple[str, str]] = field(default_factory=Counter)
+
+    def tainted_names(self) -> set[str]:
+        """Names on either side of a mis-resolved reference (the text written there, and the
+        target SCIP chose, with its class): code typed through them may be mis-resolved too."""
+        names = set()
+        for text, key in self.misresolved:
+            names.add(text)
+            found = self.definitions.get(key)
+            if found is not None:
+                names.add(found.name)
+                names.add(found.qualname.split(".")[0])
+        return names
 
     def callees(self) -> dict[str, set[str]]:
         """caller key → keys it calls (the inverse of ``callers``)."""
@@ -89,7 +117,7 @@ class Facts:
         found = self.definitions.get(key)
         if found is not None:
             return Location(symbol_key=key, path=found.path, line=found.line)
-        test = self.test_symbols[key]
+        test = self.test_symbols.get(key) or self.redefinitions[key]
         path = parse_symbol_key(key).path
         return Location(symbol_key=key, path=path, line=test.name_range.start_line)
 
@@ -141,15 +169,12 @@ def import_lines(path: str, text: str) -> set[int]:
 # --------------------------------------------------------------------------------------------
 
 
-def _parsed_owner(parsed: ParsedFile, line: int, known: Callable[[str], bool]) -> Symbol | None:
-    """The innermost parsed function, method, class, or test whose span contains ``line`` and
-    whose location is known (a SCIP definition or a test case; not an ``@overload`` stub)."""
+def _parsed_owner(parsed: ParsedFile, line: int) -> Symbol | None:
+    """The innermost parsed function, method, class, or test whose span contains ``line``."""
     found = [
         s
         for s in parsed.symbols
-        if s.kind in CALLABLE_KINDS
-        and s.span.start_line <= line <= s.span.end_line
-        and known(s.key)
+        if s.kind in CALLABLE_KINDS and s.span.start_line <= line <= s.span.end_line
     ]
     return min(found, key=lambda s: (s.span.end_line - s.span.start_line, s.key), default=None)
 
@@ -199,6 +224,10 @@ def build_facts(index: ScipIndex, parsed: Mapping[str, ParsedFile], files: RepoF
             )
             facts.definitions[symbol.key] = definition
             facts.by_scip[occ.symbol] = definition
+            if not document.path.endswith((".py", ".pyi")) and _declares_type(
+                files.text(document.path), symbol.name
+            ):
+                facts.type_merged.add(symbol.key)
 
     classes = {(d.path, d.qualname): d.key for d in facts.definitions.values() if d.kind == "class"}
     constructors: dict[str, str] = {}  # class key → constructor key
@@ -224,6 +253,11 @@ def build_facts(index: ScipIndex, parsed: Mapping[str, ParsedFile], files: RepoF
             target = facts.by_scip.get(occ.symbol)
             if target is None:
                 continue
+            if occ.range.start_line == occ.range.end_line:
+                written = lines[occ.range.start_line][occ.range.start_char : occ.range.end_char]
+                if not _names_target(written, target, text, facts):
+                    facts.misresolved[(written, target.key)] += 1
+                    continue
             if target.path != document.path:
                 facts.file_references[document.path].add(target.key)
             if occ.is_import or occ.line in imports:
@@ -259,12 +293,45 @@ def build_facts(index: ScipIndex, parsed: Mapping[str, ParsedFile], files: RepoF
     return facts
 
 
+def _declares_type(text: str, name: str) -> bool:
+    kinds = r"(?m)^\s*(?:export\s+)?(?:declare\s+)?(?:interface|type)\s+"
+    pattern = kinds + re.escape(name) + r"(?![\w$])"
+    return re.search(pattern, text) is not None
+
+
+def _names_target(written: str, target: Definition, text: str, facts: Facts) -> bool:
+    """Whether the text at a reference plausibly names ``target``: its own name (possibly
+    quoted, or the whole ``name as alias`` span of an import), its class's name for a
+    constructor (``new X(``), or a local alias (``import X as Y``, ``{ X as Y }``, or a default
+    import ``import Y from``)."""
+    name = re.escape(target.name)
+    if written.strip("'\"`") == target.name or re.fullmatch(rf"{name}\s+as\s+\w+", written):
+        return True
+    if target.name in CONSTRUCTORS and target.qualname.rsplit(".", 1)[0].endswith(written):
+        return True
+    alias = rf"(?<!\w){name}\s+as\s+{re.escape(written)}(?!\w)"
+    default = rf"(?m)^\s*import\s+(?:type\s+)?{re.escape(written)}\s*(?:,|from\b)"
+    return re.search(alias, text) is not None or re.search(default, text) is not None
+
+
 def _caller(index: ScipIndex, occ: Occurrence, facts: Facts, file: ParsedFile) -> str | None:
-    for scope in index.enclosing_definitions(occ):
-        found = facts.by_scip.get(scope.symbol)
+    """The innermost enclosing definition: SCIP's innermost callable scope, unless a parsed
+    callable lies strictly inside it (or SCIP has none), which SCIP gives no definition of."""
+    scope: Occurrence | None = None
+    key: str | None = None
+    for candidate in index.enclosing_definitions(occ):
+        found = facts.by_scip.get(candidate.symbol)
         if found is not None and found.kind in CALLABLE_KINDS:
-            return found.key
-    owner = _parsed_owner(
-        file, occ.line, lambda k: k in facts.definitions or k in facts.test_symbols
-    )
-    return owner.key if owner is not None else None
+            scope, key = candidate, found.key
+            break
+    owner = _parsed_owner(file, occ.line)
+    if owner is None or owner.key == key:
+        return key
+    if scope is not None and scope.enclosing_range is not None:
+        first, last = scope.enclosing_range.start_line + 1, scope.enclosing_range.end_line + 1
+        inside = first <= owner.span.start_line and owner.span.end_line <= last
+        if not inside or (owner.span.start_line, owner.span.end_line) == (first, last):
+            return key
+    if owner.key not in facts.definitions and owner.key not in facts.test_symbols:
+        facts.redefinitions[owner.key] = owner
+    return owner.key
