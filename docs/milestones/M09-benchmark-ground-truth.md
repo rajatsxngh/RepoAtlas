@@ -1,6 +1,6 @@
 # M09 — Benchmark & ground truth
 
-**Type of work:** Measurement dataset · **Size:** M (8 tasks) · **Status:** In progress
+**Type of work:** Measurement dataset · **Size:** M (8 tasks) · **Status:** Done
 
 ## Goal
 
@@ -120,7 +120,7 @@ uv run repoatlas bench audit --sample 0.1
 
 ## Results
 
-Gate checked on 2026-11-12 on branch `m09-benchmark`, on Windows 11 with Postgres and Docker up.
+Gate checked on 2026-11-12 on branch `m09-benchmark` (CI run 43178069096 passed on every job), on Windows 11 with Postgres and Docker up.
 
 **Tests.** In `backend/`, `uv run poe check` passes. Totals: 1,280 tests passed, 1 skipped (creating symlinks needs extra privileges on Windows), 7 deselected (the `live` tests). ruff, mypy (312 files), and the docs lint pass too. `tests/unit/bench` has 109 tests, built on two committed SCIP fixtures: a Python package, and a TypeScript subproject indexed from `/src/packages/lib`.
 
