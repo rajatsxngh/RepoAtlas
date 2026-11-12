@@ -96,8 +96,11 @@ def selection_args(recipe: Recipe, only: Sequence[TestId]) -> list[str]:
     """Arguments that limit a run to ``only``: pytest node IDs, or the files that hold them."""
     if recipe.test.selection == "nodeids":
         return sorted(set(only))
+    # Absolute paths: runners resolve relative filters against their own working directory,
+    # which may be a subfolder (remeda runs from packages/remeda).
+    root = "/src" if recipe.workdir == "src" else WORK_DIR
     files = {test_id.split(" > ", 1)[0].split("::", 1)[0] for test_id in only}
-    return sorted(files)
+    return sorted(f"{root}/{path}" for path in files)
 
 
 def suite_script(recipe: Recipe, only: Sequence[TestId] | None = None) -> str:

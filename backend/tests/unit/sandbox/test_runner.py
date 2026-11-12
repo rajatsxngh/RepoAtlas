@@ -18,7 +18,7 @@ def test_script_runs_in_src_with_selected_node_ids() -> None:
 def test_files_selection_dedupes_files() -> None:
     recipe = parse_recipe(MINIPY_RECIPE.replace("reporter: junit", "reporter: vitest-json"))
     only = ["src/a.test.ts > x > y", "src/a.test.ts > z", "src/b.test.ts > q"]
-    assert selection_args(recipe, only) == ["src/a.test.ts", "src/b.test.ts"]
+    assert selection_args(recipe, only) == ["/src/src/a.test.ts", "/src/src/b.test.ts"]
 
 
 def test_tmp_workdir_copies_source_and_links_node_modules() -> None:

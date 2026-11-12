@@ -20,13 +20,19 @@
     },
     {
       "in_git": true,
+      "path": "mutations.jsonl",
+      "sha256": "61c4e8ba22b222eaf530095a58328c825e230e52aa61044325e1e12dc2d63ebc",
+      "size": 1832676
+    },
+    {
+      "in_git": true,
       "path": "scip.json",
       "sha256": "64311527ef84de8aa9f1caf8f86467d02ce218428a3caba1338254a11f9d28d6",
       "size": 199
     }
   ],
   "commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
-  "recipe_sha256": "9d397a5805ed277088399b214ca1c8c000cc6bd528fed6f2b790d0dc24e38ba6",
+  "recipe_sha256": "abc04ea97df386e8bfcd57b2e8c52571363934b31d890ddb2ecc7f9e0fe600ce",
   "repo_id": "click",
   "tools": {
     "base_image": "repoatlas-sbx/base-python:fdb97c8b9c4a@sha256:284866b5943f864283b9db4fbd96d24821c31c3f4fbd1d59fedf8fab25878cfb",

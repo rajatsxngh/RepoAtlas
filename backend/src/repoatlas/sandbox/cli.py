@@ -201,3 +201,87 @@ def scip_command(recipe_path: RecipeArg) -> None:
         f"{occurrences} occurrences, {artifact.size} bytes in {artifact.duration_s} s"
     )
     _manifest(recipe)
+
+
+@sandbox_app.command("mutate")
+def mutate_command(
+    recipe_path: RecipeArg,
+    targets: Annotated[int, typer.Option(help="Targets to mutate (a stratified sample).")] = 30,
+    seed: Annotated[int, typer.Option(help="Sampling seed (recorded in every record).")] = 7,
+    resume: Annotated[
+        bool, typer.Option("--resume", help="Keep mutations.jsonl and skip finished targets.")
+    ] = False,
+) -> None:
+    """Mutate sampled functions one at a time and record the confirmed failing tests."""
+    from collections import Counter
+
+    from repoatlas.sandbox.artifacts import (
+        BASELINE_JSON,
+        MUTATIONS_JSONL,
+        SCIP_INDEX,
+        SCIP_JSON,
+        read_model,
+        recipe_dir,
+        sha256_file,
+    )
+    from repoatlas.sandbox.baseline import Baseline
+    from repoatlas.sandbox.images import open_source
+    from repoatlas.sandbox.mutations import MutationRecord, read_records, run_mutations
+    from repoatlas.sandbox.parsed import parse_tree
+    from repoatlas.sandbox.runner import SandboxRunner, ScipArtifact
+    from repoatlas.sandbox.scip import read_index
+    from repoatlas.sandbox.targets import candidates, ordered_sample
+
+    recipe = _load(recipe_path)
+    image = _image(recipe)
+    folder = recipe_dir(recipe)
+    baseline = read_model(recipe, BASELINE_JSON, Baseline)
+    if baseline is None or baseline.image_digest != image.image.digest:
+        typer.echo("No baseline for the current image; run: repoatlas sandbox baseline", err=True)
+        raise typer.Exit(1)
+    scip = read_model(recipe, SCIP_JSON, ScipArtifact)
+    index_path = folder / SCIP_INDEX
+    if scip is None or not index_path.is_file() or sha256_file(index_path) != scip.sha256:
+        typer.echo("No SCIP index matching scip.json; run: repoatlas sandbox scip", err=True)
+        raise typer.Exit(1)
+    out = folder / MUTATIONS_JSONL
+    existing = read_records(out)
+    if existing and not resume:
+        out.unlink()
+    elif any(record.seed != seed for record in existing):
+        typer.echo("mutations.jsonl was sampled with another seed; drop --resume.", err=True)
+        raise typer.Exit(1)
+
+    index = read_index(index_path.read_bytes())
+    with open_source(recipe) as tree:
+        parsed = parse_tree(tree)
+        found = candidates(index, parsed)
+        chosen = ordered_sample(found, seed)[:targets]
+        typer.echo(f"{len(found)} reachable mutable functions; mutating {len(chosen)}")
+
+        def progress(record: MutationRecord) -> None:
+            typer.echo(
+                f"  {record.status:<11} {len(record.failing):>4} failing  "
+                f"{record.runtime_s:>6} s  {record.symbol_key}"
+            )
+
+        records = run_mutations(
+            SandboxRunner(recipe, image.image),
+            chosen,
+            tree=tree,
+            parsed=parsed,
+            baseline=baseline,
+            seed=seed,
+            out=out,
+            progress=progress,
+        )
+    statuses = Counter(record.status for record in records)
+    with_failures = [record for record in records if record.has_failures]
+    failing = [test for record in with_failures for test in record.failing]
+    unmapped = sum(1 for test in failing if test.symbol_key is None)
+    typer.echo(", ".join(f"{k} {v}" for k, v in sorted(statuses.items())))
+    typer.echo(
+        f"{len(with_failures)} targets with confirmed failures; {len(failing)} failing tests "
+        f"({unmapped} unmapped); {sum(r.runtime_s for r in records):.0f} s in total"
+    )
+    _manifest(recipe)

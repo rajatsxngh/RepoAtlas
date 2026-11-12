@@ -135,12 +135,16 @@ def run_hardened(
     """Run ``script`` (POSIX sh) in a hardened container; kill it after ``timeout_s``."""
     name = f"{name_prefix}-{uuid.uuid4().hex[:12]}"
     args = [docker_bin(), *hardened_run_args(name, image, limits=limits, env=env)]
-    args += ["sh", "-c", wrap_script(script)]
+    # The script goes in on stdin, not the command line (which has a length limit on Windows).
+    args.insert(2, "--interactive")
+    args += ["sh", "-s"]
     started = time.monotonic()
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(
+        args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     timed_out = False
     try:
-        stdout, stderr = proc.communicate(timeout=timeout_s)
+        stdout, stderr = proc.communicate(wrap_script(script).encode("utf-8"), timeout=timeout_s)
     except subprocess.TimeoutExpired:
         timed_out = True
         subprocess.run([docker_bin(), "kill", name], capture_output=True, timeout=60, check=False)
