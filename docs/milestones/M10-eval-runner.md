@@ -1,6 +1,6 @@
 # M10 — Eval runner & baselines
 
-**Type of work:** Measurement · **Size:** L (11 tasks) · **Status:** In progress
+**Type of work:** Measurement · **Size:** L (11 tasks) · **Status:** Done
 
 ## Goal
 
@@ -119,7 +119,7 @@ uv run repoatlas eval compare eval/reports/<hybrid>.json eval/reports/<vector>.j
 
 ## Results
 
-Gate checked on 2026-11-13 on branch `m10-eval-runner`, on Windows 11 with Postgres and Docker up.
+Gate checked on 2026-11-13 on branch `m10-eval-runner` (CI run 43303039142 passed on every job: Linux full checks, Windows unit tests, API types, docs lint, frontend), on Windows 11 with Postgres and Docker up.
 
 **Tests.** In `backend/`, `uv run poe check` passes: 1,373 tests passed, 1 skipped (symlinks need extra privileges on Windows), 7 deselected (the `live` tests); ruff, mypy (344 files), and the docs lint pass too. `tests/unit/evals` has 92 tests covering scorers, mapping, runner (caching, cost cap, concurrency, resume), reports and their schema, statistics, baselines, the checker, the judge, labels and agreement, embeddings, and calibration. They use `FakeLLM` and synthetic data; no unit test calls an LLM.
 
