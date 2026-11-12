@@ -57,14 +57,14 @@ class ScipIndex:
     project_root: str = ""
     documents: list[Document] = field(default_factory=list)
 
-    def path_prefix(self, container_root: str = "/src") -> str:
+    def path_prefix(self, container_roots: tuple[str, ...] = ("/src", "/tmp/work")) -> str:
         """Prefix that turns a document's path into a repo path (``packages/x/`` for a
-        project indexed from ``/src/packages/x``)."""
+        project indexed from ``/src/packages/x`` or its copy ``/tmp/work/packages/x``)."""
         root = self.project_root.removeprefix("file://").rstrip("/")
-        base = container_root.rstrip("/")
-        if root == base or not root.startswith(base + "/"):
-            return ""
-        return root[len(base) + 1 :] + "/"
+        for base in container_roots:
+            if root.startswith(base.rstrip("/") + "/"):
+                return root[len(base.rstrip("/")) + 1 :] + "/"
+        return ""
 
 
 # --------------------------------------------------------------------------------------------

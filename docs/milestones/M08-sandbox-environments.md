@@ -113,7 +113,7 @@ Test runs use:
 - [x] **T5 — Result parsing and test mapping.** JUnit and Vitest/Jest JSON parsers; test ID → symbol key mapping with fixtures.
 - [x] **T6 — Choose and pin five repos.** Apply the criteria; write recipes; confirm each suite runs in its container.
 - [x] **T7 — Baselines.** Three runs per repo; quarantine and pre-failing lists; `baseline.json`.
-- [ ] **T8 — SCIP indexing.** Run indexers in the images; `index.scip`, `scip.json`; manifests with digests.
+- [x] **T8 — SCIP indexing.** Run indexers in the images; `index.scip`, `scip.json`; manifests with digests.
 - [ ] **T9 — Mutation engines.** Python and TypeScript, with unit tests (decorated functions, methods, arrow functions, skip rules).
 - [ ] **T10 — Target sampling.** SCIP-based, stratified, seeded; unit tests on a small SCIP fixture.
 - [ ] **T11 — Mutation runs.** At least 30 targets on at least 2 repos, confirmed failures, resumable; record counts, runtimes, and unmapped test IDs in Results.

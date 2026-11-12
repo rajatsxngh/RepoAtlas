@@ -24,7 +24,8 @@ test:
   timeout_s: 120
 scip:
   indexer: scip-python
-  args: ["index", ".", "--project-name", "minipy", "--project-version", "0"]
+  args: ["index", ".", "--project-name", "minipy", "--project-version", "0",
+         "--output", "/tmp/out/index.scip"]
 """
 
 

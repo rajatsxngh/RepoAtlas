@@ -11,16 +11,29 @@
       "path": "image.json",
       "sha256": "45e6bec7c5205c29f604726c0cc44340878116321dd6bf5ca40eb63ba59344c2",
       "size": 940
+    },
+    {
+      "in_git": false,
+      "path": "index.scip",
+      "sha256": "0d07dcb440fa67a91ef68619af84fcfa0e069cb36adb5659fa09e043bf11f3fa",
+      "size": 6450120
+    },
+    {
+      "in_git": true,
+      "path": "scip.json",
+      "sha256": "bb5654c778be10d4d831f66499e7b701e02e0f21f686094e844eb63c6e428f8c",
+      "size": 203
     }
   ],
   "commit": "ec4d3f5dad1105c522c83ec4877e04937cb2405e",
-  "recipe_sha256": "e982bec14805bb0cb9b8c10c6b4cf7fa7c9de7640aa41e50fba0e5fc83b5b749",
+  "recipe_sha256": "a7c9abc7bf8ef3f39f45f4c3bdedcfcb74a849737729e5517d0a3592c4f3063a",
   "repo_id": "remeda",
   "tools": {
     "base_image": "repoatlas-sbx/base-node:9fe535eaa2c7@sha256:ab1d3ee90599a443dc5137669659d90fba207a663f2fd6ab966e6990af19acf3",
     "docker": "29.9.2",
     "repo_image": "repoatlas-sbx/remeda:ec4d3f5dad11@sha256:9a42b56276ec6b1dce8f34262425ad9250b171f224ce5d8a07ed4974dacd03d2",
     "repoatlas": "0.1.0",
+    "scip-typescript": "0.6.2",
     "upstream:docker.io/library/node:22-bookworm-slim": "sha256:18052396bf1d0c6e0a8c58181b5c1457da19409efbd5032a3f4d86974e74d13c"
   },
   "url": "https://github.com/remeda/remeda"

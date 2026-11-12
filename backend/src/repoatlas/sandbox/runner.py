@@ -80,12 +80,15 @@ def enter_workdir(recipe: Recipe) -> str:
     """Shell lines that enter the suite's working directory."""
     if recipe.workdir == "src":
         return "cd /src\n"
-    # A writable copy (node_modules stays in the image and is linked, not copied).
+    return copy_to_work() + f"cd {WORK_DIR}\n"
+
+
+def copy_to_work() -> str:
+    """A writable copy of /src in /tmp/work (node_modules stays in the image and is linked)."""
     return (
         f"mkdir -p {WORK_DIR} && cd /src && "
         f"tar --exclude=./node_modules -cf - . | tar -C {WORK_DIR} -xf - && "
         f"if [ -d node_modules ]; then ln -s /src/node_modules {WORK_DIR}/node_modules; fi\n"
-        f"cd {WORK_DIR}\n"
     )
 
 
@@ -217,9 +220,12 @@ class SandboxRunner:
     def run_scip(self) -> tuple[ScipArtifact, bytes]:
         """Index the source inside the repo image (no network); returns the artifact and bytes."""
         spec = self.recipe.scip
+        root = "/src" if spec.workdir == "src" else WORK_DIR
         script = (
-            f"cd /src/{spec.cwd}\n"
+            (copy_to_work() if spec.workdir == "tmp" else "")
+            + f"cd {root}/{spec.cwd}\n"
             + _shell_env({**self.recipe.env, **SCIP_ENV})
+            + "".join(f"{step}\n" for step in spec.setup)
             + " ".join(shlex.quote(arg) for arg in [spec.indexer, *spec.args])
         )
         run = run_hardened(

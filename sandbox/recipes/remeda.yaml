@@ -15,5 +15,6 @@ test:
   timeout_s: 900
 scip:
   indexer: scip-typescript
+  cwd: packages/remeda  # the library project (its tsconfig includes src and test)
   args: ["index", "--output", "/tmp/out/index.scip"]
 quarantine: []

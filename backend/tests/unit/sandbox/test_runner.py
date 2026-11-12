@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import pytest
+
 from repoatlas.sandbox.recipe import parse_recipe
-from repoatlas.sandbox.runner import selection_args, suite_script
+from repoatlas.sandbox.runner import SandboxRunner, selection_args, suite_script
 from tests.integration.sandbox.fixtures import MINIPY_RECIPE, minipy_recipe
 
 
@@ -25,3 +27,34 @@ def test_tmp_workdir_copies_source_and_links_node_modules() -> None:
     assert "tar --exclude=./node_modules" in script
     assert "ln -s /src/node_modules /tmp/work/node_modules" in script
     assert "\ncd /tmp/work\nexport TZ=UTC\npython -m pytest" in script
+
+
+SCIP_TMP = """\
+  indexer: scip-python
+  workdir: tmp
+  cwd: pkg
+  setup: ["echo {} > cfg.json"]
+"""
+
+
+def test_scip_script_can_index_a_writable_copy_after_setup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scripts: list[str] = []
+
+    class Done(Exception):
+        pass
+
+    def fake_run(image: str, script: str, **kwargs: object) -> object:
+        scripts.append(script)
+        raise Done
+
+    recipe = parse_recipe(MINIPY_RECIPE.replace("  indexer: scip-python\n", SCIP_TMP))
+    monkeypatch.setattr("repoatlas.sandbox.runner.run_hardened", fake_run)
+    with pytest.raises(Done):
+        SandboxRunner(recipe, "img").run_scip()
+    script = scripts[0]
+    assert "tar -C /tmp/work -xf -" in script
+    assert "\ncd /tmp/work/pkg\n" in script
+    assert "echo {} > cfg.json\nscip-python index ." in script
+    assert "NODE_OPTIONS=--max-old-space-size=3072" in script

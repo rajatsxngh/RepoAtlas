@@ -14,6 +14,10 @@ test:
   timeout_s: 900
 scip:
   indexer: scip-python
+  # pyproject limits pyright to src/requests; index the tests too (pyrightconfig.json wins).
+  workdir: tmp
+  # extraPaths makes src/requests/x.py the module requests.x, as the tests import it.
+  setup: ["printf '{\"include\": [\"src\", \"tests\"], \"extraPaths\": [\"src\"]}' > pyrightconfig.json"]
   args: ["index", ".", "--project-name", "requests", "--project-version", "2.34.2", "--output", "/tmp/out/index.scip"]
 quarantine:
   - "tests/test_requests.py::TestTimeout::test_connect_timeout[timeout0]"

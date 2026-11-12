@@ -57,6 +57,9 @@ class ScipSpec(_Model):
     # The indexer must write /tmp/out/index.scip (pass it with --output).
     args: list[str] = []
     cwd: str = "."  # where the indexer runs, relative to the source root
+    # "tmp": index a writable copy in /tmp/work (for setup steps that write files there).
+    workdir: Literal["src", "tmp"] = "src"
+    setup: list[str] = []  # shell commands run in the indexer's directory first
     timeout_s: int = Field(default=1800, ge=10, le=7200)
 
     @field_validator("cwd")

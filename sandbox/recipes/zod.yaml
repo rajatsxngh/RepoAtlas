@@ -7,6 +7,9 @@ url: https://github.com/colinhacks/zod
 commit: "c7ec94d309ee8acb25113e3db738b3e03816a424"
 language: typescript
 base_image: node
+env:
+  # The pinned pnpm (installed below) comes first, ahead of corepack's shim.
+  PATH: "/home/sandbox/.tools/node_modules/.bin:/usr/local/bin:/usr/bin:/bin"
 install:
   # packageManager's pnpm, installed with npm (corepack's downloader ignores the proxy).
   - "npm install --prefix /home/sandbox/.tools --no-save --ignore-scripts pnpm@10.12.1"

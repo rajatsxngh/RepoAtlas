@@ -180,3 +180,24 @@ def _manifest(recipe: Recipe) -> None:
         tools[scip.indexer] = scip.version
     path = write_manifest(recipe, tools)
     typer.echo(f"Updated {path}")
+
+
+@sandbox_app.command("scip")
+def scip_command(recipe_path: RecipeArg) -> None:
+    """Build the SCIP index inside the repo image (network off)."""
+    from repoatlas.sandbox.artifacts import SCIP_JSON, recipe_dir, write_model
+    from repoatlas.sandbox.runner import SandboxRunner
+    from repoatlas.sandbox.scip import read_index
+
+    recipe = _load(recipe_path)
+    runner = SandboxRunner(recipe, _image_tag(recipe))
+    artifact, data = runner.run_scip()
+    index = read_index(data)
+    occurrences = sum(len(document.occurrences) for document in index.documents)
+    (recipe_dir(recipe) / artifact.path).write_bytes(data)
+    write_model(recipe, SCIP_JSON, artifact)
+    typer.echo(
+        f"{artifact.indexer} {artifact.version}: {len(index.documents)} documents, "
+        f"{occurrences} occurrences, {artifact.size} bytes in {artifact.duration_s} s"
+    )
+    _manifest(recipe)

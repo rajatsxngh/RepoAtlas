@@ -11,6 +11,18 @@
       "path": "image.json",
       "sha256": "4ead7f9bc9b99280eeb461efeb8fa53326c6dba0ec37c5fd989ce92871260d20",
       "size": 1049
+    },
+    {
+      "in_git": false,
+      "path": "index.scip",
+      "sha256": "b93d79cc97c6493f2f4a2a32a4b8a2673e1f04a5c6399af554408924e5f85e97",
+      "size": 2280020
+    },
+    {
+      "in_git": true,
+      "path": "scip.json",
+      "sha256": "8266bd9dd6dec375f46c6eac0f598ef4f8116d66386ac5164ff3d4e2b48e1813",
+      "size": 198
     }
   ],
   "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
@@ -21,6 +33,7 @@
     "docker": "29.9.2",
     "repo_image": "repoatlas-sbx/httpx:b5addb64f016@sha256:4035baa8f6050351864b766188a5411346ff2c5f359b7f8bb94b374f6be876c9",
     "repoatlas": "0.1.0",
+    "scip-python": "0.6.8",
     "upstream:docker.io/library/node:22-bookworm-slim": "sha256:18052396bf1d0c6e0a8c58181b5c1457da19409efbd5032a3f4d86974e74d13c",
     "upstream:ghcr.io/astral-sh/uv:0.12.3": "sha256:2d890623d310b57771ce840f0da5eed5fc6d657da05ffaa45d82797b53fa3abc"
   },
