@@ -86,6 +86,12 @@ class RunResult(BaseModel):
         return sum(r.output.cost_usd + r.output.eval_cost_usd for r in self.records)
 
 
+def _short_hash(text: str) -> str:
+    import hashlib
+
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:24]
+
+
 class ResultCache:
     """JSON files under ``root/<namespace>/<fingerprint>/<question>/<run>.json``."""
 
@@ -93,7 +99,10 @@ class ResultCache:
         self.root = root
 
     def _path(self, namespace: str, fingerprint: str, question_id: str, run: int) -> Path:
-        return self.root / namespace / fingerprint[:24] / question_id / f"{run}.json"
+        # A plain fingerprint names its folder by prefix; a composite key (an enricher's
+        # fingerprint joined to the system's) by a hash of all of it, so systems never share one.
+        folder = fingerprint[:24] if len(fingerprint) <= 64 else _short_hash(fingerprint)
+        return self.root / namespace / folder / question_id / f"{run}.json"
 
     def get(self, namespace: str, fingerprint: str, question_id: str, run: int) -> Any | None:
         import json

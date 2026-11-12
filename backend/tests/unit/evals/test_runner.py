@@ -332,3 +332,12 @@ async def test_a_cap_below_the_answer_budget_still_runs_cheap_answers(tmp_path: 
     result = await run_eval(run)
     assert result.complete and len(system.calls) == 9
     assert result.spent_usd == pytest.approx(0.09)
+
+
+def test_enricher_results_of_different_systems_never_share_a_cache_file(tmp_path: Path) -> None:
+    cache = ResultCache(tmp_path)
+    checker = "c" * 64
+    cache.put("support", f"{checker}-{'a' * 64}", "q1", 0, {"system": "a"})
+    cache.put("support", f"{checker}-{'b' * 64}", "q1", 0, {"system": "b"})
+    assert cache.get("support", f"{checker}-{'a' * 64}", "q1", 0) == {"system": "a"}
+    assert cache.get("support", f"{checker}-{'b' * 64}", "q1", 0) == {"system": "b"}
