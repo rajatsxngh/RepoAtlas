@@ -15,9 +15,12 @@ from collections import Counter
 from collections.abc import Callable, Sequence
 
 from repoatlas.bench.facts import Definition, Facts
+from repoatlas.bench.ownership import Ownership
 from repoatlas.bench.schema import (
     AnswerSetTruth,
     GroundTruth,
+    ImpactTruth,
+    Location,
     LookupTruth,
     Provenance,
     Question,
@@ -183,3 +186,156 @@ def _override_note(facts: Facts, key: str) -> str:
     if extra:
         note += " Callers of the overrides (not in the answer): " + ", ".join(extra) + "."
     return note
+
+
+# --------------------------------------------------------------------------------------------
+# Multi-hop (BEN-5)
+# --------------------------------------------------------------------------------------------
+
+REACH_MIN, REACH_MAX = 2, 20
+MODULES_MIN, MODULES_MAX = 2, 15
+
+
+def reaching_tests(facts: Facts, key: str) -> list[str]:
+    """Tests that call ``key`` directly or through exactly one non-test intermediate."""
+    found: set[str] = set()
+    for caller in facts.callers.get(key, ()):
+        if facts.is_test(caller):
+            found.add(caller)
+        else:
+            found.update(c for c in facts.callers.get(caller, ()) if facts.is_test(c))
+    return sorted(found)
+
+
+def _target_name(facts: Facts, names: dict[str, str], key: str) -> str:
+    return names.get(key) or facts.definitions[key].qualname
+
+
+def gen_multihop(
+    facts: Facts, seed: int, ownership: Ownership | None = None, count: int = 4
+) -> list[Question]:
+    """Half "which tests reach X through at most one intermediate", half "which modules import
+    code from files mostly changed by <author>" (when history is given and has candidates)."""
+    names = display_names(facts)
+    reach_pool = [
+        d
+        for d in facts.definitions.values()
+        if _askable(d)
+        and d.kind in ("function", "method")
+        and d.key in names
+        and REACH_MIN <= len(reaching_tests(facts, d.key)) <= REACH_MAX
+        # at least one answer must need the intermediate hop
+        and any(not facts.is_test(c) for c in facts.callers.get(d.key, ()))
+    ]
+    reach = stratified_order(
+        reach_pool,
+        lambda d: len(reaching_tests(facts, d.key)),
+        lambda d: d.key,
+        rng(seed, facts.repo_id, "multihop", "reach"),
+    )
+    owned = _ownership_candidates(facts, ownership) if ownership else []
+    rng(seed, facts.repo_id, "multihop", "owners").shuffle(owned)
+    owner_count = min(len(owned), count // 2)
+    out: list[tuple[str, AnswerSetTruth, Provenance, str]] = []
+    for d in reach[: count - owner_count]:
+        text = (
+            f"Which test functions reach `{names[d.key]}` (defined in `{d.path}`) directly "
+            "or through exactly one intermediate function?"
+        )
+        answers = [facts.location(k) for k in reaching_tests(facts, d.key)]
+        notes = "template: tests-reach-1. Intermediates are non-test functions, methods, classes."
+        out.append((text, AnswerSetTruth(answers=answers), "scip", notes))
+    for author, files, modules in owned[:owner_count]:
+        text = (
+            f"Which non-test modules import or use code from the files mostly changed by "
+            f"{author}? (Mostly changed: {author} made more than half of the non-merge commits "
+            "that touched the file, up to this commit.)"
+        )
+        answers = [Location(symbol_key=f"file:{p}", path=p, line=1) for p in modules]
+        notes = "template: owner-modules. Owned files: " + ", ".join(files) + "."
+        out.append((text, AnswerSetTruth(answers=answers), "git", notes))
+    return [
+        question(facts, "multihop", n, text, truth, provenance, notes)
+        for n, (text, truth, provenance, notes) in enumerate(out, start=1)
+    ]
+
+
+def _ownership_candidates(
+    facts: Facts, ownership: Ownership
+) -> list[tuple[str, list[str], list[str]]]:
+    """(author, owned files, modules that reference them) with 2 to 15 modules."""
+    library = {
+        d.path for d in facts.definitions.values() if not d.is_test_file and _is_library(d.path)
+    }
+    owned_by: dict[str, list[str]] = {}
+    for path, author in sorted(ownership.owners.items()):
+        if path in library:
+            owned_by.setdefault(author, []).append(path)
+    found = []
+    for author in sorted(owned_by):
+        files = owned_by[author]
+        owned_keys = {k for k, d in facts.definitions.items() if d.path in files}
+        modules = sorted(
+            path
+            for path, keys in facts.file_references.items()
+            if path in library and path not in files and keys & owned_keys
+        )
+        if MODULES_MIN <= len(modules) <= MODULES_MAX:
+            found.append((author, files, modules))
+    return found
+
+
+# --------------------------------------------------------------------------------------------
+# Static impact (BEN-6)
+# --------------------------------------------------------------------------------------------
+
+IMPACT_DEPTH = 3
+
+
+def transitive_callers(facts: Facts, key: str, depth: int = IMPACT_DEPTH) -> list[str]:
+    """Every definition that reaches ``key`` through at most ``depth`` caller hops."""
+    seen: set[str] = set()
+    frontier = {key}
+    for _ in range(depth):
+        nxt: set[str] = set()
+        for k in sorted(frontier):
+            nxt.update(facts.callers.get(k, ()))
+        nxt -= seen | {key}
+        seen |= nxt
+        frontier = nxt
+    return sorted(seen)
+
+
+def gen_static_impact(
+    facts: Facts, seed: int, count: int = 4, targets: Sequence[str] | None = None
+) -> list[Question]:
+    """ "What breaks if I change `X`?": transitive callers up to depth 3, tests included.
+    ``targets`` restricts the sample (the sandbox's mutated functions, so real failures can be
+    joined in); otherwise askable functions and methods with at least one caller are used."""
+    names = display_names(facts)
+    if targets is not None:
+        pool = [facts.definitions[k] for k in sorted(set(targets)) if k in facts.definitions]
+    else:
+        pool = [
+            d
+            for d in facts.definitions.values()
+            if _askable(d) and d.kind in ("function", "method") and facts.callers.get(d.key)
+        ]
+    order = stratified_order(
+        pool,
+        lambda d: len(transitive_callers(facts, d.key)),
+        lambda d: d.key,
+        rng(seed, facts.repo_id, "impact"),
+    )
+    out = []
+    for n, d in enumerate(order[:count], start=1):
+        name = _target_name(facts, names, d.key)
+        text = (
+            f"What breaks if I change `{name}` (defined in `{d.path}`)? List the functions, "
+            "methods, and tests that depend on it."
+        )
+        static = [facts.location(k) for k in transitive_callers(facts, d.key)]
+        truth = ImpactTruth(target=facts.location(d.key), static=static, real_failing_tests=None)
+        notes = f"static: callers up to depth {IMPACT_DEPTH} ({len(static)})."
+        out.append(question(facts, "impact", n, text, truth, "scip", notes))
+    return out

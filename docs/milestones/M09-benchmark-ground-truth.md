@@ -87,7 +87,7 @@ BEN-1, BEN-2, BEN-3, BEN-4, BEN-5, BEN-6, BEN-7, BEN-8, BEN-9, BEN-10, BEN-11, B
 - [x] **T1 — SCIP bindings and helpers.** Generate bindings from the pinned proto; `ScipIndex`; tests on a small committed SCIP fixture.
 - [x] **T2 — Question schema and validator.** Pydantic model, per-type ground-truth models, `bench validate` (schema, references to existing paths and lines at the pinned commit).
 - [x] **T3 — Lookup and callers generators.** Tests on the SCIP fixture.
-- [ ] **T4 — Multi-hop and static impact generators.**
+- [x] **T4 — Multi-hop and static impact generators.**
 - [ ] **T5 — Real impact import.** Join `mutations.jsonl` into impact questions; count unmapped tests.
 - [ ] **T6 — Flow and unanswerable questions.** Authoring guide and template; write and review flow questions (human step); unanswerable generator with absence checks.
 - [ ] **T7 — Splits and determinism.** Stratified split, freeze, digests; test that regeneration is identical.
