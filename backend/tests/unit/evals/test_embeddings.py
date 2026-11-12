@@ -119,7 +119,7 @@ def test_throughput_sample_is_fixed() -> None:
 
 def test_peak_rss_and_rendering() -> None:
     rss = peak_rss_mb()
-    assert rss is None or rss > 1
+    assert rss is not None and rss > 1  # measured on Windows and POSIX
     result = evaluate_model(HashEmbedder(32), ITEMS, CHUNKS, ks=(1, 3), sample_size=3)
     text = render_comparison(
         EmbeddingComparison(

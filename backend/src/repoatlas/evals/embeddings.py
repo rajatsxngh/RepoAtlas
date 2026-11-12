@@ -128,9 +128,12 @@ def peak_rss_mb() -> float | None:
 
             counters = Counters()
             counters.cb = ctypes.sizeof(Counters)
-            windll = getattr(ctypes, "windll")  # noqa: B009  (Windows only)
-            handle = windll.kernel32.GetCurrentProcess()
-            ok = windll.psapi.GetProcessMemoryInfo(handle, ctypes.byref(counters), counters.cb)
+            kernel32 = getattr(ctypes, "windll").kernel32  # noqa: B009  (Windows only)
+            current = kernel32.GetCurrentProcess
+            current.restype = wintypes.HANDLE  # a 64-bit pseudo-handle, not an int
+            info = kernel32.K32GetProcessMemoryInfo
+            info.argtypes = [wintypes.HANDLE, ctypes.POINTER(Counters), wintypes.DWORD]
+            ok = info(current(), ctypes.byref(counters), counters.cb)
             return float(counters.PeakWorkingSetSize) / 2**20 if ok else None
         resource = __import__("resource")
         peak = float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
