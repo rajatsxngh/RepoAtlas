@@ -285,3 +285,9 @@ def mutate_command(
         f"({unmapped} unmapped); {sum(r.runtime_s for r in records):.0f} s in total"
     )
     _manifest(recipe)
+
+
+@sandbox_app.command("manifest")
+def manifest_command(recipe_path: RecipeArg) -> None:
+    """Rewrite manifest.json from the artifacts on disk (after editing a recipe by hand)."""
+    _manifest(_load(recipe_path))

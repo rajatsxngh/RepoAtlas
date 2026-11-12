@@ -120,11 +120,11 @@ Test runs use:
 
 ## Exit criteria
 
-- [ ] Baseline runs are reproducible: a fourth run matches the non-quarantined outcomes of the first three for every pinned repo.
-- [ ] Mutation-engine unit tests pass.
-- [ ] At least 30 mutated functions per repo on at least 2 repos have confirmed failure sets in `mutations.jsonl`.
-- [ ] Runner tests prove: no network, no access to the Docker host, read-only root filesystem, limits enforced, timeout kill.
-- [ ] Every artifact is listed with its sha256 in `manifest.json`, and the manifest is committed.
+- [x] Baseline runs are reproducible: a fourth run matches the non-quarantined outcomes of the first three for every pinned repo.
+- [x] Mutation-engine unit tests pass.
+- [x] At least 30 mutated functions per repo on at least 2 repos have confirmed failure sets in `mutations.jsonl`.
+- [x] Runner tests prove: no network, no access to the Docker host, read-only root filesystem, limits enforced, timeout kill.
+- [x] Every artifact is listed with its sha256 in `manifest.json`, and the manifest is committed.
 
 ## Verification
 
@@ -146,4 +146,50 @@ uv run repoatlas sandbox mutate ../sandbox/recipes/click.yaml --targets 30 --see
 
 ## Results
 
-_Filled in at the gate._
+Gate checked on 2026-11-12 on branch `m08-sandbox`, Docker Desktop 29.9.2 (WSL2) on Windows 11.
+
+**Tests.** In `backend/`: `uv run poe check` passes with Postgres and Docker up: 1,166 passed, 1 skipped (creating symlinks needs extra privileges on Windows), 7 deselected (the `live` tests). ruff, mypy (286 files) and the docs lint pass too. The 31 tests in `tests/integration/sandbox` run whenever Docker is available. They skip in CI unless `REPOATLAS_SANDBOX_TESTS=1`, because they build images.
+
+**The five repos** (recipes in [`sandbox/recipes/`](../../sandbox/recipes/); artifacts in [`eval/artifacts/`](../../eval/artifacts/)):
+
+| Repo | Language, size | Commit | License | Install pinning | Tests | Excluded | Suite time | SCIP |
+|---|---|---|---|---|---|---|---|---|
+| `pallets/click` 8.5.1 | Python, medium | `cf19179e8e2f` | BSD-3 | `uv.lock` | 2,459 | 27 pre-failing (pager tests need `less`) | 8 s | scip-python 0.6.8, 91 docs |
+| `psf/requests` v2.34.2 | Python, small | `6e83187b8feb` | Apache-2.0 | `--exclude-newer` commit date | 633 | 4 pre-failing (connect timeouts, no network) | 81 s | scip-python 0.6.8, 34 docs |
+| `encode/httpx` master | Python, medium | `b5addb64f016` | BSD-3 | pinned `requirements.txt` + `--exclude-newer` | 1,413 | 2 pre-failing | 8 s | scip-python 0.6.8, 60 docs |
+| `colinhacks/zod` | TypeScript, large | `c7ec94d309ee` | MIT | `pnpm-lock.yaml`, pnpm 10.12.1 | 5,150 | 3 suite-level errors (`treeshake` needs a build) | 150 s | scip-typescript 0.6.2, 459 docs |
+| `remeda/remeda` v2.59.0 | TypeScript, medium | `ec4d3f5dad11` | MIT | `package-lock.json` (`npm ci`) | 2,524 | none | 16 s | scip-typescript 0.6.2, 592 docs |
+
+- zod is not on the M07 smoke commit (`19c40d2`). By then zod had moved to the `nub` package manager, whose lockfile pnpm rejects. `c7ec94d` (2026-08-29) is the last commit before the move.
+- Base images: `node:22-bookworm-slim@sha256:18052396…`, `ghcr.io/astral-sh/uv:0.12.3@sha256:2d890623…`, Python 3.12.13 managed by uv, and the indexers pinned by `package-lock.json`. Every image digest is in `image.json`.
+- Docker disk: about 0.6 GB for the Python base, 0.4 GB for the Node base, and 0.1–0.6 GB per repo image. Downloads were about 1.5 GB.
+
+**Exit criteria**
+- *Baselines are reproducible.* Each repo ran its full suite 3 times (`repoatlas sandbox baseline --runs 3`), then a fourth time (`--check`). Every repo matched with 0 mismatches over all stable tests: click 2,459, requests 633, httpx 1,413, zod 5,150, remeda 2,524. No test was flaky, so nothing is quarantined for flakiness. Each recipe's `quarantine` holds its pre-failing tests, and `baseline.json` records per-run counts and the `check` block.
+- *The mutation-engine unit tests pass.* `tests/unit/sandbox/test_mutate.py` has 24 tests. They cover decorated and async functions, methods, property setters by ordinal, generators (which stay generators), TS declarations, methods, field arrows, expression-bodied arrows, generators and overload implementations, and every skip rule (dunder, constructor, abstract, overload declaration, under 2 lines, not a function).
+- *At least 30 mutated functions per repo on at least 2 repos have confirmed failure sets.* `repoatlas sandbox mutate --targets 36 --seed 7` ran on three repos. The sample is stratified by fan-in, and all four quartiles appear in each repo.
+
+  | Repo | Reachable candidates | Mutated | With confirmed failures | Confirmed failing tests | Unmapped test IDs | Unconfirmed on re-run | Runtime (total, median per target) |
+  |---|---|---|---|---|---|---|---|
+  | click | 238 | 36 | 33 | 10,871 (median 62 per target) | 0 | 0 | 1,347 s, 19.7 s |
+  | remeda | 347 | 36 | 36 | 1,434 (median 17) | 134 (9.3%) | 0 | 687 s, 18.6 s |
+  | httpx | 185 | 36 | 36 | 3,470 (median 20.5) | 0 | 0 | 732 s, 13.2 s |
+
+  - The 3 click targets without failures (`group`, `get_current_context`, a `confirmation_option` callback) run while test modules import. Their only failures were collection errors, which are excluded by design.
+  - The 134 unmapped remeda failures are 74 distinct test IDs whose title paths `parse_file` builds differently from Vitest. Vitest titles `describe(pipe, …)` with the function's name, while `parse_file` drops that level. Table-driven titles (`.each`/`.for` rows) also don't match. They are kept with `symbol_key: null`; mapping them is an extractor change for later (see the backlog).
+  - Candidates come from SCIP, as functions within 3 reference hops of a test file. requests (99 candidates) and zod (803) are indexed and ready, but weren't mutated: their suites take 81 s and 150 s per run.
+- *Runner tests prove the isolation.* `tests/integration/sandbox/test_hardened.py` (11 tests) shows, in a real container:
+  - only `lo` exists, and TCP to 1.1.1.1, `registry.npmjs.org`, `host.docker.internal:5433` (Postgres) and `:2375`, and `172.17.0.1` all fail;
+  - there is no Docker socket, and all capabilities are 0 with `NoNewPrivs` set;
+  - writes to `/src`, `/etc`, `/usr`, `/opt/venv` and the home folder fail, `/tmp` is capped at 512 MB, and cgroup `memory.max` is 4 GiB and `pids.max` 512;
+  - a 512 MB allocation under a 128 MB limit is killed, a fork flood under `pids=16` is blocked, and `sleep 300` with a 3 s timeout is killed and its container removed.
+
+  `test_proxy.py` shows that on the internal build network the three registries are reachable through the proxy. `example.com`, `github.com` and `host.docker.internal` get 403, and nothing is reachable without the proxy. `tests/unit/sandbox/test_hardened.py` pins the exact flags and that there are no mounts, privileges or port mappings.
+- *Every artifact is listed with its sha256 in `manifest.json`, and the manifest is committed.* Each repo has a committed `manifest.json` covering `image.json`, `baseline.json`, `scip.json`, `index.scip`, and `mutations.jsonl` where present. It also holds the recipe hash and tool versions (repoatlas, Docker, base and repo image digests, upstream digests, the indexer version). `index.scip` (0.8–17 MB) is gitignored and marked `in_git: false`; rebuild it with `repoatlas sandbox scip`. `tests/unit/sandbox/test_artifacts.py` checks every committed manifest against the files and the current recipe.
+
+**Notes for later milestones**
+- **Mutation files in git.** `mutations.jsonl` is committed even though click's is 1.8 MB. `.pre-commit-config.yaml` exempts exactly these files from the 1 MB large-file check.
+- **Proxy limits.** corepack's downloader ignores the proxy, so zod gets its pinned pnpm through npm. Vite and Vitest write caches into `node_modules`, so the TypeScript recipes point those folders at `/tmp`.
+- **Commands.** Scripts reach containers on stdin, because Windows limits command-line length. Re-runs select Vitest files by absolute path.
+- **requests indexing.** requests indexes a writable copy with a pyrightconfig that adds `tests` and `src`. Its pyproject limits pyright to the package, which hid every test reference.
+- **zod's PATH.** The zod recipe's `PATH` env was added after its image was built. It only affects runs (it is not part of the install), so the recorded image and baseline still apply.

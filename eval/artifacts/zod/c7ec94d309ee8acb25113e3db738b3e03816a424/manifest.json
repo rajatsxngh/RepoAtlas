@@ -26,7 +26,7 @@
     }
   ],
   "commit": "c7ec94d309ee8acb25113e3db738b3e03816a424",
-  "recipe_sha256": "560ee13beed0fe8c6f3a42e9b178ac8ca39887c4fe59fb2e26059f687e5f69fc",
+  "recipe_sha256": "26c74640f1ff3d9cfd527d2de0da62cd6dfcab32d928b402f60029c55a388a94",
   "repo_id": "zod",
   "tools": {
     "base_image": "repoatlas-sbx/base-node:9fe535eaa2c7@sha256:ab1d3ee90599a443dc5137669659d90fba207a663f2fd6ab966e6990af19acf3",
