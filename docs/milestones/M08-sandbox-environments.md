@@ -1,6 +1,6 @@
 # M08 — Sandbox & benchmark environments
 
-**Type of work:** Test infrastructure · **Size:** L (11 tasks) · **Status:** In progress
+**Type of work:** Test infrastructure · **Size:** L (11 tasks) · **Status:** Done
 
 ## Goal
 
@@ -146,7 +146,7 @@ uv run repoatlas sandbox mutate ../sandbox/recipes/click.yaml --targets 30 --see
 
 ## Results
 
-Gate checked on 2026-11-12 on branch `m08-sandbox`, Docker Desktop 29.9.2 (WSL2) on Windows 11.
+Gate checked on 2026-11-12 on branch `m08-sandbox` (CI run 43145920458 passed on every job), Docker Desktop 29.9.2 (WSL2) on Windows 11.
 
 **Tests.** In `backend/`: `uv run poe check` passes with Postgres and Docker up: 1,166 passed, 1 skipped (creating symlinks needs extra privileges on Windows), 7 deselected (the `live` tests). ruff, mypy (286 files) and the docs lint pass too. The 31 tests in `tests/integration/sandbox` run whenever Docker is available. They skip in CI unless `REPOATLAS_SANDBOX_TESTS=1`, because they build images.
 
