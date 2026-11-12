@@ -2,14 +2,18 @@
 
 Relationships come only from the SCIP index. ``parse_file`` is used for one thing: turning a
 location into a symbol key (a SCIP definition's name line into the key of the symbol defined
-there, and, for TypeScript test callbacks that SCIP gives no definition, a reference's line into
-the key of the test case around it).
+there, and, where SCIP gives a reference no enclosing function, a reference's line into the key
+of the parsed function, method, class, or test case around it).
 
 **Caller of X:** the innermost enclosing definition of a non-import reference to X.
 
 - The enclosing definition is found by position containment in SCIP's enclosing ranges. If the
   innermost one is not a function, method, class, or test (a variable, a property), the next
   one out is used.
+- When no SCIP definition with an enclosing range is a function, method, class, or test, the
+  caller is the innermost parsed one whose span contains the reference. scip-typescript gives
+  no enclosing range to test callbacks (``it("…", () => …)``) or to object-literal methods in
+  ``const X = make(…, { m() { … } })`` (zod's style); the reference itself is still SCIP's.
 - References inside an ``import`` statement are not calls. The indexers do not set SCIP's
   import role, so import statements are found in the source: Python's ``ast`` and, for
   TypeScript, the lines of top-level ``import``/``export … from`` statements.
@@ -28,13 +32,13 @@ from __future__ import annotations
 import ast
 import re
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 
 from repoatlas.bench.repos import RepoFiles
 from repoatlas.bench.schema import Location
 from repoatlas.bench.scip import Occurrence, ScipIndex
-from repoatlas.ingest.inventory import is_test_path, language_for
+from repoatlas.ingest.inventory import is_test_path
 from repoatlas.parsing.models import ParsedFile, Symbol
 from repoatlas.parsing.symbols import parse_symbol_key
 
@@ -66,6 +70,10 @@ class Facts:
     # file → keys of definitions in other files it references (imports included)
     file_references: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
     test_symbols: dict[str, Symbol] = field(default_factory=dict)  # parsed test cases by key
+    # (callee, caller) → 1-based (path, line) of each reference that made the caller a caller
+    call_sites: dict[tuple[str, str], list[tuple[str, int]]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
     unmatched_definitions: int = 0
 
     def callees(self) -> dict[str, set[str]]:
@@ -133,14 +141,15 @@ def import_lines(path: str, text: str) -> set[int]:
 # --------------------------------------------------------------------------------------------
 
 
-def _test_owner(parsed: ParsedFile | None, line: int) -> Symbol | None:
-    """The innermost parsed test case whose span contains ``line`` (TypeScript callbacks)."""
-    if parsed is None:
-        return None
+def _parsed_owner(parsed: ParsedFile, line: int, known: Callable[[str], bool]) -> Symbol | None:
+    """The innermost parsed function, method, class, or test whose span contains ``line`` and
+    whose location is known (a SCIP definition or a test case; not an ``@overload`` stub)."""
     found = [
         s
         for s in parsed.symbols
-        if s.kind == "test" and s.span.start_line <= line <= s.span.end_line
+        if s.kind in CALLABLE_KINDS
+        and s.span.start_line <= line <= s.span.end_line
+        and known(s.key)
     ]
     return min(found, key=lambda s: (s.span.end_line - s.span.start_line, s.key), default=None)
 
@@ -223,10 +232,13 @@ def build_facts(index: ScipIndex, parsed: Mapping[str, ParsedFile], files: RepoF
             if caller is None or caller == target.key:
                 continue
             direct[target.key].add(caller)
+            facts.call_sites[(target.key, caller)].append((document.path, occ.line))
             if target.kind == "class" and target.key in constructors:
                 after = lines[occ.range.end_line][occ.range.end_char :] if lines else ""
                 if after.lstrip().startswith("("):
                     direct[constructors[target.key]].add(caller)
+                    site = (constructors[target.key], caller)
+                    facts.call_sites[site].append((document.path, occ.line))
 
     # Overrides: SCIP implementation relationships, base method → overriding methods.
     for definition in facts.definitions.values():
@@ -252,8 +264,7 @@ def _caller(index: ScipIndex, occ: Occurrence, facts: Facts, file: ParsedFile) -
         found = facts.by_scip.get(scope.symbol)
         if found is not None and found.kind in CALLABLE_KINDS:
             return found.key
-    if language_for(file.path) is not None and is_test_path(file.path, file.language):
-        owner = _test_owner(file, occ.line)
-        if owner is not None:
-            return owner.key
-    return None
+    owner = _parsed_owner(
+        file, occ.line, lambda k: k in facts.definitions or k in facts.test_symbols
+    )
+    return owner.key if owner is not None else None

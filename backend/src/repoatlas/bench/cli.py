@@ -201,3 +201,38 @@ def digest_command(questions_path: QuestionsOpt = None) -> None:
     assert sha256_text(text) == questions_digest(questions)
     typer.echo(f"questions {questions_digest(questions)}")
     typer.echo(f"test      {split_digest(questions)}")
+
+
+@bench_app.command("audit")
+def audit_command(
+    sample: Annotated[
+        float, typer.Option("--sample", help="Fraction of generated questions.")
+    ] = 0.1,
+    seed: Annotated[int, typer.Option(help="Sampling seed.")] = 1,
+) -> None:
+    """Write a checklist of a seeded sample of generated questions for a manual audit."""
+    from repoatlas.bench.audit import Sheet, render_sheet
+    from repoatlas.bench.audit import sample as draw
+    from repoatlas.bench.build import load_index
+    from repoatlas.bench.facts import build_facts
+    from repoatlas.bench.repos import benchmark_dir, open_repo, recipes
+    from repoatlas.bench.validate import read_questions
+    from repoatlas.canonical import write_text_lf
+    from repoatlas.sandbox.parsed import parse_tree
+
+    folder = benchmark_dir()
+    questions = read_questions(folder / QUESTIONS_JSONL)
+    sampled = draw(questions, sample, seed)
+    known = recipes()
+    sheets = {}
+    for repo_id in sorted({q.repo_id for q in sampled}):
+        recipe = known[repo_id]
+        files = open_repo(recipe)
+        facts = build_facts(load_index(recipe), parse_tree(files.tree), files)
+        sheets[repo_id] = Sheet(recipe.url, recipe.commit, files, facts)
+    text = render_sheet(questions, sampled, fraction=sample, seed=seed, sheets=sheets)
+    version = questions[0].benchmark_version if questions else "0"
+    out = folder / "audit" / f"audit-{version}.md"
+    write_text_lf(out, text)
+    typer.echo(f"Sampled {len(sampled)} questions: {', '.join(q.id for q in sampled)}")
+    typer.echo(f"Wrote {out}")

@@ -107,6 +107,10 @@ MINITS: dict[str, list[Spec]] = {
         r(13, "add", TS + "src/`math.ts`/add()."),
         r(13, "total", TS + "src/`math.ts`/Counter#total.", nth=1),
         r(14, "total", TS + "src/`math.ts`/Counter#total."),
+        # An arrow-function const: scip-typescript gives it no enclosing range.
+        d(18, "triple", TS + "src/`math.ts`/triple."),
+        r(18, "add", TS + "src/`math.ts`/add()."),
+        r(18, "add", TS + "src/`math.ts`/add().", nth=1),
     ],
     "test/math.test.ts": [
         r(2, "add", TS + "src/`math.ts`/add()."),

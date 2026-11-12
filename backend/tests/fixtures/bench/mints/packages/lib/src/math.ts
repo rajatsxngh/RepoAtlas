@@ -14,3 +14,5 @@ export class Counter {
     return this.total;
   }
 }
+
+export const triple = (v: number): number => add(add(v, v), v);

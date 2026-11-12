@@ -42,6 +42,17 @@ def test_callers_are_innermost_enclosing_definitions(minipy: Facts) -> None:
     ]
 
 
+def test_call_sites_record_the_reference_lines(minipy: Facts) -> None:
+    helper = UTIL + "helper:function"
+    assert minipy.call_sites[(helper, UTIL + "twice:function")] == [
+        ("src/mini/util.py", 10),
+        ("src/mini/util.py", 10),
+    ]
+    assert minipy.call_sites[(CORE + "Base.__init__:method", CORE + "make:function")] == [
+        ("src/mini/core.py", 18)
+    ]
+
+
 def test_import_references_are_not_calls(minipy: Facts) -> None:
     # twice is imported by core.py and the tests on line 1/2, called by Child.run and test_twice.
     assert callers(minipy, UTIL + "twice:function") == [
@@ -74,10 +85,11 @@ def test_file_references_include_imports(minipy: Facts) -> None:
     ]
 
 
-def test_typescript_test_callbacks_are_attributed_to_test_cases(mints: Facts) -> None:
+def test_references_without_a_scip_scope_use_the_parsed_span(mints: Facts) -> None:
     assert callers(mints, MATH + "add:function") == [
         MATH + "Counter.bump:method",
         MATH + "sum:function",
+        MATH + "triple:function",
         MATH_TEST + "math > adds:test",
     ]
     assert callers(mints, MATH + "sum:function") == [MATH_TEST + "math > sums:test"]
