@@ -91,15 +91,15 @@ BEN-1, BEN-2, BEN-3, BEN-4, BEN-5, BEN-6, BEN-7, BEN-8, BEN-9, BEN-10, BEN-11, B
 - [x] **T5 — Real impact import.** Join `mutations.jsonl` into impact questions; count unmapped tests.
 - [x] **T6 — Flow and unanswerable questions.** Authoring guide and template; write and review flow questions (human step); unanswerable generator with absence checks.
 - [x] **T7 — Splits and determinism.** Stratified split, freeze, digests; test that regeneration is identical.
-- [ ] **T8 — Audit and documentation.** 10% audit recorded; benchmark README with version, counts by repo and type, and known limitations.
+- [x] **T8 — Audit and documentation.** 10% audit recorded; benchmark README with version, counts by repo and type, and known limitations.
 
 ## Exit criteria
 
-- [ ] At least 100 validated questions across 5 repos, including flow and unanswerable questions, balanced as above.
-- [ ] Regenerating from the same artifacts produces an identical digest.
-- [ ] The 10% manual audit passes (mismatches fixed at the generator level and re-audited).
-- [ ] The test split is frozen, with its sha256 recorded in `splits.json` and in Results.
-- [ ] Impact questions with real failure data exist for at least 2 repos.
+- [x] At least 100 validated questions across 5 repos, including flow and unanswerable questions, balanced as above.
+- [x] Regenerating from the same artifacts produces an identical digest.
+- [x] The 10% manual audit passes (mismatches fixed at the generator level and re-audited).
+- [x] The test split is frozen, with its sha256 recorded in `splits.json` and in Results.
+- [x] Impact questions with real failure data exist for at least 2 repos.
 
 ## Verification
 
@@ -120,4 +120,32 @@ uv run repoatlas bench audit --sample 0.1
 
 ## Results
 
-_Filled in at the gate._
+Gate checked on 2026-11-12 on branch `m09-benchmark`, on Windows 11 with Postgres and Docker up.
+
+**Tests.** In `backend/`, `uv run poe check` passes. Totals: 1,280 tests passed, 1 skipped (creating symlinks needs extra privileges on Windows), 7 deselected (the `live` tests). ruff, mypy (312 files), and the docs lint pass too. `tests/unit/bench` has 109 tests, built on two committed SCIP fixtures: a Python package, and a TypeScript subproject indexed from `/src/packages/lib`.
+
+**Benchmark 1.0.0** is in [`eval/benchmark/`](../../eval/benchmark/), and its [README](../../eval/benchmark/README.md) has the rules, limitations, and audit.
+- **Questions:** 130, 26 per repo (6 lookup, 6 callers, 4 multihop, 4 impact, 4 flow, 2 unanswerable), split 40 dev and 90 test.
+- **Provenance:** 89 `scip`, 12 `sandbox`, 4 `git`, 25 `human`.
+- **Questions sha256:** `c121bf8d5914228d4998dc96e9e5ea675ac1b356591a2bc18f2a34c4fc8a9577`.
+- **SCIP bindings:** generated from `scip.proto` at sourcegraph/scip v0.10.0 (`1c2b6db7`) with grpcio-tools 1.85.1 and committed. Regenerate with `scripts/gen_scip_bindings.sh`.
+
+**Exit criteria**
+- *At least 100 validated questions across 5 repos, balanced.* `repoatlas bench validate` reports `130 questions valid (5 repos)`. It checks the schema, IDs, versions, sort order, canonical JSON, and every path, line, and name at the pinned commits. Every repo has 4 flow and 2 unanswerable questions.
+- *Regenerating gives an identical digest.* `repoatlas bench generate --repo all --seed 1` ran twice from the same artifacts and wrote byte-identical files (`cmp` matched); `repoatlas bench digest` prints `c121bf8d…a9577` both times. The same check is a unit test on the fixtures (`test_split_determinism.py`).
+- *The 10% manual audit passes.* The seeded sample was 11 of the 110 generated questions, in [`audit/audit-1.0.0.md`](../../eval/benchmark/audit/audit-1.0.0.md).
+  - The owner delegated the audit, so Claude did it against the code at the pinned commits.
+  - Rounds 1 and 2 found 5 generator problems: zod's object-literal methods, scip-python's mis-resolution of httpx's tests, property setters, merged TypeScript interface/const symbols, and tainted tests-reach intermediates. Each was fixed in the generator, and each round was re-audited after regenerating.
+  - Round 3 passed 11 of 11. Two of those (click impact questions) pass with a documented limitation: SCIP can't see references through untyped pytest fixtures.
+- *The test split is frozen.* `repoatlas bench split --freeze` printed `dev 40, test 90 (frozen)`. The test sha256 is `163c2957919f00015870f1697e9a140903077d0fb7273beabd2f57767dd4cd08`, recorded in `splits.json`. Regenerating after the freeze still writes the same file; changing a test question makes `generate` refuse.
+- *Real impact data for at least 2 repos.* 12 impact questions, in click, httpx, and remeda, have confirmed failing tests from `mutations.jsonl`, with 0 unmapped test IDs.
+
+**Flow questions.** AI agents drafted all 20 by reading only the source at the pinned commits. The review rule: must-cite lists keep only symbols that decide or transform something on the path, which removed 11 pass-throughs.
+- The owner (rajatsinghh) reviewed click, requests, and httpx question by question.
+- For zod and remeda, the owner delegated the review to Claude's check against the code; their files record that.
+
+**Notes for later milestones**
+- **Static and real impact disagree a lot in click.** Its tests use untyped fixtures, so for `Result.output`, 938 of 980 real failures are outside the static set. remeda's typed tests line up (all but 5 of 57). Report the two separately.
+- **httpx.** scip-python 0.6.8 mis-resolves 712 of httpx's test references to ground-truth symbols. The benchmark ignores those references and avoids the affected names. The backlog has the fix.
+- **Generation is local-only.** It needs `index.scip`, the sandbox git caches, and the history clones under `backend/.repoatlas/`, so CI checks the committed files and the fixtures, not a regeneration.
+- **Tooling.** `repoatlas bench keys --repo <id> <path>` lists a file's symbol keys for authors of flow questions.

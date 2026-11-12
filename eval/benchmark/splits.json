@@ -84,8 +84,8 @@
     "zod-multihop-004",
     "zod-unanswerable-001"
   ],
-  "frozen": false,
-  "questions_sha256": "fb80c375d54db8bb7ba10aa6e7daad7be6fadc0331e214d25ec70088d875b399",
+  "frozen": true,
+  "questions_sha256": "c121bf8d5914228d4998dc96e9e5ea675ac1b356591a2bc18f2a34c4fc8a9577",
   "seeds": {
     "click": 1,
     "httpx": 1,
@@ -185,5 +185,5 @@
     "zod-multihop-003",
     "zod-unanswerable-002"
   ],
-  "test_sha256": "daed731ac5abaf14c6122c2bd06b9a491d546d0b01779443b4b7029c64bd6bb3"
+  "test_sha256": "163c2957919f00015870f1697e9a140903077d0fb7273beabd2f57767dd4cd08"
 }
