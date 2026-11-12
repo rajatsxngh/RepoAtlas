@@ -274,3 +274,51 @@ def embeddings_command(
     date = datetime.now(UTC).date().isoformat()
     path = write_comparison(comparison, reports_dir or eval_dir() / "reports", date)
     typer.echo(f"Written: {path}")
+
+
+@eval_app.command("calibrate-edges")
+def calibrate_edges_command(
+    repos: Annotated[list[Path], typer.Option("--repos", help="Recipe files; repeatable.")],
+    fit: Annotated[
+        bool,
+        typer.Option("--fit/--measure-only", help="Fit confidences (calibration repos only)."),
+    ] = True,
+    out: Annotated[Path | None, typer.Option("--out", help="Report path stem.")] = None,
+) -> None:
+    """Precision of RepoAtlas edges against SCIP, per tier and provenance."""
+    from datetime import UTC, datetime
+
+    from repoatlas.bench.repos import recipes as benchmark_recipes
+    from repoatlas.canonical import pretty_json, write_text_lf
+    from repoatlas.evals.calibration import (
+        Calibration,
+        calibrate_recipe,
+        fit_confidences,
+        render_calibration,
+        rows,
+    )
+    from repoatlas.sandbox.recipe import load_recipe
+
+    loaded = [load_recipe(path) for path in repos]
+    benchmark = set(benchmark_recipes())
+    if fit and any(recipe.id in benchmark for recipe in loaded):
+        typer.echo("Benchmark repos are never used for fitting; pass --measure-only.", err=True)
+        raise typer.Exit(2)
+    measured = []
+    for recipe in loaded:
+        typer.echo(f"{recipe.id} @ {recipe.commit[:12]} …")
+        measured.append(calibrate_recipe(recipe))
+    calibration = Calibration(
+        repos=measured,
+        rows=rows(measured),
+        fitted=fit_confidences(measured) if fit else {},
+        used_for_fitting=fit,
+    )
+    title = "Edge calibration" if fit else "Edge precision on benchmark repos (not fitted)"
+    text = render_calibration(calibration, title)
+    typer.echo(text, nl=False)
+    date = datetime.now(UTC).date().isoformat()
+    stem = out or eval_dir() / "calibration" / f"{date}-{'fit' if fit else 'benchmark'}"
+    write_text_lf(stem.with_suffix(".json"), pretty_json(calibration))
+    write_text_lf(stem.with_suffix(".md"), text)
+    typer.echo(f"Written: {stem.with_suffix('.json')}")

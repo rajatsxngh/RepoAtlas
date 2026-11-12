@@ -48,7 +48,7 @@ def test_direct_neighbors_score_seed_times_confidence_times_decay(py_graph: Snap
         "out",
         ADD,
     )
-    assert math.isclose(rounded.score, 0.95 * HOP_DECAY)
+    assert math.isclose(rounded.score, 0.94 * HOP_DECAY)
     caller = found[GIFT_ADD]  # GiftCart.add calls Cart.add: followed backwards
     assert (caller.hops, caller.direction) == (1, "in")
     assert math.isclose(caller.score, 0.8 * HOP_DECAY)
@@ -85,7 +85,7 @@ def test_nodes_reached_from_several_seeds_keep_their_best_score(py_graph: Snapsh
     keys = [item.key for item in found]
     assert len(keys) == len(set(keys))  # deduplicated by node
     by_key = {item.key: item for item in found}
-    assert by_key[ROUND].seed == ADD and math.isclose(by_key[ROUND].score, 0.95 * 0.5)
+    assert by_key[ROUND].seed == ADD and math.isclose(by_key[ROUND].score, 0.94 * 0.5)
     assert FORMAT not in by_key and ADD not in by_key  # seeds are never expanded results
     weaker_first = expand(py_graph, [Seed(FORMAT, 0.5), Seed(ADD, 1.0)])
     assert weaker_first == found  # the order of seeds does not matter

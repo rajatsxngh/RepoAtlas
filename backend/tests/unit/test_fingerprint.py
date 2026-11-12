@@ -208,26 +208,28 @@ def test_stages_are_validated_and_secrets_never_enter_fingerprints() -> None:
 
 
 @pytest.mark.parametrize(
-    ("kind", "version", "digests"),
+    ("kind", "version", "expected", "digests"),
     [
         (
             "parse",
             (EXTRACTOR_VERSION,),
+            (1,),
             {"py_small": "31cf59ec616dfb6a", "ts_small": "13b0ed333b8a253e"},
         ),
         (
             "graph",
             (graph_build.GRAPH_VERSION, TIERS_VERSION),
-            {"py_small": "ec01fa4353017159", "ts_small": "c066ffa9b52dbd10"},
+            (1, 2),  # TIERS_VERSION 2: confidences refit in decision 0017
+            {"py_small": "78459fc45b83186c", "ts_small": "973ff3b869dc114d"},
         ),
     ],
 )
 def test_versions_move_with_the_goldens(
-    kind: str, version: tuple[int, ...], digests: dict[str, str]
+    kind: str, version: tuple[int, ...], expected: tuple[int, ...], digests: dict[str, str]
 ) -> None:
     """If a golden digest changed, the output changed: bump the matching version (so new
     snapshots get a new fingerprint), then update the digests and versions pinned here."""
-    assert version == (1,) * len(version)
+    assert version == expected
     for name, prefix in digests.items():
         golden = json.loads((GOLDEN / f"{name}.{kind}.json").read_text(encoding="utf-8"))
         assert golden["digest"].startswith(prefix), f"{name}.{kind}.json changed: bump the version"

@@ -1,0 +1,19 @@
+# pallets/itsdangerous 2.2.0 — Python, small. BSD-3-Clause. Pinned requirements files.
+# Calibration only.
+id: itsdangerous
+url: https://github.com/pallets/itsdangerous
+commit: "096c8d42545d3b68ea21a4f890fb2b2d8979c0bd"
+language: python
+base_image: python
+install:
+  - "uv pip install --exclude-newer 2024-04-17T00:00:00Z -r requirements/tests.txt -e ."
+test:
+  cmd: "python -m pytest -q -p no:cacheprovider -o junit_family=xunit1 --junitxml=/tmp/out/report tests"
+  reporter: junit
+  timeout_s: 600
+scip:
+  indexer: scip-python
+  workdir: tmp
+  setup: ["printf '{\"include\": [\"src\", \"tests\"], \"extraPaths\": [\"src\"]}' > pyrightconfig.json"]
+  args: ["index", ".", "--project-name", "itsdangerous", "--project-version", "2.2.0", "--output", "/tmp/out/index.scip"]
+quarantine: []

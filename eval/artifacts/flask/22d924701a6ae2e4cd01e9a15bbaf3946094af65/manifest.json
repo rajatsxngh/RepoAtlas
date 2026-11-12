@@ -1,0 +1,35 @@
+{
+  "artifacts": [
+    {
+      "in_git": true,
+      "path": "image.json",
+      "sha256": "b1fac268f02f5418f9b8afa57225c9bf128a0284ae9d1757a6b69e456b7079d3",
+      "size": 1048
+    },
+    {
+      "in_git": false,
+      "path": "index.scip",
+      "sha256": "d349f3c16d029387688dbd8a4259fb11a3f8f85c930abac65eb30c64169d73d7",
+      "size": 2302167
+    },
+    {
+      "in_git": true,
+      "path": "scip.json",
+      "sha256": "6e47b76ea17e61a2a4ec6b15ded8f037b994c5bdcd3a8d6207036d47285ba531",
+      "size": 199
+    }
+  ],
+  "commit": "22d924701a6ae2e4cd01e9a15bbaf3946094af65",
+  "recipe_sha256": "61cbe812a340443e746da47b43d2eed50a44c84381e8fb8636bcfa6efa752822",
+  "repo_id": "flask",
+  "tools": {
+    "base_image": "repoatlas-sbx/base-python:fdb97c8b9c4a@sha256:284866b5943f864283b9db4fbd96d24821c31c3f4fbd1d59fedf8fab25878cfb",
+    "docker": "29.9.2",
+    "repo_image": "repoatlas-sbx/flask:22d924701a6a@sha256:13bcb2e46251cb2fe724f7ba46733f139c09402b23843c1fb0a299a777f67078",
+    "repoatlas": "0.1.0",
+    "scip-python": "0.6.8",
+    "upstream:docker.io/library/node:22-bookworm-slim": "sha256:18052396bf1d0c6e0a8c58181b5c1457da19409efbd5032a3f4d86974e74d13c",
+    "upstream:ghcr.io/astral-sh/uv:0.12.3": "sha256:2d890623d310b57771ce840f0da5eed5fc6d657da05ffaa45d82797b53fa3abc"
+  },
+  "url": "https://github.com/pallets/flask"
+}

@@ -1,6 +1,6 @@
 {
   "commit": null,
-  "digest": "c066ffa9b52dbd103a63ddc4847a04c47a5ff880dfff611f877623f005b76738",
+  "digest": "973ff3b869dc114d064f4caa05d4aba9ef80d2e8725787d8d8219377cb939f3e",
   "graph": {
     "edges": [
       {
@@ -191,7 +191,7 @@
         "src": "file:src/cart.ts"
       },
       {
-        "confidence": 0.9,
+        "confidence": 0.98,
         "dst": "file:src/__tests__/cart.test.ts",
         "kind": "tested_by",
         "meta": {},
@@ -416,7 +416,7 @@
         "src": "route:src/server.ts:POST /carts/%3Aid/items"
       },
       {
-        "confidence": 0.5,
+        "confidence": 0.25,
         "dst": "ts:src/cart.ts:Cart.add:method",
         "kind": "calls",
         "meta": {
@@ -434,7 +434,7 @@
         "src": "ts:src/__tests__/cart.test.ts:Cart > adds items:test"
       },
       {
-        "confidence": 0.95,
+        "confidence": 0.94,
         "dst": "ts:src/cart.ts:Cart:class",
         "kind": "calls",
         "meta": {
@@ -451,7 +451,7 @@
         "src": "ts:src/__tests__/cart.test.ts:Cart > adds items:test"
       },
       {
-        "confidence": 0.95,
+        "confidence": 0.94,
         "dst": "ts:src/cart.ts:sum:function",
         "kind": "calls",
         "meta": {
@@ -468,7 +468,7 @@
         "src": "ts:src/__tests__/cart.test.ts:Cart > adds items:test~2"
       },
       {
-        "confidence": 0.9,
+        "confidence": 0.99,
         "dst": "ts:src/cart.ts:Cart.empty:method",
         "kind": "calls",
         "meta": {
@@ -485,7 +485,7 @@
         "src": "ts:src/__tests__/cart.test.ts:Cart > empty > has no total:test"
       },
       {
-        "confidence": 0.5,
+        "confidence": 0.25,
         "dst": "ts:src/__tests__/cart.test.ts:Cart > adds items:test",
         "kind": "tested_by",
         "meta": {},
@@ -499,7 +499,7 @@
         "src": "ts:src/cart.ts:Cart.add:method"
       },
       {
-        "confidence": 0.9,
+        "confidence": 0.99,
         "dst": "ts:src/__tests__/cart.test.ts:Cart > empty > has no total:test",
         "kind": "tested_by",
         "meta": {},
@@ -513,7 +513,7 @@
         "src": "ts:src/cart.ts:Cart.empty:method"
       },
       {
-        "confidence": 0.95,
+        "confidence": 0.94,
         "dst": "ts:src/cart.ts:Cart:class",
         "kind": "calls",
         "meta": {
@@ -530,7 +530,7 @@
         "src": "ts:src/cart.ts:Cart.empty:method"
       },
       {
-        "confidence": 0.95,
+        "confidence": 0.94,
         "dst": "ts:src/cart.ts:sum:function",
         "kind": "calls",
         "meta": {
@@ -547,7 +547,7 @@
         "src": "ts:src/cart.ts:Cart.total:method"
       },
       {
-        "confidence": 0.95,
+        "confidence": 0.94,
         "dst": "ts:src/__tests__/cart.test.ts:Cart > adds items:test",
         "kind": "tested_by",
         "meta": {},
@@ -597,7 +597,7 @@
         "src": "ts:src/cart.ts:Cart:class"
       },
       {
-        "confidence": 0.95,
+        "confidence": 0.94,
         "dst": "ts:src/__tests__/cart.test.ts:Cart > adds items:test~2",
         "kind": "tested_by",
         "meta": {},
@@ -611,7 +611,7 @@
         "src": "ts:src/cart.ts:sum:function"
       },
       {
-        "confidence": 0.95,
+        "confidence": 0.94,
         "dst": "ts:src/components/Button.tsx:Button:function",
         "kind": "calls",
         "meta": {
@@ -628,7 +628,7 @@
         "src": "ts:src/components/Button.tsx:Toolbar:function"
       },
       {
-        "confidence": 0.95,
+        "confidence": 0.94,
         "dst": "ts:src/components/Button.tsx:save:function",
         "kind": "calls",
         "meta": {
@@ -645,7 +645,7 @@
         "src": "ts:src/components/Button.tsx:Toolbar:function"
       },
       {
-        "confidence": 0.5,
+        "confidence": 0.25,
         "dst": "ts:src/cart.ts:Cart.add:method",
         "kind": "calls",
         "meta": {
@@ -663,7 +663,7 @@
         "src": "ts:src/server.ts:<anon>:function"
       },
       {
-        "confidence": 0.9,
+        "confidence": 0.99,
         "dst": "ts:src/cart.ts:Cart.empty:method",
         "kind": "calls",
         "meta": {
@@ -680,7 +680,7 @@
         "src": "ts:src/server.ts:getCart:function"
       },
       {
-        "confidence": 0.95,
+        "confidence": 0.94,
         "dst": "ts:src/cart.ts:formatPrice:function",
         "kind": "calls",
         "meta": {

@@ -1,0 +1,485 @@
+{
+  "fitted": {},
+  "repos": [
+    {
+      "commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+      "found_call_pairs": 1950,
+      "misresolved_references": 4,
+      "repo_id": "click",
+      "scip_call_pairs": 4332,
+      "tallies": {
+        "calls|provenance|name_match": {
+          "candidates": 3781,
+          "confirmed": 1950,
+          "edges": 4752,
+          "judged": 3781
+        },
+        "calls|tier|T1": {
+          "candidates": 795,
+          "confirmed": 771,
+          "edges": 847,
+          "judged": 795
+        },
+        "calls|tier|T2": {
+          "candidates": 1039,
+          "confirmed": 741,
+          "edges": 1523,
+          "judged": 1039
+        },
+        "calls|tier|T3": {
+          "candidates": 163,
+          "confirmed": 163,
+          "edges": 167,
+          "judged": 163
+        },
+        "calls|tier|T4": {
+          "candidates": 44,
+          "confirmed": 44,
+          "edges": 46,
+          "judged": 44
+        },
+        "calls|tier|T5": {
+          "candidates": 235,
+          "confirmed": 119,
+          "edges": 307,
+          "judged": 235
+        },
+        "calls|tier|T6": {
+          "candidates": 6163,
+          "confirmed": 112,
+          "edges": 1862,
+          "judged": 1505
+        },
+        "imports|provenance|import_resolver": {
+          "candidates": 164,
+          "confirmed": 85,
+          "edges": 166,
+          "judged": 164
+        },
+        "tested_by|provenance|convention": {
+          "candidates": 4,
+          "confirmed": 4,
+          "edges": 4,
+          "judged": 4
+        },
+        "tested_by|provenance|import_resolver": {
+          "candidates": 95,
+          "confirmed": 31,
+          "edges": 97,
+          "judged": 95
+        },
+        "tested_by|provenance|name_match": {
+          "candidates": 2569,
+          "confirmed": 874,
+          "edges": 3313,
+          "judged": 2569
+        }
+      }
+    },
+    {
+      "commit": "6e83187b8feb273ed4c6cdab5efd8d54901dfab3",
+      "found_call_pairs": 1062,
+      "misresolved_references": 0,
+      "repo_id": "requests",
+      "scip_call_pairs": 1406,
+      "tallies": {
+        "calls|provenance|name_match": {
+          "candidates": 1535,
+          "confirmed": 1062,
+          "edges": 1664,
+          "judged": 1535
+        },
+        "calls|tier|T1": {
+          "candidates": 410,
+          "confirmed": 393,
+          "edges": 452,
+          "judged": 410
+        },
+        "calls|tier|T2": {
+          "candidates": 412,
+          "confirmed": 399,
+          "edges": 415,
+          "judged": 412
+        },
+        "calls|tier|T3": {
+          "candidates": 72,
+          "confirmed": 72,
+          "edges": 77,
+          "judged": 72
+        },
+        "calls|tier|T4": {
+          "candidates": 2,
+          "confirmed": 2,
+          "edges": 2,
+          "judged": 2
+        },
+        "calls|tier|T5": {
+          "candidates": 135,
+          "confirmed": 76,
+          "edges": 141,
+          "judged": 135
+        },
+        "calls|tier|T6": {
+          "candidates": 1708,
+          "confirmed": 120,
+          "edges": 577,
+          "judged": 504
+        },
+        "imports|provenance|import_resolver": {
+          "candidates": 98,
+          "confirmed": 74,
+          "edges": 106,
+          "judged": 98
+        },
+        "tested_by|provenance|convention": {
+          "candidates": 5,
+          "confirmed": 5,
+          "edges": 6,
+          "judged": 5
+        },
+        "tested_by|provenance|import_resolver": {
+          "candidates": 25,
+          "confirmed": 16,
+          "edges": 25,
+          "judged": 25
+        },
+        "tested_by|provenance|name_match": {
+          "candidates": 1005,
+          "confirmed": 695,
+          "edges": 1063,
+          "judged": 1005
+        }
+      }
+    },
+    {
+      "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+      "found_call_pairs": 1632,
+      "misresolved_references": 712,
+      "repo_id": "httpx",
+      "scip_call_pairs": 2668,
+      "tallies": {
+        "calls|provenance|name_match": {
+          "candidates": 3595,
+          "confirmed": 1632,
+          "edges": 3613,
+          "judged": 3595
+        },
+        "calls|tier|T1": {
+          "candidates": 536,
+          "confirmed": 521,
+          "edges": 542,
+          "judged": 536
+        },
+        "calls|tier|T2": {
+          "candidates": 1472,
+          "confirmed": 521,
+          "edges": 1472,
+          "judged": 1472
+        },
+        "calls|tier|T3": {
+          "candidates": 115,
+          "confirmed": 113,
+          "edges": 115,
+          "judged": 115
+        },
+        "calls|tier|T4": {
+          "candidates": 16,
+          "confirmed": 16,
+          "edges": 16,
+          "judged": 16
+        },
+        "calls|tier|T5": {
+          "candidates": 157,
+          "confirmed": 148,
+          "edges": 157,
+          "judged": 157
+        },
+        "calls|tier|T6": {
+          "candidates": 4856,
+          "confirmed": 313,
+          "edges": 1311,
+          "judged": 1299
+        },
+        "imports|provenance|import_resolver": {
+          "candidates": 70,
+          "confirmed": 64,
+          "edges": 122,
+          "judged": 70
+        },
+        "tested_by|provenance|convention": {
+          "candidates": 2,
+          "confirmed": 1,
+          "edges": 2,
+          "judged": 2
+        },
+        "tested_by|provenance|import_resolver": {
+          "candidates": 2,
+          "confirmed": 2,
+          "edges": 33,
+          "judged": 2
+        },
+        "tested_by|provenance|name_match": {
+          "candidates": 2513,
+          "confirmed": 907,
+          "edges": 2513,
+          "judged": 2513
+        }
+      }
+    },
+    {
+      "commit": "ec4d3f5dad1105c522c83ec4877e04937cb2405e",
+      "found_call_pairs": 3857,
+      "misresolved_references": 0,
+      "repo_id": "remeda",
+      "scip_call_pairs": 4160,
+      "tallies": {
+        "calls|provenance|name_match": {
+          "candidates": 1170,
+          "confirmed": 1162,
+          "edges": 4465,
+          "judged": 1170
+        },
+        "calls|tier|T1": {
+          "candidates": 1170,
+          "confirmed": 1162,
+          "edges": 4463,
+          "judged": 1170
+        },
+        "calls|tier|T6": {
+          "candidates": 0,
+          "confirmed": 0,
+          "edges": 2,
+          "judged": 0
+        },
+        "imports|provenance|import_resolver": {
+          "candidates": 349,
+          "confirmed": 311,
+          "edges": 1762,
+          "judged": 349
+        },
+        "tested_by|provenance|convention": {
+          "candidates": 23,
+          "confirmed": 23,
+          "edges": 173,
+          "judged": 23
+        },
+        "tested_by|provenance|import_resolver": {
+          "candidates": 99,
+          "confirmed": 96,
+          "edges": 513,
+          "judged": 99
+        },
+        "tested_by|provenance|name_match": {
+          "candidates": 641,
+          "confirmed": 641,
+          "edges": 3245,
+          "judged": 641
+        }
+      }
+    },
+    {
+      "commit": "c7ec94d309ee8acb25113e3db738b3e03816a424",
+      "found_call_pairs": 3780,
+      "misresolved_references": 4,
+      "repo_id": "zod",
+      "scip_call_pairs": 9534,
+      "tallies": {
+        "calls|provenance|name_match": {
+          "candidates": 4173,
+          "confirmed": 2989,
+          "edges": 7258,
+          "judged": 4173
+        },
+        "calls|tier|T1": {
+          "candidates": 1687,
+          "confirmed": 1514,
+          "edges": 2378,
+          "judged": 1687
+        },
+        "calls|tier|T2": {
+          "candidates": 1238,
+          "confirmed": 1186,
+          "edges": 1604,
+          "judged": 1238
+        },
+        "calls|tier|T3": {
+          "candidates": 121,
+          "confirmed": 120,
+          "edges": 121,
+          "judged": 121
+        },
+        "calls|tier|T5": {
+          "candidates": 668,
+          "confirmed": 145,
+          "edges": 2224,
+          "judged": 668
+        },
+        "calls|tier|T6": {
+          "candidates": 1512,
+          "confirmed": 24,
+          "edges": 931,
+          "judged": 459
+        },
+        "imports|provenance|import_resolver": {
+          "candidates": 377,
+          "confirmed": 224,
+          "edges": 651,
+          "judged": 377
+        },
+        "tested_by|provenance|convention": {
+          "candidates": 3,
+          "confirmed": 1,
+          "edges": 44,
+          "judged": 3
+        },
+        "tested_by|provenance|import_resolver": {
+          "candidates": 5,
+          "confirmed": 4,
+          "edges": 80,
+          "judged": 5
+        },
+        "tested_by|provenance|name_match": {
+          "candidates": 1099,
+          "confirmed": 624,
+          "edges": 3227,
+          "judged": 1099
+        }
+      }
+    }
+  ],
+  "rows": [
+    {
+      "by": "provenance",
+      "confirmed": 8795,
+      "current": null,
+      "edges": 21752,
+      "group": "name_match",
+      "high": 0.6249676552462554,
+      "judged": 14254,
+      "kind": "calls",
+      "low": 0.6090088535122652,
+      "precision": 0.6170197839203031
+    },
+    {
+      "by": "tier",
+      "confirmed": 4361,
+      "current": 0.95,
+      "edges": 8682,
+      "group": "T1",
+      "high": 0.954480787943047,
+      "judged": 4598,
+      "kind": "calls",
+      "low": 0.9416821742936368,
+      "precision": 0.948455850369726
+    },
+    {
+      "by": "tier",
+      "confirmed": 2847,
+      "current": 0.9,
+      "edges": 5014,
+      "group": "T2",
+      "high": 0.6981588989354852,
+      "judged": 4161,
+      "kind": "calls",
+      "low": 0.6699223265305685,
+      "precision": 0.6842105263157895
+    },
+    {
+      "by": "tier",
+      "confirmed": 468,
+      "current": 0.85,
+      "edges": 480,
+      "group": "T3",
+      "high": 0.9978315434175413,
+      "judged": 471,
+      "kind": "calls",
+      "low": 0.9814423870889686,
+      "precision": 0.9936305732484076
+    },
+    {
+      "by": "tier",
+      "confirmed": 62,
+      "current": 0.8,
+      "edges": 64,
+      "group": "T4",
+      "high": 1.0,
+      "judged": 62,
+      "kind": "calls",
+      "low": 0.9416539087749995,
+      "precision": 1.0
+    },
+    {
+      "by": "tier",
+      "confirmed": 488,
+      "current": 0.5,
+      "edges": 2829,
+      "group": "T5",
+      "high": 0.43648784626075193,
+      "judged": 1195,
+      "kind": "calls",
+      "low": 0.3808358101755945,
+      "precision": 0.40836820083682007
+    },
+    {
+      "by": "tier",
+      "confirmed": 569,
+      "current": 0.3,
+      "edges": 4683,
+      "group": "T6",
+      "high": 0.1628393547098091,
+      "judged": 3767,
+      "kind": "calls",
+      "low": 0.13996880355385277,
+      "precision": 0.1510485797717016
+    },
+    {
+      "by": "provenance",
+      "confirmed": 758,
+      "current": 1.0,
+      "edges": 2807,
+      "group": "import_resolver",
+      "high": 0.7427847488785636,
+      "judged": 1058,
+      "kind": "imports",
+      "low": 0.6885413547512055,
+      "precision": 0.7164461247637051
+    },
+    {
+      "by": "provenance",
+      "confirmed": 34,
+      "current": 0.6,
+      "edges": 229,
+      "group": "convention",
+      "high": 0.9720399336036787,
+      "judged": 37,
+      "kind": "tested_by",
+      "low": 0.7869900750149847,
+      "precision": 0.918918918918919
+    },
+    {
+      "by": "provenance",
+      "confirmed": 149,
+      "current": 0.9,
+      "edges": 748,
+      "group": "import_resolver",
+      "high": 0.717960801519312,
+      "judged": 226,
+      "kind": "tested_by",
+      "low": 0.5952984170033575,
+      "precision": 0.6592920353982301
+    },
+    {
+      "by": "provenance",
+      "confirmed": 3741,
+      "current": null,
+      "edges": 13361,
+      "group": "name_match",
+      "high": 0.48903540028472703,
+      "judged": 7827,
+      "kind": "tested_by",
+      "low": 0.46690803241093637,
+      "precision": 0.47796090456113455
+    }
+  ],
+  "used_for_fitting": false
+}

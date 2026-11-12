@@ -48,7 +48,7 @@ def test_test_files_importing_production_files() -> None:
         ("file:src/shop/cart.py", "file:tests/test_cart.py"),
     }
     cart = found[("file:src/shop/cart.py", "file:tests/test_cart.py")]
-    assert cart.confidence == 0.9
+    assert cart.confidence == 0.98
     # Two statements link cart.py (one through the package's re-export); the first one wins.
     assert cart.site == Range(start_line=1, start_col=0, end_line=1, end_col=21)
 
@@ -63,9 +63,9 @@ def test_tests_calling_production_symbols() -> None:
         ("py:src/shop/cart.py:Cart.add:method", add_test),
         ("py:src/shop/cart.py:total:function", empty_test),
     }
-    assert found[("py:src/shop/cart.py:Cart.add:method", add_test)].confidence == 0.5  # T5
+    assert found[("py:src/shop/cart.py:Cart.add:method", add_test)].confidence == 0.25  # T5
     total = found[("py:src/shop/cart.py:total:function", empty_test)]
-    assert total.confidence == 0.95
+    assert total.confidence == 0.94  # T1
     assert total.site is not None and total.site.start_line == 16
 
 

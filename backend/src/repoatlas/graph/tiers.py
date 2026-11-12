@@ -1,7 +1,9 @@
 """Edge confidences and call-resolution tiers as data (PRD §9.1, decision 0005).
 
-These are the initial values. Calibration refits them and records the result in a decision
-record; ``TIERS_VERSION`` changes whenever a value here does.
+Calibration refits them on repos outside the benchmark and records the result in a decision
+record; ``TIERS_VERSION`` changes whenever a value here does. Version 2 holds the values fitted
+in decision 0017 (T1, T2, T3, T5, T6, and tested-by through imports); T4 and tested-by by
+convention had too few judged edges and keep their initial values.
 """
 
 from __future__ import annotations
@@ -9,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-TIERS_VERSION = 1
+TIERS_VERSION = 2
 
 
 class Tier(StrEnum):
@@ -32,21 +34,21 @@ TIER_TABLE: tuple[TierSpec, ...] = (
     TierSpec(
         Tier.T1,
         "Callee bound by import to a resolved symbol, or defined in the same file scope",
-        0.95,
+        0.94,
     ),
     TierSpec(
         Tier.T2,
         "alias.func() where alias is an imported module, namespace, or class with that member",
-        0.90,
+        0.99,
     ),
     TierSpec(
         Tier.T3,
         "self.m(), this.m(), cls.m() resolved on the enclosing class or its resolved bases",
-        0.85,
+        0.99,
     ),
     TierSpec(Tier.T4, "super().m() / super.m() resolved on a base class", 0.80),
-    TierSpec(Tier.T5, "obj.m() where exactly one class or module in the repo defines m", 0.50),
-    TierSpec(Tier.T6, "obj.m() with 2-5 candidates: one edge per candidate", 0.30),
+    TierSpec(Tier.T5, "obj.m() where exactly one class or module in the repo defines m", 0.25),
+    TierSpec(Tier.T6, "obj.m() with 2-5 candidates: one edge per candidate", 0.29),
 )
 TIERS: dict[Tier, TierSpec] = {spec.tier: spec for spec in TIER_TABLE}
 
@@ -63,6 +65,6 @@ def tier_confidence(tier: Tier, candidates: int = 1) -> float:
 CONTAINS_CONFIDENCE = 1.0
 IMPORT_CONFIDENCE = 1.0
 INHERITS_CONFIDENCE = 0.95
-TESTED_BY_IMPORT_CONFIDENCE = 0.9
+TESTED_BY_IMPORT_CONFIDENCE = 0.98
 TESTED_BY_CONVENTION_CONFIDENCE = 0.6
 ROUTES_TO_CONFIDENCE = 0.95

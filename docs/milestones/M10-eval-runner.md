@@ -90,7 +90,7 @@ EVL-1, EVL-2, EVL-3, EVL-4, EVL-5, EVL-6, EVL-7, EVL-8, EVL-9, EVL-10, EVL-11
 - [ ] **T7 — Claim-support checker.** Prompt, labels, human-label set on dev, agreement report.
 - [ ] **T8 — Flow judge.** Rubric, bias controls, human-label agreement.
 - [ ] **T9 — Embedding comparison.** Run on dev; record the decision.
-- [ ] **T10 — Edge calibration.** Calibration repos, per-tier precision, updated tiers through a decision record.
+- [x] **T10 — Edge calibration.** Calibration repos, per-tier precision, updated tiers through a decision record.
 - [ ] **T11 — Baseline report.** All four baselines on the test split, 3 runs each; comparisons with intervals; summary in Results.
 
 ## Exit criteria

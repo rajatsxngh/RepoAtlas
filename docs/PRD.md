@@ -554,7 +554,7 @@ Symbol keys in paths are URL-encoded. Errors use `{"error": {"code", "message", 
 | — | More than 5 candidates, or none | Unresolved record (no edge) |
 | — | Callee bound to an external package or a builtin | Dropped, counted in stats |
 
-Constructor calls (`Foo()`, `new Foo()`) link to the class with the tier of the binding. Initial confidences are refit on calibration repos outside the benchmark (EVL-10) and recorded in a decision record.
+Constructor calls (`Foo()`, `new Foo()`) link to the class with the tier of the binding. Initial confidences are refit on calibration repos outside the benchmark (EVL-10) and recorded in a decision record (the current values: decision 0017).
 
 ### 9.2 Retrieval pipeline
 

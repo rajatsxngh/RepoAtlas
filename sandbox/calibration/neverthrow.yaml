@@ -1,0 +1,22 @@
+# supermacro/neverthrow v8.2.0 — TypeScript, small. MIT. Pinned by package-lock.json; install
+# scripts are skipped. Calibration only.
+id: neverthrow
+url: https://github.com/supermacro/neverthrow
+commit: "1d4cc19ed2e6ba882e296385fe0175d642ec8c5d"
+language: typescript
+base_image: node
+install:
+  - "npm ci --ignore-scripts --no-audit --no-fund"
+test:
+  cmd: "node_modules/.bin/jest --json --outputFile=/tmp/out/report"
+  reporter: jest-json
+  timeout_s: 600
+scip:
+  indexer: scip-typescript
+  # tsconfig.json includes only src/; index the tests too, from a writable copy.
+  workdir: tmp
+  setup:
+    - "mv tsconfig.json tsconfig.base.json"
+    - "printf '{\"extends\": \"./tsconfig.base.json\", \"include\": [\"src/**/*.ts\", \"tests/**/*.ts\"]}' > tsconfig.json"
+  args: ["index", "--output", "/tmp/out/index.scip"]
+quarantine: []

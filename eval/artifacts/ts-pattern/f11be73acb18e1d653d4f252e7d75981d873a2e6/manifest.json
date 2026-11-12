@@ -1,0 +1,34 @@
+{
+  "artifacts": [
+    {
+      "in_git": true,
+      "path": "image.json",
+      "sha256": "8803db68eb30203e49735db7194aaf3130f70632d639c4a19ddd0b717537a117",
+      "size": 951
+    },
+    {
+      "in_git": false,
+      "path": "index.scip",
+      "sha256": "6e3e42cc1217d911d9a5a52cf167302503a0b0f544508256c8b0ec2d198989a2",
+      "size": 2328867
+    },
+    {
+      "in_git": true,
+      "path": "scip.json",
+      "sha256": "6e1d3c0bc09e6414f050266715cd139b72eb66fa62f56276ebc3766f483810b9",
+      "size": 203
+    }
+  ],
+  "commit": "f11be73acb18e1d653d4f252e7d75981d873a2e6",
+  "recipe_sha256": "1e235d6a64f0d989d6facdec4be501bbbe6f52a693f7ac65eba56552fbbd247a",
+  "repo_id": "ts-pattern",
+  "tools": {
+    "base_image": "repoatlas-sbx/base-node:9fe535eaa2c7@sha256:ab1d3ee90599a443dc5137669659d90fba207a663f2fd6ab966e6990af19acf3",
+    "docker": "29.9.2",
+    "repo_image": "repoatlas-sbx/ts-pattern:f11be73acb18@sha256:f2e1c5749d2a501511dc58b0bbb2d79f9bd4faa77a04901f84bc30a712e50ce7",
+    "repoatlas": "0.1.0",
+    "scip-typescript": "0.6.2",
+    "upstream:docker.io/library/node:22-bookworm-slim": "sha256:18052396bf1d0c6e0a8c58181b5c1457da19409efbd5032a3f4d86974e74d13c"
+  },
+  "url": "https://github.com/gvergnaud/ts-pattern"
+}

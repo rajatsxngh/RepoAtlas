@@ -1,0 +1,8 @@
+{
+  "duration_s": 12.34,
+  "indexer": "scip-python",
+  "path": "index.scip",
+  "sha256": "d349f3c16d029387688dbd8a4259fb11a3f8f85c930abac65eb30c64169d73d7",
+  "size": 2302167,
+  "version": "0.6.8"
+}

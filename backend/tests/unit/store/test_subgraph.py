@@ -87,9 +87,9 @@ def test_root_level() -> None:
     children, totals = aggregated(snapshot, "dir:.", "dir")
     assert children == ["dir:scripts", "dir:src", "dir:stubs", "dir:tests", "dir:vendor"]
     assert totals == {
-        ("dir:src", "dir:tests", "tested_by"): (9, 0.15, 0.95),
+        ("dir:src", "dir:tests", "tested_by"): (9, 0.145, 0.98),
         ("dir:tests", "dir:src", "imports"): (2, 1.0, 1.0),
-        ("dir:tests", "dir:src", "calls"): (8, 0.15, 0.95),
+        ("dir:tests", "dir:src", "calls"): (8, 0.145, 0.94),
     }
 
 
@@ -106,9 +106,9 @@ def test_nested_directory_level() -> None:
         ("file:src/shop/__init__.py", "file:src/shop/app.py", "imports"): (1, 1.0, 1.0),
         ("file:src/shop/__init__.py", "file:src/shop/cart.py", "imports"): (1, 1.0, 1.0),
         ("file:src/shop/app.py", "file:src/shop/cart.py", "imports"): (1, 1.0, 1.0),
-        ("file:src/shop/app.py", "file:src/shop/cart.py", "calls"): (5, 0.15, 0.95),
+        ("file:src/shop/app.py", "file:src/shop/cart.py", "calls"): (5, 0.145, 0.94),
         ("file:src/shop/cart.py", "dir:src/shop/utils", "imports"): (1, 1.0, 1.0),
-        ("file:src/shop/cart.py", "dir:src/shop/utils", "calls"): (2, 0.95, 0.95),
+        ("file:src/shop/cart.py", "dir:src/shop/utils", "calls"): (2, 0.94, 0.94),
     }
 
 
@@ -123,7 +123,7 @@ def test_file_level_flattens_directories() -> None:
         "file:src/shop/utils/helpers.py",
     ]
     helpers = "file:src/shop/utils/helpers.py"
-    assert totals[("file:src/shop/cart.py", helpers, "calls")] == (2, 0.95, 0.95)
+    assert totals[("file:src/shop/cart.py", helpers, "calls")] == (2, 0.94, 0.94)
     assert totals[("file:src/shop/cart.py", helpers, "imports")] == (1, 1.0, 1.0)
     assert not any(kind == "contains" for _, _, kind in totals)
 
@@ -152,8 +152,8 @@ def test_symbol_level_inside_a_file_and_a_class() -> None:
             "calls",
         ): (
             1,
-            0.85,
-            0.85,
+            0.99,
+            0.99,
         )
     }
     routes, _ = aggregated(snapshot, "file:src/shop/app.py", "symbol")

@@ -5,7 +5,7 @@ from collections.abc import Mapping
 import pytest
 
 from repoatlas.graph.model import CodeGraph, Edge, EdgeKind, Provenance, UnresolvedCall
-from repoatlas.graph.tiers import TIER_TABLE, Tier, tier_confidence
+from repoatlas.graph.tiers import TIER_TABLE, TIERS_VERSION, Tier, tier_confidence
 from tests.unit.graph.helpers import graph_of
 
 
@@ -34,17 +34,19 @@ def build(files: Mapping[str, str]) -> CodeGraph:
     return graph_of(files)
 
 
-def test_the_tier_table_matches_the_prd() -> None:
+def test_the_tier_table_matches_decision_0017() -> None:
+    """The PRD's initial values, refit on calibration repos (decision 0017, TIERS_VERSION 2)."""
+    assert TIERS_VERSION == 2
     assert [(spec.tier.value, spec.confidence) for spec in TIER_TABLE] == [
-        ("T1", 0.95),
-        ("T2", 0.90),
-        ("T3", 0.85),
+        ("T1", 0.94),
+        ("T2", 0.99),
+        ("T3", 0.99),
         ("T4", 0.80),
-        ("T5", 0.50),
-        ("T6", 0.30),
+        ("T5", 0.25),
+        ("T6", 0.29),
     ]
-    assert tier_confidence(Tier.T6, 3) == pytest.approx(0.1)
-    assert tier_confidence(Tier.T1, 3) == 0.95
+    assert tier_confidence(Tier.T6, 3) == pytest.approx(0.29 / 3)
+    assert tier_confidence(Tier.T1, 3) == 0.94
 
 
 def test_t1_names_bound_by_import() -> None:
@@ -57,12 +59,12 @@ def test_t1_names_bound_by_import() -> None:
         }
     )
     edge = call(graph, "py:shop/app.py:run:function", "py:shop/money.py:fmt:function")
-    assert (edge.meta, edge.confidence) == ({"tier": "T1", "count": 1}, 0.95)
+    assert (edge.meta, edge.confidence) == ({"tier": "T1", "count": 1}, 0.94)
     assert edge.provenance == Provenance.NAME_MATCH
     assert edge.site is not None and edge.site.start_line == 4
     assert tier_of(graph, "ts:web/app.ts:run:function", "ts:web/money.ts:fmt:function") == (
         "T1",
-        0.95,
+        0.94,
     )
 
 
@@ -116,12 +118,12 @@ def test_t2_members_of_imported_modules_and_classes() -> None:
         }
     )
     run = "py:shop/app.py:run:function"
-    assert tier_of(graph, run, "py:shop/money.py:fmt:function") == ("T2", 0.9)
+    assert tier_of(graph, run, "py:shop/money.py:fmt:function") == ("T2", 0.99)
     assert call(graph, run, "py:shop/money.py:fmt:function").meta["count"] == 2
-    assert tier_of(graph, run, "py:shop/cart.py:Cart.empty:method") == ("T2", 0.9)
+    assert tier_of(graph, run, "py:shop/cart.py:Cart.empty:method") == ("T2", 0.99)
     web = "ts:web/app.ts:run:function"
-    assert tier_of(graph, web, "ts:web/money.ts:fmt:function") == ("T2", 0.9)
-    assert tier_of(graph, web, "js:web/legacy.js:join:function") == ("T2", 0.9)
+    assert tier_of(graph, web, "ts:web/money.ts:fmt:function") == ("T2", 0.99)
+    assert tier_of(graph, web, "js:web/legacy.js:join:function") == ("T2", 0.99)
 
 
 def test_t3_self_and_this_on_the_class_and_its_bases() -> None:
@@ -151,7 +153,7 @@ def test_t3_self_and_this_on_the_class_and_its_bases() -> None:
     )
     assert tier_of(graph, "py:models.py:User.store:method", "py:models.py:User.check:method") == (
         "T3",
-        0.85,
+        0.99,
     )
     later = "py:models.py:User.store.later:function"
     assert tier_of(graph, later, "py:base.py:Base.save:method")[0] == "T3"
@@ -217,7 +219,7 @@ def test_t5_exactly_one_defining_class() -> None:
         }
     )
     edge = call(graph, "py:app.py:show:function", "py:cart.py:Cart.describe:method")
-    assert (edge.meta, edge.confidence) == ({"tier": "T5", "candidates": 1, "count": 1}, 0.5)
+    assert (edge.meta, edge.confidence) == ({"tier": "T5", "candidates": 1, "count": 1}, 0.25)
     # Accessors are read, not called: `cart.total()` calls what the property returns.
     assert unresolved(graph, "cart.total").reason == "not_found"
     assert unresolved(graph, "cart.count").reason == "not_found"
@@ -254,7 +256,7 @@ def test_t6_two_to_five_candidates_split_the_confidence() -> None:
     for i in range(3):
         edge = call(graph, "py:app.py:run:function", f"py:m{i}.py:C{i}.add:method")
         assert edge.meta == {"tier": "T6", "candidates": 3, "count": 1}
-        assert edge.confidence == 0.1
+        assert edge.confidence == round(0.29 / 3, 4)
 
 
 def test_more_than_five_candidates_are_unresolved() -> None:
@@ -346,8 +348,8 @@ def test_constructor_calls_link_the_class_and_its_initializer() -> None:
         }
     )
     run = "py:app.py:run:function"
-    assert tier_of(graph, run, "py:cart.py:Cart:class") == ("T1", 0.95)
-    assert tier_of(graph, run, "py:cart.py:Cart.__init__:method") == ("T1", 0.95)
+    assert tier_of(graph, run, "py:cart.py:Cart:class") == ("T1", 0.94)
+    assert tier_of(graph, run, "py:cart.py:Cart.__init__:method") == ("T1", 0.94)
     assert tier_of(graph, run, "py:cart.py:GiftCart:class")[0] == "T1"
     assert call(graph, run, "py:cart.py:Cart.__init__:method").meta["count"] == 2  # inherited
     assert tier_of(graph, run, "py:cart.py:Plain:class")[0] == "T1"
@@ -374,7 +376,7 @@ def test_repeated_calls_collapse_and_the_best_tier_wins() -> None:
     )
     edge = call(graph, "py:app.py:run:function", "py:cart.py:Cart.add:method")
     assert edge.meta == {"tier": "T2", "count": 3}
-    assert edge.confidence == 0.9
+    assert edge.confidence == 0.99
     assert edge.site is not None and edge.site.start_line == 5  # the first T2 call
 
 
