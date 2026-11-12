@@ -86,6 +86,7 @@ class SystemOutput(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     error: str | None = None
+    notes: list[str] = Field(default_factory=list)  # for example, a checker that failed
 
     @property
     def refused(self) -> bool:
