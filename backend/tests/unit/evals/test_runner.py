@@ -318,3 +318,17 @@ def test_cost_meter_stops_after_the_first_refusal() -> None:
     meter.settle(0.6, 0.2)
     assert meter.spent == 0.2 and meter.reserved == 0.0 and meter.largest == 0.2
     assert CostMeter(None).reserve(1e9)
+
+
+async def test_a_cap_below_the_answer_budget_still_runs_cheap_answers(tmp_path: Path) -> None:
+    cheap = {
+        text: answer([("c1", "f", [ref("src/m.py", 10, 20)])], cost=0.01)
+        for text in (LOOKUP, CALLERS, UNANS)
+    }
+    system = ScriptedSystem(cheap, delay=0.01)
+    run = make_run(
+        tmp_path, system, runs=3, max_cost_usd=0.5, concurrency=4, budget=Budget(max_cost_usd=0.25)
+    )
+    result = await run_eval(run)
+    assert result.complete and len(system.calls) == 9
+    assert result.spent_usd == pytest.approx(0.09)

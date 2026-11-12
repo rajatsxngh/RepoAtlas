@@ -6,9 +6,10 @@
   snapshots it answers on, so a rebuilt graph or a changed prompt never reuses old answers.
   Checker and judge results (``Enricher``) are cached separately under their own fingerprints,
   so changing the judge doesn't re-run the answers.
-- **Cost cap.** Before a question starts, its expected cost (the most an item has cost so far,
-  or the answer budget before anything ran) is reserved; a question whose reservation would take
-  spent plus reserved past ``max_cost_usd`` is not started, and neither is anything after it.
+- **Cost cap.** The first question that needs new spend runs alone. Before each later one, its
+  expected cost (the most an item has cost so far, at least ``MIN_ESTIMATE``) is reserved; a
+  question whose reservation would take spent plus reserved past ``max_cost_usd`` is not
+  started, and neither is anything after it.
   The result is then marked incomplete and lists what was skipped. Spend is the traced cost of
   every LLM call (the system's and the enrichers').
 - **Concurrency.** Up to ``concurrency`` questions run at once. Runs go in order (all of run 0,
@@ -37,6 +38,7 @@ from repoatlas.evals.outputs import ItemScore, SystemOutput
 from repoatlas.evals.registry import EvalItem, ImpactSystem, ImpactTarget, Suite
 
 CACHE_VERSION = 1
+MIN_ESTIMATE = 0.01  # reserved per item once costs are known
 
 
 class RunRecord(BaseModel):
@@ -118,6 +120,7 @@ class CostMeter:
         self.spent = 0.0
         self.reserved = 0.0
         self.largest = 0.0  # the most one item has cost
+        self.settled = 0  # items whose cost is known
         self.stopped = False
 
     def reserve(self, estimate: float) -> bool:
@@ -133,6 +136,7 @@ class CostMeter:
         self.reserved -= estimate
         self.spent += actual
         self.largest = max(self.largest, actual)
+        self.settled += 1
 
 
 EnrichFn = Callable[[EvalItem, SystemOutput, int | None], Awaitable[SystemOutput]]
@@ -269,6 +273,7 @@ async def run_eval(run: EvalRun) -> RunResult:
     records: dict[tuple[int, str], RunRecord] = {}
     skipped: list[Skipped] = []
     first_estimate = run.budget.max_cost_usd + sum(e.estimate_usd for e in run.enrichers)
+    warmup: dict[str, Any] = {"started": False, "done": anyio.Event()}
 
     def report(entry: RunRecord | Skipped) -> None:
         if run.progress is not None:
@@ -288,9 +293,14 @@ async def run_eval(run: EvalRun) -> RunResult:
             estimate = 0.0
             fresh = output is None
             if output is None or _needs_enrichment(run, item, output, index):
+                # The first new item runs alone; later ones reserve the most an item has cost.
+                if warmup["started"]:
+                    await warmup["done"].wait()
+                warmup["started"] = True
                 async with lock:
-                    estimate = meter.largest or first_estimate
+                    estimate = max(meter.largest, MIN_ESTIMATE) if meter.settled else first_estimate
                     if not meter.reserve(estimate):
+                        warmup["done"].set()
                         entry = Skipped(question_id=item.id, run=index, reason="cost cap reached")
                         skipped.append(entry)
                         report(entry)
@@ -308,6 +318,7 @@ async def run_eval(run: EvalRun) -> RunResult:
             if estimate:
                 async with lock:
                     meter.settle(estimate, actual)
+                warmup["done"].set()
             score = run.suite.scorer_for(item.type)(item, output).model_copy(update={"run": index})
             record = RunRecord(
                 question_id=item.id,
