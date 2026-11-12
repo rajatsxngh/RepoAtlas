@@ -45,8 +45,12 @@ class SymbolTarget(_Model):
 
 
 class DiffTarget(_Model):
+    """A unified diff. ``side="old"``: the snapshot is the code the diff applies to (the
+    default); ``"new"``: the snapshot already contains the change."""
+
     kind: Literal["diff"] = "diff"
     diff: str = Field(min_length=1, max_length=MAX_DIFF_CHARS)
+    side: Literal["old", "new"] = "old"
 
 
 Target = Annotated[SymbolTarget | DiffTarget, Field(discriminator="kind")]

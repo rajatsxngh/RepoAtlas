@@ -18,6 +18,7 @@ from collections.abc import Callable, Sequence
 
 from repoatlas.graph.model import Edge, EdgeKind, Node, NodeKind
 from repoatlas.impact.data import ImpactData
+from repoatlas.impact.diff import changed_symbols_in
 from repoatlas.impact.groups import count_by_group, group_of, rank_key
 from repoatlas.impact.schema import (
     DiffTarget,
@@ -36,6 +37,7 @@ from repoatlas.store.cache import SnapshotGraph
 from repoatlas.store.errors import InvalidQuery, NodeNotFound
 
 MODULE_KINDS = (EdgeKind.IMPORTS, EdgeKind.TESTED_BY)
+MAX_TARGETS = 200  # changed symbols one diff may start from
 
 
 class ImpactEngine:
@@ -118,7 +120,12 @@ class ImpactEngine:
             if target.symbol_key not in graph.index:
                 raise NodeNotFound(f"Snapshot {snapshot_id} has no node {target.symbol_key!r}.")
             return [target.symbol_key]
-        raise InvalidQuery("Diff targets are not supported yet.")
+        keys = changed_symbols_in(self.data, snapshot_id, target.diff, side=target.side)
+        if len(keys) > MAX_TARGETS:
+            raise InvalidQuery(
+                f"The diff changes {len(keys)} symbols; at most {MAX_TARGETS} can be analyzed."
+            )
+        return keys
 
     # --- items -----------------------------------------------------------------------------
 

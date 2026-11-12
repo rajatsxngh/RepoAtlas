@@ -126,6 +126,9 @@ class MemoryImpactData:
             raise PathNotInSnapshot(f"No file {path!r}.")
         if line < 1:
             raise InvalidQuery("Lines start at 1.")
+        text = self.files.get(path)
+        if text is not None and line > max(len(split_lines(text)), 1):
+            raise InvalidQuery(f"Line {line} is past the end of {path}.")
         order = {"method": 0, "function": 1, "test": 2}
         candidates = [
             node
