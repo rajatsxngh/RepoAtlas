@@ -114,6 +114,31 @@ def test_fastembed_uses_the_passage_and_query_paths(monkeypatch: pytest.MonkeyPa
     assert [len(call[1][0]) for call in fake.calls] == [4, 2]
 
 
+def test_concurrent_first_queries_load_the_model_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+    import threading
+    import time
+    import types
+
+    loads: list[int] = []
+
+    class SlowModel(FakeModel):
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            super().__init__()
+            loads.append(1)
+            time.sleep(0.05)
+            self.model = types.SimpleNamespace(tokenizer=None)
+
+    monkeypatch.setitem(sys.modules, "fastembed", types.SimpleNamespace(TextEmbedding=SlowModel))
+    embedder = FastEmbedEmbedder(DEFAULT_MODEL)
+    threads = [threading.Thread(target=embedder.embed_query, args=("q",)) for _ in range(4)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert loads == [1]
+
+
 def test_token_batches_group_similar_lengths_within_the_budget() -> None:
     texts = ["a" * 30, "b" * 3_000, "c" * 300, "d" * 30_000, "e" * 3]
     groups = token_batches(texts)

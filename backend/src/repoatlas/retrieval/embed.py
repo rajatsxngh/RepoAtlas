@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import math
 import re
+import threading
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -128,6 +129,7 @@ class FastEmbedEmbedder:
         self._batch_size = batch_size
         self._model: TextEmbedding | None = None
         self._dim: int | None = None
+        self._lock = threading.Lock()  # concurrent first queries load the model once
 
     @property
     def model_name(self) -> str:
@@ -140,6 +142,12 @@ class FastEmbedEmbedder:
         return self._dim
 
     def _load(self) -> TextEmbedding:
+        if self._model is not None:
+            return self._model
+        with self._lock:
+            return self._load_locked()
+
+    def _load_locked(self) -> TextEmbedding:
         if self._model is None:
             from fastembed import TextEmbedding
 
