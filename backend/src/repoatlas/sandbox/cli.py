@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Annotated
 import typer
 
 if TYPE_CHECKING:
+    from repoatlas.sandbox.images import RepoImageInfo
     from repoatlas.sandbox.recipe import Recipe
 
 RecipeArg = Annotated[Path, typer.Argument(help="Recipe file, e.g. sandbox/recipes/click.yaml.")]
@@ -63,9 +64,11 @@ def build_command(recipe_path: RecipeArg) -> None:
     typer.echo(f"{info.image.tag} {info.image.digest}")
     typer.echo(f"{info.files} files; install took {info.install_seconds} s")
     typer.echo(f"Wrote {path}")
+    _manifest(recipe)
 
 
-def _image_tag(recipe: Recipe) -> str:
+def _image(recipe: Recipe) -> RepoImageInfo:
+    """The recorded repo image, which must still exist locally with the recorded digest."""
     from repoatlas.sandbox.artifacts import IMAGE_JSON, read_model
     from repoatlas.sandbox.docker import image_id
     from repoatlas.sandbox.images import RepoImageInfo
@@ -74,7 +77,11 @@ def _image_tag(recipe: Recipe) -> str:
     if info is None or image_id(info.image.tag) != info.image.digest:
         typer.echo(f"No current image for {recipe.id}; run: repoatlas sandbox build", err=True)
         raise typer.Exit(1)
-    return info.image.tag
+    return info
+
+
+def _image_tag(recipe: Recipe) -> str:
+    return _image(recipe).image.tag
 
 
 @sandbox_app.command("test")
@@ -96,3 +103,80 @@ def test_command(recipe_path: RecipeArg) -> None:
         typer.echo(f"report: {run.report_error}")
         typer.echo(run.log_tail)
         raise typer.Exit(1)
+
+
+@sandbox_app.command("baseline")
+def baseline_command(
+    recipe_path: RecipeArg,
+    runs: Annotated[int, typer.Option(help="Full-suite runs.")] = 3,
+    check: Annotated[
+        bool, typer.Option("--check", help="Run once more and compare with the saved baseline.")
+    ] = False,
+) -> None:
+    """Run the suite several times; quarantine flaky tests and record pre-failing ones."""
+    from repoatlas.sandbox.artifacts import BASELINE_JSON, read_model, write_model
+    from repoatlas.sandbox.baseline import Baseline, check_baseline, run_baseline
+    from repoatlas.sandbox.recipe import write_quarantine
+    from repoatlas.sandbox.runner import SandboxRunner, TestRun
+
+    recipe = _load(recipe_path)
+    image = _image(recipe)
+    runner = SandboxRunner(recipe, image.image)
+    if check:
+        saved = read_model(recipe, BASELINE_JSON, Baseline)
+        if saved is None or saved.image_digest != image.image.digest:
+            typer.echo("No baseline for the current image; run without --check first.", err=True)
+            raise typer.Exit(1)
+        checked = check_baseline(runner, saved)
+        write_model(recipe, BASELINE_JSON, checked)
+        assert checked.check is not None
+        result = checked.check
+        typer.echo(
+            f"Check run ({result.duration_s} s): {result.compared} stable tests compared, "
+            f"{len(result.mismatches)} mismatches"
+        )
+        for test_id, change in list(result.mismatches.items())[:20]:
+            typer.echo(f"  {test_id}: {change}")
+        _manifest(recipe)
+        if result.mismatches:
+            raise typer.Exit(1)
+        return
+
+    def progress(index: int, run: TestRun) -> None:
+        typer.echo(f"run {index}/{runs}: {len(run.results)} results in {run.duration_s} s")
+
+    baseline = run_baseline(runner, image_digest=image.image.digest, runs=runs, progress=progress)
+    path = write_model(recipe, BASELINE_JSON, baseline)
+    write_quarantine(recipe_path, baseline.recipe_quarantine())
+    typer.echo(
+        f"{len(baseline.outcomes)} stable tests, {len(baseline.quarantined)} quarantined, "
+        f"{len(baseline.pre_failing)} pre-failing, "
+        f"{len(baseline.collection_errors)} suite-level errors"
+    )
+    typer.echo(f"Wrote {path} and the quarantine list in {recipe_path}")
+    _manifest(recipe)
+
+
+def _manifest(recipe: Recipe) -> None:
+    """Rewrite manifest.json: every artifact's sha256, the recipe hash, and tool versions."""
+    from repoatlas import __version__
+    from repoatlas.sandbox.artifacts import IMAGE_JSON, SCIP_JSON, read_model, write_manifest
+    from repoatlas.sandbox.docker import docker
+    from repoatlas.sandbox.images import RepoImageInfo
+    from repoatlas.sandbox.runner import ScipArtifact
+
+    tools = {"repoatlas": __version__}
+    server = docker(["version", "--format", "{{.Server.Version}}"], check=False)
+    if server.returncode == 0:
+        tools["docker"] = server.text
+    image = read_model(recipe, IMAGE_JSON, RepoImageInfo)
+    if image is not None:
+        tools["base_image"] = f"{image.base.tag}@{image.base.digest}"
+        tools["repo_image"] = f"{image.image.tag}@{image.image.digest}"
+        for ref in image.base.upstream:
+            tools[f"upstream:{ref.split('@')[0]}"] = ref.split("@")[-1]
+    scip = read_model(recipe, SCIP_JSON, ScipArtifact)
+    if scip is not None:
+        tools[scip.indexer] = scip.version
+    path = write_manifest(recipe, tools)
+    typer.echo(f"Updated {path}")

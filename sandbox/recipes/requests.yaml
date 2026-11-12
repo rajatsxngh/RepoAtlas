@@ -15,4 +15,8 @@ test:
 scip:
   indexer: scip-python
   args: ["index", ".", "--project-name", "requests", "--project-version", "2.34.2", "--output", "/tmp/out/index.scip"]
-quarantine: []
+quarantine:
+  - "tests/test_requests.py::TestTimeout::test_connect_timeout[timeout0]"
+  - "tests/test_requests.py::TestTimeout::test_connect_timeout[timeout1]"
+  - "tests/test_requests.py::TestTimeout::test_total_timeout_connect[timeout0]"
+  - "tests/test_requests.py::TestTimeout::test_total_timeout_connect[timeout1]"

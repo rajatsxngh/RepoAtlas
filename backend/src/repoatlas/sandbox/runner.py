@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import shlex
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 
 from pydantic import BaseModel, ConfigDict
@@ -23,6 +23,9 @@ from repoatlas.sandbox.results import ReportError, TestResult, parse_report
 
 TestId = str
 WORK_DIR = "/tmp/work"
+SCIP_OUTPUT = "index.scip"
+# Indexers on large projects need more than Node's default heap; stay under the memory limit.
+SCIP_ENV = {"NODE_OPTIONS": "--max-old-space-size=3072"}
 
 
 class Mutation(BaseModel):
@@ -34,6 +37,17 @@ class Mutation(BaseModel):
     path: str
     kind: str
     content: bytes
+
+
+class ScipArtifact(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    path: str  # file name inside the artifacts folder
+    indexer: str
+    version: str
+    sha256: str
+    size: int
+    duration_s: float
 
 
 @dataclass(slots=True)
@@ -131,22 +145,39 @@ class SandboxRunner:
     def run_tests(
         self, *, mutation: Mutation | None = None, only: Sequence[TestId] | None = None
     ) -> TestRun:
-        image = self.image
-        mutated: ImageInfo | None = None
-        if mutation is not None:
-            mutated = self.mutated_image(mutation)
-            image = mutated.tag
+        if mutation is None:
+            return self._run_on(self.image, only)
+        mutated = self.mutated_image(mutation)
         try:
-            run = run_hardened(
-                image,
-                suite_script(self.recipe, only),
-                timeout_s=self.recipe.test.timeout_s,
-                limits=self.limits,
-                name_prefix=f"{IMAGE_PREFIX}-test-{self.recipe.id}",
-            )
+            return self._run_on(mutated.tag, only)
         finally:
-            if mutated is not None:
-                remove_image(mutated.tag)
+            remove_image(mutated.tag)
+
+    def run_confirmed(
+        self, mutation: Mutation, *, failing: Callable[[TestRun], Sequence[TestId]]
+    ) -> tuple[TestRun, TestRun | None]:
+        """The full suite on the mutated image, then a re-run of only ``failing(full)``.
+
+        The mutated layer is built once for both runs. The second run is ``None`` when the
+        first leaves nothing to confirm.
+        """
+        mutated = self.mutated_image(mutation)
+        try:
+            full = self._run_on(mutated.tag, None)
+            selected = list(failing(full)) if full.report_error is None else []
+            confirm = self._run_on(mutated.tag, selected) if selected else None
+            return full, confirm
+        finally:
+            remove_image(mutated.tag)
+
+    def _run_on(self, image: str, only: Sequence[TestId] | None) -> TestRun:
+        run = run_hardened(
+            image,
+            suite_script(self.recipe, only),
+            timeout_s=self.recipe.test.timeout_s,
+            limits=self.limits,
+            name_prefix=f"{IMAGE_PREFIX}-test-{self.recipe.id}",
+        )
         return self._test_run(run, list(only or []))
 
     def _test_run(self, run: SandboxRun, selected: list[str]) -> TestRun:
@@ -174,3 +205,42 @@ class SandboxRunner:
             report_error=error,
             selected=selected,
         )
+
+    def indexer_version(self) -> str:
+        indexer = self.recipe.scip.indexer
+        run = run_hardened(self.image, f"{indexer} --version", timeout_s=120, limits=self.limits)
+        lines = run.log.strip().splitlines()
+        if run.exit_code != 0 or not lines:
+            raise RuntimeError(f"{indexer} --version failed: {run.log_tail()}")
+        return lines[-1].strip()
+
+    def run_scip(self) -> tuple[ScipArtifact, bytes]:
+        """Index the source inside the repo image (no network); returns the artifact and bytes."""
+        spec = self.recipe.scip
+        script = (
+            f"cd /src/{spec.cwd}\n"
+            + _shell_env({**self.recipe.env, **SCIP_ENV})
+            + " ".join(shlex.quote(arg) for arg in [spec.indexer, *spec.args])
+        )
+        run = run_hardened(
+            self.image,
+            script,
+            timeout_s=spec.timeout_s,
+            limits=self.limits,
+            name_prefix=f"{IMAGE_PREFIX}-scip-{self.recipe.id}",
+        )
+        data = run.files.get(SCIP_OUTPUT)
+        if run.timed_out or run.exit_code != 0 or not data:
+            raise RuntimeError(
+                f"{spec.indexer} failed (exit {run.exit_code}, timed out: {run.timed_out}):\n"
+                + run.log_tail()
+            )
+        artifact = ScipArtifact(
+            path=SCIP_OUTPUT,
+            indexer=spec.indexer,
+            version=self.indexer_version(),
+            sha256=hashlib.sha256(data).hexdigest(),
+            size=len(data),
+            duration_s=run.duration_s,
+        )
+        return artifact, data

@@ -1,0 +1,28 @@
+{
+  "artifacts": [
+    {
+      "in_git": true,
+      "path": "baseline.json",
+      "sha256": "ef46a3b6b6eef8eda952f6a7911bee5eda5d6e294b719729da165ffce8028a82",
+      "size": 113400
+    },
+    {
+      "in_git": true,
+      "path": "image.json",
+      "sha256": "4ead7f9bc9b99280eeb461efeb8fa53326c6dba0ec37c5fd989ce92871260d20",
+      "size": 1049
+    }
+  ],
+  "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+  "recipe_sha256": "124450e197d279d2055ed307917f296a309e5a1cdf661cd4becf2b5b5dd43749",
+  "repo_id": "httpx",
+  "tools": {
+    "base_image": "repoatlas-sbx/base-python:fdb97c8b9c4a@sha256:284866b5943f864283b9db4fbd96d24821c31c3f4fbd1d59fedf8fab25878cfb",
+    "docker": "29.9.2",
+    "repo_image": "repoatlas-sbx/httpx:b5addb64f016@sha256:4035baa8f6050351864b766188a5411346ff2c5f359b7f8bb94b374f6be876c9",
+    "repoatlas": "0.1.0",
+    "upstream:docker.io/library/node:22-bookworm-slim": "sha256:18052396bf1d0c6e0a8c58181b5c1457da19409efbd5032a3f4d86974e74d13c",
+    "upstream:ghcr.io/astral-sh/uv:0.12.3": "sha256:2d890623d310b57771ce840f0da5eed5fc6d657da05ffaa45d82797b53fa3abc"
+  },
+  "url": "https://github.com/encode/httpx"
+}

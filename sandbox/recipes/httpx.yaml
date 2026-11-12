@@ -14,4 +14,6 @@ test:
 scip:
   indexer: scip-python
   args: ["index", ".", "--project-name", "httpx", "--project-version", "0.28.1", "--output", "/tmp/out/index.scip"]
-quarantine: []
+quarantine:
+  - "tests/test_config.py::test_load_ssl_with_keylog"
+  - "tests/test_timeouts.py::test_write_timeout[trio]"

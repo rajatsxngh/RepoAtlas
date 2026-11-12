@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from repoatlas.canonical import pretty_json, write_text_lf
 from repoatlas.sandbox.paths import artifacts_dir
@@ -42,3 +42,56 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+# --------------------------------------------------------------------------------------------
+# Manifest
+# --------------------------------------------------------------------------------------------
+
+LOCAL_ONLY_SUFFIXES = (".scip",)  # large; gitignored, reproducible from the recorded images
+
+
+class ManifestEntry(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    path: str
+    sha256: str
+    size: int
+    in_git: bool
+
+
+class Manifest(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    repo_id: str
+    url: str
+    commit: str
+    recipe_sha256: str
+    artifacts: list[ManifestEntry]
+    tools: dict[str, str]
+
+
+def build_manifest(recipe: Recipe, tools: dict[str, str]) -> Manifest:
+    folder = recipe_dir(recipe)
+    entries = [
+        ManifestEntry(
+            path=path.name,
+            sha256=sha256_file(path),
+            size=path.stat().st_size,
+            in_git=not path.name.endswith(LOCAL_ONLY_SUFFIXES),
+        )
+        for path in sorted(folder.iterdir())
+        if path.is_file() and path.name != MANIFEST_JSON
+    ]
+    return Manifest(
+        repo_id=recipe.id,
+        url=recipe.url,
+        commit=recipe.commit,
+        recipe_sha256=recipe.digest(),
+        artifacts=entries,
+        tools=dict(sorted(tools.items())),
+    )
+
+
+def write_manifest(recipe: Recipe, tools: dict[str, str]) -> Path:
+    return write_model(recipe, MANIFEST_JSON, build_manifest(recipe, tools))

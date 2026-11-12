@@ -1,0 +1,28 @@
+{
+  "artifacts": [
+    {
+      "in_git": true,
+      "path": "baseline.json",
+      "sha256": "f779a6b6a3a10dc0aacffb0fcf3a6173f0e5a40d64a889d229d65bce69ae5c14",
+      "size": 63452
+    },
+    {
+      "in_git": true,
+      "path": "image.json",
+      "sha256": "7ddfdd4d002767a797669886aa3dc796f9486adce6491ca09695a4fb32f0a7ac",
+      "size": 1057
+    }
+  ],
+  "commit": "6e83187b8feb273ed4c6cdab5efd8d54901dfab3",
+  "recipe_sha256": "2199725b193a091b1f2e63126de6940bd184bb3c5c3f0978d8937ec41e374b9f",
+  "repo_id": "requests",
+  "tools": {
+    "base_image": "repoatlas-sbx/base-python:fdb97c8b9c4a@sha256:284866b5943f864283b9db4fbd96d24821c31c3f4fbd1d59fedf8fab25878cfb",
+    "docker": "29.9.2",
+    "repo_image": "repoatlas-sbx/requests:6e83187b8feb@sha256:5e5688487782d3092be2adfc42874244f2755898af3fc2c9460aa8da26d8e303",
+    "repoatlas": "0.1.0",
+    "upstream:docker.io/library/node:22-bookworm-slim": "sha256:18052396bf1d0c6e0a8c58181b5c1457da19409efbd5032a3f4d86974e74d13c",
+    "upstream:ghcr.io/astral-sh/uv:0.12.3": "sha256:2d890623d310b57771ce840f0da5eed5fc6d657da05ffaa45d82797b53fa3abc"
+  },
+  "url": "https://github.com/psf/requests"
+}

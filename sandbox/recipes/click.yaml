@@ -14,4 +14,31 @@ test:
 scip:
   indexer: scip-python
   args: ["index", ".", "--project-name", "click", "--project-version", "8.5.1", "--output", "/tmp/out/index.scip"]
-quarantine: []
+quarantine:
+  - "tests/test_termui.py::test_pipepager_less_detection_case_insensitive_on_windows"
+  - "tests/test_termui.py::test_pipepager_less_detection_matches_stem[less.exe]"
+  - "tests/test_termui.py::test_pipepager_less_detection_matches_stem[less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test0- less ]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test0- less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test0-less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test1- less ]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test1- less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test1-less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test2- less ]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test2- less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test2-less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test3- less ]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test3- less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test3-less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test4- less ]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test4- less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test4-less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test7- less ]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test7- less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test7-less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test8- less ]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test8- less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test8-less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test9- less ]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test9- less]"
+  - "tests/test_utils/test_echo_via_pager.py::test_echo_via_pager[test9-less]"

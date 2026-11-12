@@ -54,7 +54,17 @@ class TestSpec(_Model):
 
 class ScipSpec(_Model):
     indexer: Indexer
+    # The indexer must write /tmp/out/index.scip (pass it with --output).
     args: list[str] = []
+    cwd: str = "."  # where the indexer runs, relative to the source root
+    timeout_s: int = Field(default=1800, ge=10, le=7200)
+
+    @field_validator("cwd")
+    @classmethod
+    def _relative(cls, value: str) -> str:
+        if value.startswith("/") or ".." in value.split("/"):
+            raise ValueError("cwd must be a relative path inside the source")
+        return value
 
 
 class Recipe(_Model):

@@ -1,0 +1,27 @@
+{
+  "artifacts": [
+    {
+      "in_git": true,
+      "path": "baseline.json",
+      "sha256": "8ca75b0cb255fdd9c8fbf050e5cd9073f4e5b05325419b07277be984cf773d80",
+      "size": 638002
+    },
+    {
+      "in_git": true,
+      "path": "image.json",
+      "sha256": "6dc02f9b0a7560d10cf69db731bd02feebdfc827a0d6b6859cfb1b29d037c578",
+      "size": 930
+    }
+  ],
+  "commit": "c7ec94d309ee8acb25113e3db738b3e03816a424",
+  "recipe_sha256": "f57aac5559806f738d2dad7b067d37afb66c80c10dd1315c273fb1d88da83f56",
+  "repo_id": "zod",
+  "tools": {
+    "base_image": "repoatlas-sbx/base-node:9fe535eaa2c7@sha256:ab1d3ee90599a443dc5137669659d90fba207a663f2fd6ab966e6990af19acf3",
+    "docker": "29.9.2",
+    "repo_image": "repoatlas-sbx/zod:c7ec94d309ee@sha256:1a7f8a559cac4deac981f9e5fb34323f12e11378817aa5eae26d4147989cbedf",
+    "repoatlas": "0.1.0",
+    "upstream:docker.io/library/node:22-bookworm-slim": "sha256:18052396bf1d0c6e0a8c58181b5c1457da19409efbd5032a3f4d86974e74d13c"
+  },
+  "url": "https://github.com/colinhacks/zod"
+}
