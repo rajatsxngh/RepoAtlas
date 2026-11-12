@@ -11,6 +11,7 @@ Questions come out with ``split = "dev"``; ``repoatlas.bench.split`` assigns the
 from __future__ import annotations
 
 import random
+import re
 from collections import Counter
 from collections.abc import Callable, Sequence
 
@@ -28,6 +29,7 @@ from repoatlas.bench.schema import (
     Question,
     QuestionType,
     RealFailingTest,
+    UnanswerableTruth,
 )
 from repoatlas.sandbox.mutations import MutationRecord
 
@@ -396,3 +398,63 @@ def import_real_impact(
             )
         )
     return out, RealImpactStats(joined=joined, failing_tests=failing, unmapped_tests=unmapped)
+
+
+# --------------------------------------------------------------------------------------------
+# Unanswerable (BEN-9)
+# --------------------------------------------------------------------------------------------
+
+_VERBS = ("reset", "flush", "prune", "rebind", "snapshot", "replay", "coalesce", "rehydrate")
+_OUTSIDE = (
+    "What is the median response time of the {repo} project's production deployment, "
+    "according to the maintainers' monitoring dashboards?",
+    "How many monthly active users does {repo} have, and which country has the most?",
+    "What value does the `{env}` environment variable have on the maintainers' release machine?",
+    "Which cloud region hosts the servers that run the {repo} project's nightly load tests?",
+)
+
+
+def _camel(verb: str, name: str) -> str:
+    return verb + name[:1].upper() + name[1:]
+
+
+def gen_unanswerable(
+    facts: Facts, corpus: str, seed: int, display_repo: str, count: int = 2
+) -> list[Question]:
+    """Half about plausible symbols that do not exist (the name appears nowhere in the repo's
+    files or SCIP symbols), half about facts outside the code."""
+    r = rng(seed, facts.repo_id, "unanswerable")
+    scip_symbols = " ".join(d.scip_symbol for d in facts.definitions.values())
+    pool = sorted((d for d in facts.definitions.values() if _askable(d)), key=lambda d: d.key)
+    out: list[tuple[str, Provenance, str]] = []
+    attempts = 0
+    while len(out) < (count + 1) // 2 and pool and attempts < 1000:
+        attempts += 1
+        base = pool[r.randrange(len(pool))]
+        verb = _VERBS[r.randrange(len(_VERBS))]
+        python = base.key.startswith("py:")
+        leaf = f"{verb}_{base.name.lstrip('_').lower()}" if python else _camel(verb, base.name)
+        if base.kind == "method":
+            owner = base.qualname.split(".")[0]
+            name, kind = f"{owner}.{leaf}", "method"
+        else:
+            name, kind = leaf, "function"
+        if leaf in corpus or leaf in scip_symbols or any(name in o[0] for o in out):
+            continue
+        text = f"What does the {kind} `{name}` do, and which functions call it?"
+        notes = f"Absent: `{leaf}` appears in no file at this commit and in no SCIP symbol."
+        out.append((text, "scip", notes))
+    env = re.sub(r"[^A-Z0-9]+", "_", display_repo.upper()).strip("_") + "_RELEASE_TOKEN"
+    templates = list(_OUTSIDE)
+    r.shuffle(templates)
+    for template in templates:
+        if len(out) >= count:
+            break
+        if "{env}" in template and env in corpus:
+            continue
+        text = template.format(repo=display_repo, env=env)
+        out.append((text, "human", "Outside the code: no file in the repo can answer this."))
+    return [
+        question(facts, "unanswerable", n, text, UnanswerableTruth(), provenance, notes)
+        for n, (text, provenance, notes) in enumerate(out, start=1)
+    ]

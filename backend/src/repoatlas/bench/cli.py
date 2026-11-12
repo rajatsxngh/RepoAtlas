@@ -45,3 +45,25 @@ def validate_command(questions_path: QuestionsOpt = None) -> None:
         typer.echo(f"{len(found)} problems in {len(questions)} questions", err=True)
         raise typer.Exit(1)
     typer.echo(f"{len(questions)} questions valid ({len(files)} repos)")
+
+
+@bench_app.command("keys")
+def keys_command(
+    repo: Annotated[str, typer.Option("--repo", help="Benchmark repo ID, e.g. click.")],
+    paths: Annotated[list[str], typer.Argument(help="Repo-relative files to list.")],
+) -> None:
+    """List the symbol keys defined in files at the pinned commit (for writing flow questions)."""
+    from repoatlas.bench.repos import open_repo, recipes
+    from repoatlas.sandbox.parsed import parse_bytes
+
+    known = recipes()
+    if repo not in known:
+        typer.echo(f"Unknown repo {repo}; known: {', '.join(sorted(known))}", err=True)
+        raise typer.Exit(2)
+    files = open_repo(known[repo])
+    for path in paths:
+        if not files.has(path):
+            typer.echo(f"{path} does not exist at {files.commit[:12]}", err=True)
+            raise typer.Exit(1)
+        for symbol in parse_bytes(path, files.data(path)).symbols:
+            typer.echo(f"{symbol.name_range.start_line:>6}  {symbol.key}")
