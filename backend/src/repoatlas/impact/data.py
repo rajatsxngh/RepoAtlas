@@ -20,8 +20,6 @@ from repoatlas.store.cache import SnapshotGraph
 from repoatlas.store.errors import InvalidQuery, NodeNotFound, PathNotInSnapshot
 from repoatlas.store.graphstore import LOCATABLE_KINDS
 
-MAX_LITERAL_SITES = 50
-
 
 @dataclass(frozen=True, slots=True)
 class TextSite:

@@ -69,7 +69,7 @@ IMP-1, IMP-2, IMP-3, IMP-4, IMP-5, IMP-6, IMP-7, IMP-8, IMP-9
 
 - [x] **T1 — Traversal and scoring.** Best-first search, decay × confidence, noisy-or; tests on synthetic graphs (chain, diamond, cycle, depth cap).
 - [x] **T2 — Groups and ranking.** Tests, public APIs, callers; combined ranking.
-- [ ] **T3 — Unknown bucket.** Unresolved-call matching and string-literal references; tests.
+- [x] **T3 — Unknown bucket.** Unresolved-call matching and string-literal references; tests.
 - [ ] **T4 — Diff targets.** Unified-diff parsing and symbol mapping; tests with edits, additions, deletions.
 - [ ] **T5 — Report and API.** `ImpactReport` schema, `impact_runs` migration, endpoint, OpenAPI and TypeScript types.
 - [ ] **T6 — UI.** "What breaks?" action, `ImpactPanel`, scored highlight layer, evidence navigation; Playwright test.

@@ -30,6 +30,7 @@ from repoatlas.impact.schema import (
     UnknownSite,
 )
 from repoatlas.impact.traversal import Propagation, Reach, Step, propagate
+from repoatlas.impact.unknown import unknown_sites
 from repoatlas.retrieval.evidence import EvidenceRef
 from repoatlas.store.cache import SnapshotGraph
 from repoatlas.store.errors import InvalidQuery, NodeNotFound
@@ -182,7 +183,7 @@ class ImpactEngine:
         keys: list[str],
         nodes: dict[str, Node],
     ) -> list[UnknownSite]:
-        return []
+        return unknown_sites(self.data, snapshot_id, keys, nodes)
 
 
 class _Ranked:
