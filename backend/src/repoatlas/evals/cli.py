@@ -212,3 +212,29 @@ def agreement_command(
     typer.echo(text, nl=False)
     write_text_lf(labels_file.with_suffix(".agreement.json"), pretty_json(result))
     write_text_lf(labels_file.with_suffix(".agreement.md"), text)
+
+
+@labels_app.command("export-flow")
+def export_flow_command(
+    reports: Annotated[list[Path], typer.Argument(help="Dev reports of the systems to label.")],
+    n: Annotated[int, typer.Option("--n", min=1)] = 20,
+    seed: Annotated[int, typer.Option("--seed")] = 7,
+    out: Annotated[Path | None, typer.Option("--out")] = None,
+    cache_dir: Annotated[Path | None, typer.Option("--cache-dir")] = None,
+) -> None:
+    """Write a blind flow-score label file from several systems' dev reports."""
+    from repoatlas.evals.labels import export_flow, write_label_file
+    from repoatlas.evals.report import read_report
+    from repoatlas.evals.runner import ResultCache
+    from repoatlas.evals.suites import load_benchmark
+
+    loaded = [read_report(path) for path in reports]
+    if any(report.split != "dev" for report in loaded):
+        typer.echo("Human labels come from dev runs only.", err=True)
+        raise typer.Exit(2)
+    questions = {item.id: item for item in load_benchmark("dev")}
+    labels, machine = export_flow(
+        loaded, ResultCache(cache_dir or eval_dir() / "cache"), questions, n=n, seed=seed
+    )
+    path, machine_path = write_label_file(out or _labels_path("flow.yaml"), labels, machine)
+    typer.echo(f"{len(labels.items)} answers to score: {path} (machine scores: {machine_path})")

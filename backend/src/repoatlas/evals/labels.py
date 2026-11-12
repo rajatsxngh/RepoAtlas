@@ -214,6 +214,67 @@ def export_claims(
     return labels, machine_labels
 
 
+def export_flow(
+    reports: Sequence[Any], cache: Any, questions: dict[str, Any], *, n: int = 20, seed: int = 7
+) -> tuple[LabelFile, dict[str, Any]]:
+    """A blind flow label file over several systems' dev reports: answers shuffled, system names
+    left out (they go into the machine file with the judge's scores)."""
+    from repoatlas.evals.judge import judged_text
+
+    candidates: list[dict[str, Any]] = []
+    for report in reports:
+        for question_id, run, output in cached_outputs(report, cache):
+            item = questions.get(question_id)
+            if item is None or item.type != "flow" or output.judge is None or run != 0:
+                continue
+            candidates.append(
+                {
+                    "question_id": question_id,
+                    "item": item,
+                    "output": output,
+                    "system": report.system,
+                }
+            )
+    chosen = sample(candidates, n, seed)
+    items: list[dict[str, Any]] = []
+    machine: dict[str, Any] = {}
+    for index, entry in enumerate(chosen, start=1):
+        item_id = f"f{index:02d}"
+        truth = entry["item"].truth
+        judge = entry["output"].judge
+        items.append(
+            {
+                "id": item_id,
+                "question_id": entry["question_id"],
+                "question": entry["item"].text,
+                "reference_outline": truth.reference_outline,
+                "must_cite": [loc.symbol_key for loc in truth.must_cite],
+                "answer": judged_text(entry["output"]),
+                "steps_correct": None,
+                "coverage": None,
+                "grounded": None,
+            }
+        )
+        machine[item_id] = {
+            "system": entry["system"],
+            "steps_correct": judge.steps_correct,
+            "coverage": judge.coverage,
+            "grounded": judge.grounded,
+        }
+    labels = LabelFile(
+        kind="flow",
+        instructions=FLOW_INSTRUCTIONS,
+        source={
+            "systems": sorted({r.system for r in reports}),
+            "split": "dev",
+            "judge": sorted({r.evaluators.get("judge") or "" for r in reports}),
+            "seed": seed,
+        },
+        items=items,
+    )
+    return labels, machine
+
+
 # ---------------------------------------------------------------------------
 # Agreement
 # ---------------------------------------------------------------------------

@@ -126,7 +126,8 @@ def prepare_run(
         {repo: used.config_fingerprint for repo, used in snapshots.items()},
         budget,
     )
-    import repoatlas.evals.support  # noqa: F401  (registers its enricher)
+    import repoatlas.evals.judge
+    import repoatlas.evals.support  # noqa: F401  (they register their enrichers)
 
     enrichers = []
     if kind == "answer":
