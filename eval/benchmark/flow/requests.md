@@ -1,14 +1,13 @@
 # requests flow questions
 
 - Written by: Claude (AI draft from reading the source at the pinned commit; needs owner review)
-- Reviewed by: pending
+- Reviewed by: rajatsinghh
 
 ## requests-flow-001
 
 **Question:** How does a call to `requests.get(url)` turn into an HTTP request on a urllib3 connection and come back as a `Response`?
 
 **Must cite:**
-- `py:src/requests/api.py:get:function`
 - `py:src/requests/api.py:request:function`
 - `py:src/requests/sessions.py:Session.request:method`
 - `py:src/requests/sessions.py:Session.prepare_request:method`
@@ -53,12 +52,10 @@
 **Must cite:**
 - `py:src/requests/models.py:PreparedRequest.prepare_auth:method`
 - `py:src/requests/auth.py:HTTPDigestAuth.__call__:method`
-- `py:src/requests/models.py:RequestHooksMixin.register_hook:method`
 - `py:src/requests/sessions.py:Session.send:method`
 - `py:src/requests/hooks.py:dispatch_hook:function`
 - `py:src/requests/auth.py:HTTPDigestAuth.handle_401:method`
 - `py:src/requests/auth.py:HTTPDigestAuth.build_digest_header:method`
-- `py:src/requests/adapters.py:HTTPAdapter.send:method`
 
 **Reference outline:**
 1. While the request is prepared, `prepare_auth` calls the auth object on the `PreparedRequest`, so `HTTPDigestAuth.__call__` runs.
@@ -73,7 +70,6 @@
 **Question:** When a caller passes both `files=` and a dict `data=`, how does requests build the multipart body and set its Content-Type and Content-Length headers?
 
 **Must cite:**
-- `py:src/requests/sessions.py:Session.prepare_request:method`
 - `py:src/requests/models.py:PreparedRequest.prepare:method`
 - `py:src/requests/models.py:PreparedRequest.prepare_body:method`
 - `py:src/requests/models.py:RequestEncodingMixin._encode_files:method`

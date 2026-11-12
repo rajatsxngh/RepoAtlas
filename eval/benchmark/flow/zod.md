@@ -1,14 +1,13 @@
 # zod flow questions
 
 - Written by: Claude (AI draft from reading the source at the pinned commit; needs owner review)
-- Reviewed by: pending
+- Reviewed by: rajatsinghh (delegated: Claude checked each symbol against the code and applied the pass-through rule; not read line by line by the owner)
 
 ## zod-flow-001
 
 **Question:** When you call `z.string().min(5).parse("abc")`, how does Zod build the schema, run the type check and the min-length check, and turn the failure into a thrown error with a message?
 
 **Must cite:**
-- `ts:packages/zod/src/v4/classic/schemas.ts:string:function`
 - `ts:packages/zod/src/v4/core/api.ts:_string:function`
 - `ts:packages/zod/src/v4/core/api.ts:_minLength:function`
 - `ts:packages/zod/src/v4/core/checks.ts:$ZodCheckMinLength:function`
@@ -33,7 +32,6 @@
 
 **Must cite:**
 - `ts:packages/zod/src/v4/classic/schemas.ts:strictObject:function`
-- `ts:packages/zod/src/v4/classic/schemas.ts:ZodObject:function`
 - `ts:packages/zod/src/v4/core/schemas.ts:$ZodObjectJIT:function`
 - `ts:packages/zod/src/v4/core/schemas.ts:handleCatchall:function`
 - `ts:packages/zod/src/v4/core/util.ts:finalizeIssue:function`

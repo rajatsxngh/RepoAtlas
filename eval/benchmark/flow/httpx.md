@@ -1,7 +1,7 @@
 # httpx flow questions
 
 - Written by: Claude (AI draft from reading the source at the pinned commit; needs owner review)
-- Reviewed by: pending
+- Reviewed by: rajatsinghh
 
 ## httpx-flow-001
 
@@ -32,7 +32,6 @@
 
 **Must cite:**
 - `py:httpx/_client.py:Client._send_handling_auth:method`
-- `py:httpx/_auth.py:Auth.sync_auth_flow:method`
 - `py:httpx/_auth.py:DigestAuth.auth_flow:method`
 - `py:httpx/_auth.py:DigestAuth._parse_challenge:method`
 - `py:httpx/_auth.py:DigestAuth._build_auth_header:method`
@@ -55,7 +54,6 @@
 **Must cite:**
 - `py:httpx/_models.py:Request.__init__:method`
 - `py:httpx/_content.py:encode_request:function`
-- `py:httpx/_content.py:encode_multipart_data:function`
 - `py:httpx/_multipart.py:MultipartStream.__init__:method`
 - `py:httpx/_multipart.py:MultipartStream._iter_fields:method`
 - `py:httpx/_multipart.py:MultipartStream.get_headers:method`
@@ -80,7 +78,6 @@
 - `py:httpx/_models.py:Response.iter_bytes:method`
 - `py:httpx/_models.py:Response._get_content_decoder:method`
 - `py:httpx/_models.py:Response.iter_raw:method`
-- `py:httpx/_client.py:BoundSyncStream.__iter__:method`
 - `py:httpx/_decoders.py:GZipDecoder.decode:method`
 
 **Reference outline:**

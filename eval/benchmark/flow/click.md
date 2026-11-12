@@ -1,7 +1,7 @@
 # click flow questions
 
 - Written by: Claude (AI draft from reading the source at the pinned commit; needs owner review)
-- Reviewed by: pending
+- Reviewed by: rajatsinghh
 
 ## click-flow-001
 
@@ -13,7 +13,6 @@
 - `py:src/click/core.py:Group.parse_args:method`
 - `py:src/click/core.py:Group.invoke:method`
 - `py:src/click/core.py:Group.resolve_command:method`
-- `py:src/click/core.py:Group.get_command:method`
 - `py:src/click/core.py:Command.invoke:method`
 - `py:src/click/core.py:Context.invoke:method~3`
 
@@ -22,7 +21,7 @@
 2. `Command.make_context` creates the group's `Context` and calls the command's `parse_args` inside the context scope.
 3. `Group.parse_args` lets the base command parse the group's own options, then stores the first leftover token (the subcommand name) in `ctx._protected_args` and the rest in `ctx.args`.
 4. `Group.invoke` joins those back into one argument list and, for a non-chained group, calls `resolve_command`.
-5. `Group.resolve_command` takes the first token as the command name and looks it up with `get_command` (retrying with `token_normalize_func` if set), raising `NoSuchCommand` when nothing matches; `Group.get_command` is a lookup in `self.commands`.
+5. `Group.resolve_command` takes the first token as the command name and looks it up with `get_command` (a lookup in `self.commands`, retried with `token_normalize_func` if set), raising `NoSuchCommand` when nothing matches.
 6. `Group.invoke` records `invoked_subcommand`, runs the group's own callback through the base `Command.invoke`, then calls the subcommand's `make_context` with the remaining arguments and the group context as parent, which parses `--force`.
 7. The subcommand's `Command.invoke` calls `ctx.invoke(self.callback, **ctx.params)`, and `Context.invoke` calls the callback with those keyword arguments; the result goes through the group's result callback, if any.
 
@@ -33,7 +32,6 @@
 **Must cite:**
 - `py:src/click/core.py:Command.parse_args:method`
 - `py:src/click/core.py:Parameter.handle_parse_result:method`
-- `py:src/click/core.py:Option.consume_value:method`
 - `py:src/click/core.py:Parameter.consume_value:method`
 - `py:src/click/core.py:Option.value_from_envvar:method`
 - `py:src/click/core.py:Parameter.process_value:method`
@@ -44,7 +42,7 @@
 1. When the option is created, `type=int` is mapped to the shared `IntParamType` instance by `types.convert_type`, and `Option` keeps that explicit type.
 2. `Command.parse_args` runs the option parser, then calls `handle_parse_result` on every parameter in processing order.
 3. `Parameter.handle_parse_result` calls `consume_value` to get a value and its source, records the source on the context, then passes the value to `process_value`.
-4. `Option.consume_value` first defers to `Parameter.consume_value`, which finds no parser value and so asks `value_from_envvar`, marking the source as `ENVIRONMENT` when it returns something (default map and default come after).
+4. `Option.consume_value` passes straight through to `Parameter.consume_value` here (its extra handling is only for flags, `multiple` sentinels, and prompts); `Parameter.consume_value` finds no parser value and so asks `value_from_envvar`, marking the source as `ENVIRONMENT` when it returns something (default map and default come after).
 5. `Option.value_from_envvar` reads the variable through `resolve_envvar_value` (which also supports `auto_envvar_prefix`); for a non-flag option with `nargs=1` it returns the raw string unchanged.
 6. `Parameter.process_value` (reached via `Option.process_value`, which only special-cases boolean flags) calls `type_cast_value`, then checks `required` and runs any parameter callback.
 7. `type_cast_value` with `nargs=1` calls the type object, whose `__call__` delegates to `convert`; `_NumberParamTypeBase.convert` calls `int(value)` and turns a `ValueError` into a usage error via `fail`.
@@ -57,7 +55,6 @@
 **Must cite:**
 - `py:src/click/core.py:Command.get_help_option:method`
 - `py:src/click/decorators.py:help_option.show_help:function`
-- `py:src/click/core.py:Context.get_help:method`
 - `py:src/click/core.py:Command.get_help:method`
 - `py:src/click/core.py:Command.format_help:method`
 - `py:src/click/core.py:Command.format_options:method`
@@ -68,7 +65,7 @@
 1. `Command.get_params` appends the option returned by `get_help_option`, which builds it once (cached on the command) with the `help_option` decorator from `decorators.py`: an eager boolean flag that does not expose a value and has `show_help` as its callback.
 2. Because the help option is eager, it is processed before other parameters during parsing; its value is converted and its callback runs from `process_value`.
 3. `show_help` (when the flag is set and parsing is not resilient) echoes `ctx.get_help()` and then calls `ctx.exit()`.
-4. `Context.get_help` delegates to `Command.get_help`, which creates a `HelpFormatter` via `ctx.make_formatter`, calls `format_help`, and returns the buffered text.
+4. `Context.get_help` is a one-line delegation to `Command.get_help`, which creates a `HelpFormatter` via `ctx.make_formatter`, calls `format_help`, and returns the buffered text.
 5. `Command.format_help` writes, in order, the usage line, help text, positional arguments, options, and epilog.
 6. `Command.format_options` collects a help record from each non-argument parameter; `Option.get_help_record` returns the option spec and its help, with extras such as env var, default, range, or required in brackets (hidden options return nothing).
 7. Inside an "Options" section, `HelpFormatter.write_dl` lays out those records as a two-column definition list, wrapping the description column to the formatter width.

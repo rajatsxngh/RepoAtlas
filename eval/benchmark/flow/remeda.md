@@ -1,7 +1,7 @@
 # remeda flow questions
 
 - Written by: Claude (AI draft from reading the source at the pinned commit; needs owner review)
-- Reviewed by: pending
+- Reviewed by: rajatsinghh (delegated: Claude checked each symbol against the code and applied the pass-through rule; not read line by line by the owner)
 
 ## remeda-flow-001
 
@@ -48,7 +48,6 @@
 **Question:** How does `sortBy` tell a data-first call from a data-last call and turn several order rules into a single comparator?
 
 **Must cite:**
-- `ts:packages/remeda/src/sortBy.ts:sortBy:function`
 - `ts:packages/remeda/src/internal/purryOrderRules.ts:purryOrderRules:function`
 - `ts:packages/remeda/src/internal/purryOrderRules.ts:isOrderRule:function`
 - `ts:packages/remeda/src/internal/purryOrderRules.ts:isProjection:function`

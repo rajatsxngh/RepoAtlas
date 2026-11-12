@@ -89,7 +89,7 @@ BEN-1, BEN-2, BEN-3, BEN-4, BEN-5, BEN-6, BEN-7, BEN-8, BEN-9, BEN-10, BEN-11, B
 - [x] **T3 — Lookup and callers generators.** Tests on the SCIP fixture.
 - [x] **T4 — Multi-hop and static impact generators.**
 - [x] **T5 — Real impact import.** Join `mutations.jsonl` into impact questions; count unmapped tests.
-- [ ] **T6 — Flow and unanswerable questions.** Authoring guide and template; write and review flow questions (human step); unanswerable generator with absence checks.
+- [x] **T6 — Flow and unanswerable questions.** Authoring guide and template; write and review flow questions (human step); unanswerable generator with absence checks.
 - [x] **T7 — Splits and determinism.** Stratified split, freeze, digests; test that regeneration is identical.
 - [ ] **T8 — Audit and documentation.** 10% audit recorded; benchmark README with version, counts by repo and type, and known limitations.
 

@@ -13,7 +13,10 @@ SCIP, so people write them by reading the code. Each repo has four, in `<repo_id
 2. **Ask about a real path through the code** that a new contributor would want explained. It
    should cross at least two files or three functions, and have one correct answer at this commit.
 3. **Must cite 3–8 symbols:** the functions, methods, or classes a correct answer has to point
-   at. Leave out helpers that are only incidental. Order them along the flow.
+   at. Order them along the flow. Cite only symbols that make a decision or transform data on
+   this path. A pass-through (a method that only calls `super()` here) or a one-line lookup
+   belongs in the outline, not the must-cite list, because must-cite recall would penalize a
+   correct answer that skips it.
 4. **Name symbols by symbol key** (`<lang>:<path>:<qualname>:<kind>`, PRD §7.3). To list a
    file's keys:
    `cd backend && uv run repoatlas bench keys --repo click src/click/core.py`.
