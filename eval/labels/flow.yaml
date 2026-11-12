@@ -18,141 +18,6 @@ labeler: Claude (Opus 5.5), delegated by the owner; not a human label
 human: false
 items:
 - id: f01
-  question_id: requests-flow-004
-  question: When a caller passes both `files=` and a dict `data=`, how does requests build the multipart
-    body and set its Content-Type and Content-Length headers?
-  reference_outline: '1. `Session.prepare_request` builds a `PreparedRequest` and calls its `prepare`
-    with the request''s files and data.
-
-    2. `prepare` runs the steps in order (method, URL, headers, cookies, body, auth, hooks); the body
-    step is `prepare_body`.
-
-    3. A dict is not treated as a streamed body, so `prepare_body` takes the non-streaming branch and,
-    because files were given, calls `_encode_files` with the files and data.
-
-    4. `_encode_files` rejects a missing files value or string data, turns each data field into a (name,
-    bytes) pair, turns each file entry (a bare file object or a 2-, 3- or 4-tuple of filename, file object,
-    content type, headers) into a urllib3 `RequestField`, reading file objects, and encodes everything
-    with urllib3''s `encode_multipart_formdata`, returning the body and a multipart Content-Type with
-    its boundary.
-
-    5. `prepare_body` then calls `prepare_content_length`, which measures the body with `super_len` and
-    sets Content-Length when the length is non-zero.
-
-    6. Finally `prepare_body` sets the multipart Content-Type only if the caller did not supply one, and
-    stores the body on the request.'
-  must_cite:
-  - py:src/requests/models.py:PreparedRequest.prepare:method
-  - py:src/requests/models.py:PreparedRequest.prepare_body:method
-  - py:src/requests/models.py:RequestEncodingMixin._encode_files:method
-  - py:src/requests/models.py:PreparedRequest.prepare_content_length:method
-  - py:src/requests/utils.py:super_len:function
-  answer: 'When `files` and a dict `data` are both given, `prepare_body` takes the non-streamed branch,
-    because a dict is excluded from the stream check. It calls `_encode_files(files, raw_data)` to get
-    the body and the content type. [c1][c2]
-
-
-    `_encode_files` turns the data fields into `(name, bytes)` tuples. A value that is a non-string iterable
-    is expanded into multiple fields, and `None` values are skipped. [c3] Each file entry becomes a `RequestField`
-    with `make_multipart`. Entries can be a bare file, or a 2-, 3- or 4-tuple, which supplies the filename,
-    content type and extra headers. [c4] Everything is then encoded with `encode_multipart_formdata`,
-    which returns the body and the content type. [c5]
-
-
-    Back in `prepare_body`, `prepare_content_length(body)` sets `Content-Length` to `super_len(body)`
-    when that length is non-zero. [c6] `Content-Type` is set from the encoder''s result only if the caller
-    has not already supplied a `content-type` header. [c7]
-
-
-    Claims:
-
-    - With files and non-stream data, prepare_body calls self._encode_files(files, raw_data) to produce
-    the body and content_type.
-
-    - Mapping data (such as a dict) is excluded from the streamed-body branch, so it goes to the else
-    branch.
-
-    - _encode_files converts data fields into (name, bytes) tuples, expanding non-string iterable values
-    and skipping None values.
-
-    - Each file becomes a RequestField made multipart with an optional content type. Tuples of length
-    2, 3 or 4 provide the filename, content type and headers.
-
-    - The body and content type come from encode_multipart_formdata(new_fields).
-
-    - prepare_content_length sets the Content-Length header to the string of super_len(body) when the
-    length is non-zero.
-
-    - The Content-Type header is set from the encoder''s content type only if no content-type header is
-    already present.'
-  steps_correct: 2
-  coverage: 1
-  grounded: 2
-- id: f02
-  question_id: zod-flow-004
-  question: When a classic schema has `.transform(fn)` and you parse a value, how is the value validated
-    first and then handed to `fn`, and what stops `fn` from running on invalid input?
-  reference_outline: '1. The `.transform(fn)` method on classic `ZodType` builds `pipe(this, transform(fn))`:
-    `transform` creates a `ZodTransform` whose def holds `fn`, and `pipe` creates a `ZodPipe` with the
-    original schema as `in` and the transform as `out`.
-
-    2. The `parse` installed by `$ZodPipe` (forward direction) runs the `in` schema on the payload first.
-
-    3. `handlePipeResult` stops the pipe if the left result has any issue other than `unrecognized_keys`:
-    it marks the payload aborted and returns it, so `fn` never runs.
-
-    4. Otherwise it runs the `out` schema on a payload carrying the validated value and the existing issues.
-
-    5. The classic `ZodTransform` replaces the core transform''s `parse`: it throws for encode (backward)
-    direction, attaches an `addIssue` helper to the payload, calls `fn` with the value and payload, and
-    stores the result (awaiting it if `fn` returns a promise) as the new value.'
-  must_cite:
-  - ts:packages/zod/src/v4/classic/schemas.ts:transform:function
-  - ts:packages/zod/src/v4/classic/schemas.ts:pipe:function
-  - ts:packages/zod/src/v4/core/schemas.ts:$ZodPipe:function
-  - ts:packages/zod/src/v4/core/schemas.ts:handlePipeResult:function
-  - ts:packages/zod/src/v4/classic/schemas.ts:ZodTransform:function
-  answer: 'The evidence only partly answers this. It shows how `.transform` is constructed and how the
-    top-level parse treats issues, but it does not include the code that sequences validation before `fn`
-    runs.
-
-
-    - In v3, `.transform(fn)` wraps the schema in a `ZodEffects` with `schema: this` and a transform effect
-    [c1]. This suggests the inner schema is the one validated, but the code that applies the effect is
-    not in the evidence.
-
-    - In v4 classic, the standalone `transform(fn)` creates a `ZodTransform` with `type: "transform"`
-    and `transform: fn` [c2]. The core `_transform` helper does the same [c3].
-
-    - `parse` calls `schema._zod.run` on a payload `{ value, issues: [] }` [c4]. It throws if the result
-    has issues, so an invalid result never returns a value [c4]. The async variant does the same after
-    awaiting [c5].
-
-
-    The v4 `$ZodTransform` run implementation, and the pipe or check logic that stops `fn` from executing
-    on invalid input, are not in the indexed code. I can''t confirm that mechanism from this evidence.
-
-
-    Claims:
-
-    - In v3, the `transform` method returns a `ZodEffects` that wraps the original schema (`schema: this`)
-    with a transform effect holding the function.
-
-    - The classic v4 `transform` function constructs a `ZodTransform` with type "transform" and the user
-    function as `transform`.
-
-    - The core `_transform` helper builds a schema of the given Class with type "transform" and the function
-    as `transform`.
-
-    - Sync parse runs `schema._zod.run` on a payload with an empty issues array and throws an error if
-    the result has issues, otherwise returns `result.value`.
-
-    - The async parse runs the schema with `async: true`, awaits a Promise result, and throws if there
-    are issues.'
-  steps_correct: 1
-  coverage: 0
-  grounded: 1
-- id: f03
   question_id: remeda-flow-004
   question: With the default trailing timing, how does a call to a `debounce`d function end up invoking
     the wrapped function after the wait elapses?
@@ -231,7 +96,217 @@ items:
   steps_correct: 2
   coverage: 2
   grounded: 2
+- id: f02
+  question_id: requests-flow-004
+  question: When a caller passes both `files=` and a dict `data=`, how does requests build the multipart
+    body and set its Content-Type and Content-Length headers?
+  reference_outline: '1. `Session.prepare_request` builds a `PreparedRequest` and calls its `prepare`
+    with the request''s files and data.
+
+    2. `prepare` runs the steps in order (method, URL, headers, cookies, body, auth, hooks); the body
+    step is `prepare_body`.
+
+    3. A dict is not treated as a streamed body, so `prepare_body` takes the non-streaming branch and,
+    because files were given, calls `_encode_files` with the files and data.
+
+    4. `_encode_files` rejects a missing files value or string data, turns each data field into a (name,
+    bytes) pair, turns each file entry (a bare file object or a 2-, 3- or 4-tuple of filename, file object,
+    content type, headers) into a urllib3 `RequestField`, reading file objects, and encodes everything
+    with urllib3''s `encode_multipart_formdata`, returning the body and a multipart Content-Type with
+    its boundary.
+
+    5. `prepare_body` then calls `prepare_content_length`, which measures the body with `super_len` and
+    sets Content-Length when the length is non-zero.
+
+    6. Finally `prepare_body` sets the multipart Content-Type only if the caller did not supply one, and
+    stores the body on the request.'
+  must_cite:
+  - py:src/requests/models.py:PreparedRequest.prepare:method
+  - py:src/requests/models.py:PreparedRequest.prepare_body:method
+  - py:src/requests/models.py:RequestEncodingMixin._encode_files:method
+  - py:src/requests/models.py:PreparedRequest.prepare_content_length:method
+  - py:src/requests/utils.py:super_len:function
+  answer: 'When `files=` is given, `PreparedRequest.prepare_body` calls `_encode_files(files, data)` in
+    `src/requests/models.py` (`requests/models.py` in older layouts) to build the multipart body, and
+    `prepare_content_length` sets Content-Length. [c1][c2][c3][c4][c5] I''m recalling this from memory
+    of the library, not from the code at this exact commit, so check the details against the source.
+
+
+    Claims:
+
+    - In src/requests/models.py, PreparedRequest.prepare_body takes the multipart path when files is truthy,
+    calling self._encode_files(files, data) to get body and content_type.
+
+    - RequestEncodingMixin._encode_files in src/requests/models.py turns each key/value in the dict data
+    into a form field (values that are lists are expanded, and str values are encoded to bytes) and adds
+    each file as a file part, using urllib3''s encode_multipart_formdata.
+
+    - _encode_files returns the encoded body and a content type of the form multipart/form-data; boundary=...,
+    which comes from encode_multipart_formdata.
+
+    - In prepare_body, the Content-Type header is set from the returned content_type only if the user
+    has not already supplied a Content-Type header.
+
+    - prepare_body then calls prepare_content_length(body), which sets Content-Length from super_len(body),
+    or 0 for an empty non-streamed body.'
+  steps_correct: 2
+  coverage: 1
+  grounded: 2
+- id: f03
+  question_id: zod-flow-004
+  question: When a classic schema has `.transform(fn)` and you parse a value, how is the value validated
+    first and then handed to `fn`, and what stops `fn` from running on invalid input?
+  reference_outline: '1. The `.transform(fn)` method on classic `ZodType` builds `pipe(this, transform(fn))`:
+    `transform` creates a `ZodTransform` whose def holds `fn`, and `pipe` creates a `ZodPipe` with the
+    original schema as `in` and the transform as `out`.
+
+    2. The `parse` installed by `$ZodPipe` (forward direction) runs the `in` schema on the payload first.
+
+    3. `handlePipeResult` stops the pipe if the left result has any issue other than `unrecognized_keys`:
+    it marks the payload aborted and returns it, so `fn` never runs.
+
+    4. Otherwise it runs the `out` schema on a payload carrying the validated value and the existing issues.
+
+    5. The classic `ZodTransform` replaces the core transform''s `parse`: it throws for encode (backward)
+    direction, attaches an `addIssue` helper to the payload, calls `fn` with the value and payload, and
+    stores the result (awaiting it if `fn` returns a promise) as the new value.'
+  must_cite:
+  - ts:packages/zod/src/v4/classic/schemas.ts:transform:function
+  - ts:packages/zod/src/v4/classic/schemas.ts:pipe:function
+  - ts:packages/zod/src/v4/core/schemas.ts:$ZodPipe:function
+  - ts:packages/zod/src/v4/core/schemas.ts:handlePipeResult:function
+  - ts:packages/zod/src/v4/classic/schemas.ts:ZodTransform:function
+  answer: 'The evidence only partly answers this. It shows how `.transform` is constructed and how the
+    top-level parse treats issues, but it does not include the code that sequences validation before `fn`
+    runs.
+
+
+    - In v3, `.transform(fn)` wraps the schema in a `ZodEffects` with `schema: this` and a transform effect
+    [c1]. This suggests the inner schema is the one validated, but the code that applies the effect is
+    not in the evidence.
+
+    - In v4 classic, the standalone `transform(fn)` creates a `ZodTransform` with `type: "transform"`
+    and `transform: fn` [c2]. The core `_transform` helper does the same [c3].
+
+    - `parse` calls `schema._zod.run` on a payload `{ value, issues: [] }` [c4]. It throws if the result
+    has issues, so an invalid result never returns a value [c4]. The async variant does the same after
+    awaiting [c5].
+
+
+    The v4 `$ZodTransform` run implementation, and the pipe or check logic that stops `fn` from executing
+    on invalid input, are not in the indexed code. I can''t confirm that mechanism from this evidence.
+
+
+    Claims:
+
+    - In v3, the `transform` method returns a `ZodEffects` that wraps the original schema (`schema: this`)
+    with a transform effect holding the function.
+
+    - The classic v4 `transform` function constructs a `ZodTransform` with type "transform" and the user
+    function as `transform`.
+
+    - The core `_transform` helper builds a schema of the given Class with type "transform" and the function
+    as `transform`.
+
+    - Sync parse runs `schema._zod.run` on a payload with an empty issues array and throws an error if
+    the result has issues, otherwise returns `result.value`.
+
+    - The async parse runs the schema with `async: true`, awaits a Promise result, and throws if there
+    are issues.'
+  steps_correct: 1
+  coverage: 0
+  grounded: 1
 - id: f04
+  question_id: click-flow-004
+  question: When Bash asks for tab completion of a group's subcommand name (for example `cli sy<TAB>`
+    with `_CLI_COMPLETE=bash_complete`), how does Click compute and print the candidates?
+  reference_outline: '1. `Command.main` calls `_main_shell_completion` before normal parsing; it derives
+    the variable name `_{PROG_NAME}_COMPLETE`, returns if it is unset, and otherwise calls `shell_completion.shell_complete`
+    and exits with its return code.
+
+    2. `shell_complete` splits the instruction into shell and action, looks up the completion class with
+    `get_completion_class` (Bash here), and for the `complete` action echoes the result of `complete()`.
+
+    3. `ShellComplete.complete` gets the arguments and the incomplete word, calls `get_completions`, and
+    joins one formatted line per item.
+
+    4. `BashComplete.get_completion_args` splits `COMP_WORDS`, uses `COMP_CWORD` to separate the finished
+    arguments from the word being completed.
+
+    5. `ShellComplete.get_completions` builds the context with `_resolve_context`, picks the object to
+    complete with `_resolve_incomplete`, and calls that object''s `shell_complete`.
+
+    6. `_resolve_context` makes the root context with `resilient_parsing=True` and walks down through
+    any subcommands already typed, using `resolve_command` and `make_context`, without running callbacks.
+
+    7. `_resolve_incomplete` sees that the incomplete word is not an option and no argument is waiting
+    for a value, so it returns the current command (the group).
+
+    8. `Group.shell_complete` yields a `CompletionItem` for each visible subcommand whose name starts
+    with the incomplete word (with its short help), then appends whatever the base `Command.shell_complete`
+    adds (option names only when the word starts with a non-alphanumeric character, and siblings from
+    chained parent groups); `BashComplete.format_completion` writes each item as `type,value`.'
+  must_cite:
+  - py:src/click/core.py:Command._main_shell_completion:method
+  - py:src/click/shell_completion.py:shell_complete:function
+  - py:src/click/shell_completion.py:ShellComplete.complete:method
+  - py:src/click/shell_completion.py:BashComplete.get_completion_args:method
+  - py:src/click/shell_completion.py:ShellComplete.get_completions:method
+  - py:src/click/shell_completion.py:_resolve_context:function
+  - py:src/click/shell_completion.py:_resolve_incomplete:function
+  - py:src/click/core.py:Group.shell_complete:method
+  answer: 'Click''s Bash completion lives in `src/click/shell_completion.py`. The generated Bash script
+    sets `COMP_WORDS` and `COMP_CWORD` and calls the program with `_CLI_COMPLETE=bash_complete`. Click
+    then handles this in `shell_completion`/`_main_shell_completion`, which builds a `BashComplete` object
+    and prints its output. I am recalling this from memory and have not checked it against this exact
+    commit. [c1][c2][c3]
+
+
+    1. `BashComplete.get_completion_args` reads `COMP_WORDS` and `COMP_CWORD` from the environment, splits
+    them with `split_arg_string`, and returns `(args, incomplete)`. [c4]
+
+    2. `ShellComplete.get_completions` calls `_resolve_context` to walk the args down to the right context,
+    which here is the group. [c5]
+
+    3. It then calls `_resolve_incomplete` to decide what is being completed. If the incomplete word is
+    not an option or argument value, the command is asked for completions. [c6]
+
+    4. For a group, `Command.shell_complete` includes subcommand names from `list_commands(ctx)` that
+    start with the incomplete text (`sy`). Hidden commands are skipped. Each match becomes a `CompletionItem`.
+    [c7]
+
+    5. `BashComplete.format_completion` formats each item as `type,value`, for example `plain,sync`. The
+    items are joined with newlines and printed to stdout. The Bash script then turns them into `COMPREPLY`.
+    [c8]
+
+
+    Claims:
+
+    - Bash completion is implemented in src/click/shell_completion.py, with a Bash script template that
+    invokes the program with _CLI_COMPLETE set to bash_complete.
+
+    - The generated Bash script passes COMP_WORDS and COMP_CWORD to the program through the environment.
+
+    - shell_completion in src/click/shell_completion.py handles the completion request by creating a BashComplete
+    object and printing its output.
+
+    - BashComplete.get_completion_args in src/click/shell_completion.py reads COMP_WORDS and COMP_CWORD,
+    splits them, and returns args and the incomplete word.
+
+    - ShellComplete.get_completions in src/click/shell_completion.py resolves the context from the args
+    via _resolve_context.
+
+    - _resolve_incomplete in src/click/shell_completion.py determines which object is being completed.
+
+    - Command.shell_complete in src/click/core.py, for a group, adds subcommand names from list_commands
+    that start with the incomplete text, skipping hidden commands, as CompletionItem objects.
+
+    - BashComplete.format_completion in src/click/shell_completion.py formats each item as ''type,value'',
+    and the items are printed one per line.'
+  steps_correct: 1
+  coverage: 2
+  grounded: 2
+- id: f05
   question_id: httpx-flow-004
   question: When `Client.send` loads a non-streamed response whose `Content-Encoding` is gzip, how are
     the raw bytes pulled from the transport stream and decompressed into `response.content`?
@@ -260,39 +335,186 @@ items:
   - py:httpx/_models.py:Response._get_content_decoder:method
   - py:httpx/_models.py:Response.iter_raw:method
   - py:httpx/_decoders.py:GZipDecoder.decode:method
-  answer: 'When `stream` is false, `Client.send` calls `response.read()` after `_send_handling_auth` returns.
-    [c1] `read()` sets `_content` to the joined output of `iter_bytes()`. [c2] `iter_bytes()` (when `_content`
-    isn''t yet set) gets a decoder from `_get_content_decoder()` and creates a `ByteChunker`. [c3] It
-    loops over `iter_raw()`, which yields the raw bytes from the transport stream, and passes each piece
-    through `decoder.decode`. The decoded output goes through the chunker. After the loop it calls `decoder.flush()`
-    and `chunker.flush()` for the remaining output. [c3] For gzip, the decoder class is `GZipDecoder`,
-    whose `flush` calls `self.decompressor.flush()` and wraps `zlib.error` in `DecodingError`. [c4][c5]
-    Once `_content` is set, the `content` property returns it. [c6]
-
-
-    The evidence doesn''t show the body of `_get_content_decoder`, `iter_raw`, or `GZipDecoder.decode`,
-    so how the Content-Encoding header selects the gzip decoder and how `iter_raw` reads from the transport
-    are not covered.
+  answer: 'The evidence only shows the first step: when `stream` is false, `Client.send` calls `response.read()`
+    after `_send_handling_auth` returns, and closes the response and re-raises if that fails [c1]. The
+    code for `Response.read`, the stream iteration, and the gzip decoder is not in the provided excerpts,
+    so I can''t say how the bytes are pulled from the transport stream or decompressed into `response.content`.
+    The excerpts also don''t show how `Content-Encoding` is handled.
 
 
     Claims:
 
-    - Client.send calls response.read() when stream is False, after obtaining the response from _send_handling_auth.
+    - Client.send calls response.read() when stream is False, and on any BaseException it closes the response
+    and re-raises.'
+  steps_correct: 2
+  coverage: 0
+  grounded: 1
+- id: f06
+  question_id: requests-flow-004
+  question: When a caller passes both `files=` and a dict `data=`, how does requests build the multipart
+    body and set its Content-Type and Content-Length headers?
+  reference_outline: '1. `Session.prepare_request` builds a `PreparedRequest` and calls its `prepare`
+    with the request''s files and data.
 
-    - Response.read sets _content to b"".join(self.iter_bytes()) if not already set.
+    2. `prepare` runs the steps in order (method, URL, headers, cookies, body, auth, hooks); the body
+    step is `prepare_body`.
 
-    - iter_bytes obtains a decoder via _get_content_decoder, iterates iter_raw(), decodes each raw chunk
-    with decoder.decode, passes it through a ByteChunker, then flushes the decoder and chunker.
+    3. A dict is not treated as a streamed body, so `prepare_body` takes the non-streaming branch and,
+    because files were given, calls `_encode_files` with the files and data.
 
-    - GZipDecoder is the decoder class that handles ''gzip'' decoding.
+    4. `_encode_files` rejects a missing files value or string data, turns each data field into a (name,
+    bytes) pair, turns each file entry (a bare file object or a 2-, 3- or 4-tuple of filename, file object,
+    content type, headers) into a urllib3 `RequestField`, reading file objects, and encodes everything
+    with urllib3''s `encode_multipart_formdata`, returning the body and a multipart Content-Type with
+    its boundary.
 
-    - GZipDecoder.flush returns self.decompressor.flush() and converts zlib.error into DecodingError.
+    5. `prepare_body` then calls `prepare_content_length`, which measures the body with `super_len` and
+    sets Content-Length when the length is non-zero.
 
-    - The content property returns the stored _content, raising ResponseNotRead if it hasn''t been read.'
+    6. Finally `prepare_body` sets the multipart Content-Type only if the caller did not supply one, and
+    stores the body on the request.'
+  must_cite:
+  - py:src/requests/models.py:PreparedRequest.prepare:method
+  - py:src/requests/models.py:PreparedRequest.prepare_body:method
+  - py:src/requests/models.py:RequestEncodingMixin._encode_files:method
+  - py:src/requests/models.py:PreparedRequest.prepare_content_length:method
+  - py:src/requests/utils.py:super_len:function
+  answer: 'When `files` and a dict `data` are both given, `prepare_body` takes the non-streamed branch,
+    because a dict is excluded from the stream check. It calls `_encode_files(files, raw_data)` to get
+    the body and the content type. [c1][c2]
+
+
+    `_encode_files` turns the data fields into `(name, bytes)` tuples. A value that is a non-string iterable
+    is expanded into multiple fields, and `None` values are skipped. [c3] Each file entry becomes a `RequestField`
+    with `make_multipart`. Entries can be a bare file, or a 2-, 3- or 4-tuple, which supplies the filename,
+    content type and extra headers. [c4] Everything is then encoded with `encode_multipart_formdata`,
+    which returns the body and the content type. [c5]
+
+
+    Back in `prepare_body`, `prepare_content_length(body)` sets `Content-Length` to `super_len(body)`
+    when that length is non-zero. [c6] `Content-Type` is set from the encoder''s result only if the caller
+    has not already supplied a `content-type` header. [c7]
+
+
+    Claims:
+
+    - With files and non-stream data, prepare_body calls self._encode_files(files, raw_data) to produce
+    the body and content_type.
+
+    - Mapping data (such as a dict) is excluded from the streamed-body branch, so it goes to the else
+    branch.
+
+    - _encode_files converts data fields into (name, bytes) tuples, expanding non-string iterable values
+    and skipping None values.
+
+    - Each file becomes a RequestField made multipart with an optional content type. Tuples of length
+    2, 3 or 4 provide the filename, content type and headers.
+
+    - The body and content type come from encode_multipart_formdata(new_fields).
+
+    - prepare_content_length sets the Content-Length header to the string of super_len(body) when the
+    length is non-zero.
+
+    - The Content-Type header is set from the encoder''s content type only if no content-type header is
+    already present.'
   steps_correct: 2
   coverage: 1
   grounded: 2
-- id: f05
+- id: f07
+  question_id: remeda-flow-004
+  question: With the default trailing timing, how does a call to a `debounce`d function end up invoking
+    the wrapped function after the wait elapses?
+  reference_outline: '1. `debounce` validates that `maxWaitMs` is not less than `waitMs` and returns an
+    object whose `call` closes over the cool-down and max-wait timer IDs, the latest arguments, and the
+    last result.
+
+    2. On `call` with trailing timing, `handleDebouncedCall` saves the arguments as the latest call arguments
+    and, if `maxWaitMs` is set and no max-wait timer is running, starts one that will run `handleInvoke`.
+
+    3. `call` clears any running cool-down timer and starts a new one for `waitMs` (falling back to `maxWaitMs`,
+    then 0) pointing at `handleCoolDownEnd`, then returns the cached result from the previous invocation.
+
+    4. When the cool-down timer fires, `handleCoolDownEnd` clears the timer and, if latest arguments are
+    stored, calls `handleInvoke`.
+
+    5. `handleInvoke` clears the max-wait timer, takes and clears the stored arguments, calls the wrapped
+    function with them, and caches its return value as the new result.'
+  must_cite:
+  - ts:packages/remeda/src/debounce.ts:debounce:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleDebouncedCall:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleCoolDownEnd:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleInvoke:function
+  answer: 'With the default `timing` of `"trailing"`, the first call (no active cool-down) is treated
+    as a debounced call: its args are saved in `latestCallArgs` and nothing is invoked yet [c1][c2]. `call`
+    then starts a `setTimeout` for `handleCoolDownEnd` lasting `waitMs ?? maxWaitMs ?? 0` [c3]. Each later
+    call during the cool-down saves its args again, clears the running timeout and starts a fresh one,
+    so the wait restarts [c4]. When the timer finally fires, `handleCoolDownEnd` clears the timeout and,
+    if `latestCallArgs` is set, calls `handleInvoke` [c5]. `handleInvoke` takes the saved args, clears
+    them, and calls `func(...args)`, storing the return value in `result`, which later calls return [c6].
+    If `maxWaitMs` is set, a separate timer started on the first debounced call can also trigger `handleInvoke`
+    [c7].
+
+
+    Claims:
+
+    - The default value of `timing` is "trailing".
+
+    - When there is no active cool-down and timing is "trailing", the call is passed to `handleDebouncedCall`,
+    which stores the args in `latestCallArgs`.
+
+    - After handling a call, a cool-down timeout is set to run `handleCoolDownEnd` after `waitMs ?? maxWaitMs
+    ?? 0` milliseconds.
+
+    - A call during an active cool-down (timing not "leading") is debounced and the current timeout is
+    cleared so a new full wait begins.
+
+    - `handleCoolDownEnd` clears the cool-down timeout and invokes `handleInvoke` if `latestCallArgs`
+    is defined.
+
+    - `handleInvoke` takes the saved args, resets `latestCallArgs`, and calls `func(...args)`, storing
+    the return in `result`.
+
+    - If `maxWaitMs` is defined, the first debounced call starts a `maxWaitTimeoutId` timeout that runs
+    `handleInvoke`.'
+  steps_correct: 2
+  coverage: 2
+  grounded: 2
+- id: f08
+  question_id: zod-flow-004
+  question: When a classic schema has `.transform(fn)` and you parse a value, how is the value validated
+    first and then handed to `fn`, and what stops `fn` from running on invalid input?
+  reference_outline: '1. The `.transform(fn)` method on classic `ZodType` builds `pipe(this, transform(fn))`:
+    `transform` creates a `ZodTransform` whose def holds `fn`, and `pipe` creates a `ZodPipe` with the
+    original schema as `in` and the transform as `out`.
+
+    2. The `parse` installed by `$ZodPipe` (forward direction) runs the `in` schema on the payload first.
+
+    3. `handlePipeResult` stops the pipe if the left result has any issue other than `unrecognized_keys`:
+    it marks the payload aborted and returns it, so `fn` never runs.
+
+    4. Otherwise it runs the `out` schema on a payload carrying the validated value and the existing issues.
+
+    5. The classic `ZodTransform` replaces the core transform''s `parse`: it throws for encode (backward)
+    direction, attaches an `addIssue` helper to the payload, calls `fn` with the value and payload, and
+    stores the result (awaiting it if `fn` returns a promise) as the new value.'
+  must_cite:
+  - ts:packages/zod/src/v4/classic/schemas.ts:transform:function
+  - ts:packages/zod/src/v4/classic/schemas.ts:pipe:function
+  - ts:packages/zod/src/v4/core/schemas.ts:$ZodPipe:function
+  - ts:packages/zod/src/v4/core/schemas.ts:handlePipeResult:function
+  - ts:packages/zod/src/v4/classic/schemas.ts:ZodTransform:function
+  answer: 'I can''t verify this at the specific commit, so I''m answering only from general knowledge
+    of Zod v4 and am not citing exact file locations or line numbers. In Zod''s classic API, `.transform(fn)`
+    wraps the schema in a pipe: it creates a `ZodPipe` whose input is the original schema and whose output
+    is a `ZodTransform` holding `fn`. Parsing runs the input schema first, and the transform step receives
+    the parsed output of that first step. A transform is skipped when the first step has issues, because
+    the pipe checks the result of the input stage for aborted or failed status and returns early without
+    running the output stage. I can''t confirm the exact internal function names or file paths at this
+    commit, so I''m not naming specific symbols.'
+  steps_correct: 2
+  coverage: 1
+  grounded: 1
+- id: f09
   question_id: click-flow-004
   question: When Bash asks for tab completion of a group's subcommand name (for example `cli sy<TAB>`
     with `_CLI_COMPLETE=bash_complete`), how does Click compute and print the candidates?
@@ -370,7 +592,220 @@ items:
   steps_correct: 2
   coverage: 1
   grounded: 2
-- id: f06
+- id: f10
+  question_id: httpx-flow-004
+  question: When `Client.send` loads a non-streamed response whose `Content-Encoding` is gzip, how are
+    the raw bytes pulled from the transport stream and decompressed into `response.content`?
+  reference_outline: '1. After the auth and redirect handling returns a response, `Client.send` calls
+    `response.read()` unless `stream=True` was requested, closing the response if reading fails.
+
+    2. `Response.read` sets the content to the joined output of `iter_bytes` if it was not already loaded.
+
+    3. `iter_bytes` gets a decoder from `_get_content_decoder`, which maps each `Content-Encoding` value
+    through the `SUPPORTED_DECODERS` table ("gzip" maps to `GZipDecoder`), using a `MultiDecoder` for
+    several encodings and an `IdentityDecoder` for none.
+
+    4. `iter_raw` refuses a consumed or closed stream, then iterates the response''s stream, counting
+    downloaded bytes, and closes the response when done.
+
+    5. That stream is the `BoundSyncStream` set in `_send_single_request`, whose `__iter__` simply yields
+    the chunks of the transport''s stream.
+
+    6. Each raw chunk goes through `GZipDecoder.decode`, which decompresses it with a zlib object set
+    up for gzip framing and turns zlib errors into `DecodingError`; `iter_bytes` then flushes the decoder
+    and the chunker so the trailing bytes are included.'
+  must_cite:
+  - py:httpx/_client.py:Client.send:method
+  - py:httpx/_models.py:Response.read:method
+  - py:httpx/_models.py:Response.iter_bytes:method
+  - py:httpx/_models.py:Response._get_content_decoder:method
+  - py:httpx/_models.py:Response.iter_raw:method
+  - py:httpx/_decoders.py:GZipDecoder.decode:method
+  answer: 'When `stream` is false, `Client.send` calls `response.read()` after `_send_handling_auth` returns.
+    [c1] `read()` sets `_content` to the joined output of `iter_bytes()`. [c2] `iter_bytes()` (when `_content`
+    isn''t yet set) gets a decoder from `_get_content_decoder()` and creates a `ByteChunker`. [c3] It
+    loops over `iter_raw()`, which yields the raw bytes from the transport stream, and passes each piece
+    through `decoder.decode`. The decoded output goes through the chunker. After the loop it calls `decoder.flush()`
+    and `chunker.flush()` for the remaining output. [c3] For gzip, the decoder class is `GZipDecoder`,
+    whose `flush` calls `self.decompressor.flush()` and wraps `zlib.error` in `DecodingError`. [c4][c5]
+    Once `_content` is set, the `content` property returns it. [c6]
+
+
+    The evidence doesn''t show the body of `_get_content_decoder`, `iter_raw`, or `GZipDecoder.decode`,
+    so how the Content-Encoding header selects the gzip decoder and how `iter_raw` reads from the transport
+    are not covered.
+
+
+    Claims:
+
+    - Client.send calls response.read() when stream is False, after obtaining the response from _send_handling_auth.
+
+    - Response.read sets _content to b"".join(self.iter_bytes()) if not already set.
+
+    - iter_bytes obtains a decoder via _get_content_decoder, iterates iter_raw(), decodes each raw chunk
+    with decoder.decode, passes it through a ByteChunker, then flushes the decoder and chunker.
+
+    - GZipDecoder is the decoder class that handles ''gzip'' decoding.
+
+    - GZipDecoder.flush returns self.decompressor.flush() and converts zlib.error into DecodingError.
+
+    - The content property returns the stored _content, raising ResponseNotRead if it hasn''t been read.'
+  steps_correct: 2
+  coverage: 1
+  grounded: 2
+- id: f11
+  question_id: requests-flow-004
+  question: When a caller passes both `files=` and a dict `data=`, how does requests build the multipart
+    body and set its Content-Type and Content-Length headers?
+  reference_outline: '1. `Session.prepare_request` builds a `PreparedRequest` and calls its `prepare`
+    with the request''s files and data.
+
+    2. `prepare` runs the steps in order (method, URL, headers, cookies, body, auth, hooks); the body
+    step is `prepare_body`.
+
+    3. A dict is not treated as a streamed body, so `prepare_body` takes the non-streaming branch and,
+    because files were given, calls `_encode_files` with the files and data.
+
+    4. `_encode_files` rejects a missing files value or string data, turns each data field into a (name,
+    bytes) pair, turns each file entry (a bare file object or a 2-, 3- or 4-tuple of filename, file object,
+    content type, headers) into a urllib3 `RequestField`, reading file objects, and encodes everything
+    with urllib3''s `encode_multipart_formdata`, returning the body and a multipart Content-Type with
+    its boundary.
+
+    5. `prepare_body` then calls `prepare_content_length`, which measures the body with `super_len` and
+    sets Content-Length when the length is non-zero.
+
+    6. Finally `prepare_body` sets the multipart Content-Type only if the caller did not supply one, and
+    stores the body on the request.'
+  must_cite:
+  - py:src/requests/models.py:PreparedRequest.prepare:method
+  - py:src/requests/models.py:PreparedRequest.prepare_body:method
+  - py:src/requests/models.py:RequestEncodingMixin._encode_files:method
+  - py:src/requests/models.py:PreparedRequest.prepare_content_length:method
+  - py:src/requests/utils.py:super_len:function
+  answer: 'With both `files=` and a dict `data=`, `prepare_body` treats the dict as non-streamed raw data,
+    since a Mapping is excluded from the streaming branch. It then calls `_encode_files(files, raw_data)`
+    to get the body and content type. [c1][c2]
+
+
+    `_encode_files` turns the dict''s key/value pairs into form fields (values stringified and UTF-8 encoded,
+    with iterable values expanded to multiple fields). It then builds a `RequestField` for each file,
+    calls `make_multipart` on it, and passes everything to `encode_multipart_formdata`, which returns
+    the body and its content type. [c3][c4]
+
+
+    Content-Length is then set by `prepare_content_length(body)`, which uses `super_len(body)` and sets
+    the header as a string if the length is non-zero. [c5]
+
+
+    Content-Type is set from the one returned by `_encode_files`, but only if the caller hasn''t already
+    supplied a `content-type` header. [c6]
+
+
+    Streamed bodies combined with files raise `NotImplementedError`. [c7]
+
+
+    Claims:
+
+    - In prepare_body, a Mapping data value is excluded from the streaming branch, so it goes through
+    the else branch as raw data.
+
+    - When files is truthy, prepare_body sets (body, content_type) from self._encode_files(files, raw_data).
+
+    - _encode_files converts data dict items into fields (non-bytes values stringified, UTF-8 encoded,
+    iterable values expanded) and builds RequestField objects for each file, calling make_multipart.
+
+    - _encode_files returns the body and content type produced by encode_multipart_formdata.
+
+    - prepare_content_length sets Content-Length to the string of super_len(body) when the body is not
+    None and the length is non-zero.
+
+    - prepare_body sets the Content-Type header to the encoded content type only if a content-type header
+    was not already provided.
+
+    - If the data is a streamed body and files is given, prepare_body raises NotImplementedError.'
+  steps_correct: 2
+  coverage: 1
+  grounded: 2
+- id: f12
+  question_id: remeda-flow-004
+  question: With the default trailing timing, how does a call to a `debounce`d function end up invoking
+    the wrapped function after the wait elapses?
+  reference_outline: '1. `debounce` validates that `maxWaitMs` is not less than `waitMs` and returns an
+    object whose `call` closes over the cool-down and max-wait timer IDs, the latest arguments, and the
+    last result.
+
+    2. On `call` with trailing timing, `handleDebouncedCall` saves the arguments as the latest call arguments
+    and, if `maxWaitMs` is set and no max-wait timer is running, starts one that will run `handleInvoke`.
+
+    3. `call` clears any running cool-down timer and starts a new one for `waitMs` (falling back to `maxWaitMs`,
+    then 0) pointing at `handleCoolDownEnd`, then returns the cached result from the previous invocation.
+
+    4. When the cool-down timer fires, `handleCoolDownEnd` clears the timer and, if latest arguments are
+    stored, calls `handleInvoke`.
+
+    5. `handleInvoke` clears the max-wait timer, takes and clears the stored arguments, calls the wrapped
+    function with them, and caches its return value as the new result.'
+  must_cite:
+  - ts:packages/remeda/src/debounce.ts:debounce:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleDebouncedCall:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleCoolDownEnd:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleInvoke:function
+  answer: 'With the default `trailing` timing, the first call starts a cool-down window and the wrapped
+    function is not called right away. It is invoked when the cool-down timer fires.
+
+
+    - `timing` defaults to `"trailing"` [c1].
+
+    - On a call with no active cool-down (`coolDownTimeoutId` undefined), trailing timing sends the call
+    to `handleDebouncedCall`, which saves the args as `latestCallArgs` [c2]. If `maxWaitMs` is set, it
+    also starts a max-wait timeout once [c3].
+
+    - `call` then arms `coolDownTimeoutId = setTimeout(handleCoolDownEnd, waitMs ?? maxWaitMs ?? 0)` [c4].
+
+    - A further call during the window is also debounced: it replaces the saved args, and the existing
+    cool-down timeout is cleared and re-armed, so the wait restarts [c5].
+
+    - When the timer fires, `handleCoolDownEnd` clears the timeout and, if `latestCallArgs` is set, calls
+    `handleInvoke` [c6].
+
+    - `handleInvoke` clears any max-wait timer, takes and resets `latestCallArgs`, calls `func(...args)`
+    and stores the return value in `result` [c7].
+
+    - `call` returns the cached `result`, which is `undefined` until the first invocation has happened
+    [c8].
+
+    - `flush` triggers the same end-of-cool-down handling manually [c9].
+
+
+    Claims:
+
+    - The `timing` option defaults to "trailing" in `debounce`.
+
+    - When no cool-down is active and timing is "trailing", `call` invokes `handleDebouncedCall(args)`
+    instead of calling `func`, and that stores the args in `latestCallArgs`.
+
+    - If `maxWaitMs` is defined, `handleDebouncedCall` starts a max-wait timeout (once) that runs `handleInvoke`.
+
+    - After handling the call, `call` sets `coolDownTimeoutId` via `setTimeout(handleCoolDownEnd, waitMs
+    ?? maxWaitMs ?? 0)`.
+
+    - A call during an in-flight cool-down (timing not "leading") is debounced and the existing cool-down
+    timeout is cleared before a new one is set.
+
+    - `handleCoolDownEnd` clears the cool-down timeout and, if `latestCallArgs` is defined, invokes `handleInvoke`.
+
+    - `handleInvoke` clears the max-wait timeout, consumes `latestCallArgs`, calls `func(...args)` and
+    stores the result in `result`.
+
+    - `call` returns the last computed `result` while debouncing, which is undefined before the first
+    invocation.
+
+    - `flush` calls `handleCoolDownEnd` to end the cool-down immediately and returns `result`.'
+  steps_correct: 2
+  coverage: 2
+  grounded: 2
+- id: f13
   question_id: click-flow-004
   question: When Bash asks for tab completion of a group's subcommand name (for example `cli sy<TAB>`
     with `_CLI_COMPLETE=bash_complete`), how does Click compute and print the candidates?
@@ -458,7 +893,376 @@ items:
   steps_correct: 2
   coverage: 1
   grounded: 2
-- id: f07
+- id: f14
+  question_id: zod-flow-004
+  question: When a classic schema has `.transform(fn)` and you parse a value, how is the value validated
+    first and then handed to `fn`, and what stops `fn` from running on invalid input?
+  reference_outline: '1. The `.transform(fn)` method on classic `ZodType` builds `pipe(this, transform(fn))`:
+    `transform` creates a `ZodTransform` whose def holds `fn`, and `pipe` creates a `ZodPipe` with the
+    original schema as `in` and the transform as `out`.
+
+    2. The `parse` installed by `$ZodPipe` (forward direction) runs the `in` schema on the payload first.
+
+    3. `handlePipeResult` stops the pipe if the left result has any issue other than `unrecognized_keys`:
+    it marks the payload aborted and returns it, so `fn` never runs.
+
+    4. Otherwise it runs the `out` schema on a payload carrying the validated value and the existing issues.
+
+    5. The classic `ZodTransform` replaces the core transform''s `parse`: it throws for encode (backward)
+    direction, attaches an `addIssue` helper to the payload, calls `fn` with the value and payload, and
+    stores the result (awaiting it if `fn` returns a promise) as the new value.'
+  must_cite:
+  - ts:packages/zod/src/v4/classic/schemas.ts:transform:function
+  - ts:packages/zod/src/v4/classic/schemas.ts:pipe:function
+  - ts:packages/zod/src/v4/core/schemas.ts:$ZodPipe:function
+  - ts:packages/zod/src/v4/core/schemas.ts:handlePipeResult:function
+  - ts:packages/zod/src/v4/classic/schemas.ts:ZodTransform:function
+  answer: 'The provided evidence doesn''t show the v4 classic `.transform(fn)` method or the runtime that
+    runs the transform, so I can only partly answer.
+
+
+    - The v4 classic `transform` factory only builds a `ZodTransform` with `type: "transform"` and stores
+    `fn` as `transform`. It does no validation itself. [c1] The core `_transform` helper does the same.
+    [c2]
+
+    - The v4 runtime that actually invokes `fn` and gates it on prior validation (the `$ZodTransform`
+    parse logic, or the pipe that `.transform` creates) is not in the evidence. I can''t say how v4 stops
+    `fn` running on invalid input.
+
+    - For the legacy v3 implementation, the evidence does show it. In `ZodEffects._parse` with a `transform`
+    effect, the inner schema is parsed first. In sync mode it calls `_parseSync` on the inner schema.
+    [c3] If the result isn''t valid (`!isValid(base)`), it returns `INVALID` before calling `effect.transform`.
+    [c4] In async mode it does the same after `_parseAsync` resolves. [c5]
+
+
+    Claims:
+
+    - The v4 classic `transform` function only constructs a ZodTransform with type "transform" and the
+    user function as `transform`, with no validation in it.
+
+    - The core `_transform` helper likewise just instantiates a $ZodTransform with `transform: fn`.
+
+    - In v3 ZodEffects._parse, for a transform effect in sync mode, the inner schema is parsed first via
+    _parseSync.
+
+    - In v3 sync mode, if the inner parse result is not valid, INVALID is returned before effect.transform
+    is called.
+
+    - In v3 async mode, the inner schema is parsed with _parseAsync and the transform runs only after
+    an isValid check passes.'
+  steps_correct: 1
+  coverage: 0
+  grounded: 1
+- id: f15
+  question_id: httpx-flow-004
+  question: When `Client.send` loads a non-streamed response whose `Content-Encoding` is gzip, how are
+    the raw bytes pulled from the transport stream and decompressed into `response.content`?
+  reference_outline: '1. After the auth and redirect handling returns a response, `Client.send` calls
+    `response.read()` unless `stream=True` was requested, closing the response if reading fails.
+
+    2. `Response.read` sets the content to the joined output of `iter_bytes` if it was not already loaded.
+
+    3. `iter_bytes` gets a decoder from `_get_content_decoder`, which maps each `Content-Encoding` value
+    through the `SUPPORTED_DECODERS` table ("gzip" maps to `GZipDecoder`), using a `MultiDecoder` for
+    several encodings and an `IdentityDecoder` for none.
+
+    4. `iter_raw` refuses a consumed or closed stream, then iterates the response''s stream, counting
+    downloaded bytes, and closes the response when done.
+
+    5. That stream is the `BoundSyncStream` set in `_send_single_request`, whose `__iter__` simply yields
+    the chunks of the transport''s stream.
+
+    6. Each raw chunk goes through `GZipDecoder.decode`, which decompresses it with a zlib object set
+    up for gzip framing and turns zlib errors into `DecodingError`; `iter_bytes` then flushes the decoder
+    and the chunker so the trailing bytes are included.'
+  must_cite:
+  - py:httpx/_client.py:Client.send:method
+  - py:httpx/_models.py:Response.read:method
+  - py:httpx/_models.py:Response.iter_bytes:method
+  - py:httpx/_models.py:Response._get_content_decoder:method
+  - py:httpx/_models.py:Response.iter_raw:method
+  - py:httpx/_decoders.py:GZipDecoder.decode:method
+  answer: 'In httpx, `Client.send` calls `_send_handling_auth`, which calls `_send_handling_redirects`
+    and then `_send_single_request`. When `stream=False`, `send` then calls `response.read()`. I''m recalling
+    this from memory of the repository, not from the code at this commit, so exact details may differ.
+    [c1][c2][c3][c4][c5]
+
+
+    `Response.read()` collects `self.iter_bytes()` into `self._content`. [c3]
+
+
+    `iter_bytes` pulls the already-decoded chunks from `iter_raw`''s output via the decoder. Specifically,
+    it calls `self._get_content_decoder()`, which is built from the `Content-Encoding` header and maps
+    gzip to `GZipDecoder`. It runs `decoder.decode(raw_bytes)` on each chunk and then `decoder.flush()`.
+    [c4][c5]
+
+
+    `iter_raw` reads raw bytes from `self.stream`, which is the transport''s `SyncByteStream` wrapped
+    in `BoundSyncStream`. [c6]
+
+
+    `GZipDecoder` wraps `zlib.decompressobj` with `zlib.MAX_WBITS | 16`. [c7]
+
+
+    Claims:
+
+    - Client.send in httpx/_client.py runs the request through _send_handling_auth and _send_handling_redirects,
+    which end in _send_single_request.
+
+    - When stream is False, Client.send in httpx/_client.py calls response.read() to load the body.
+
+    - Response.read in httpx/_models.py joins the bytes yielded by iter_bytes into self._content.
+
+    - Response.iter_bytes in httpx/_models.py gets a decoder from _get_content_decoder and decodes each
+    raw chunk, then flushes the decoder.
+
+    - Response._get_content_decoder in httpx/_models.py selects GZipDecoder for gzip Content-Encoding.
+
+    - Response.iter_raw in httpx/_models.py iterates over self.stream, which is the transport''s byte
+    stream.
+
+    - GZipDecoder in httpx/_decoders.py uses zlib.decompressobj with wbits of zlib.MAX_WBITS | 16.'
+  steps_correct: 2
+  coverage: 2
+  grounded: 2
+- id: f16
+  question_id: zod-flow-004
+  question: When a classic schema has `.transform(fn)` and you parse a value, how is the value validated
+    first and then handed to `fn`, and what stops `fn` from running on invalid input?
+  reference_outline: '1. The `.transform(fn)` method on classic `ZodType` builds `pipe(this, transform(fn))`:
+    `transform` creates a `ZodTransform` whose def holds `fn`, and `pipe` creates a `ZodPipe` with the
+    original schema as `in` and the transform as `out`.
+
+    2. The `parse` installed by `$ZodPipe` (forward direction) runs the `in` schema on the payload first.
+
+    3. `handlePipeResult` stops the pipe if the left result has any issue other than `unrecognized_keys`:
+    it marks the payload aborted and returns it, so `fn` never runs.
+
+    4. Otherwise it runs the `out` schema on a payload carrying the validated value and the existing issues.
+
+    5. The classic `ZodTransform` replaces the core transform''s `parse`: it throws for encode (backward)
+    direction, attaches an `addIssue` helper to the payload, calls `fn` with the value and payload, and
+    stores the result (awaiting it if `fn` returns a promise) as the new value.'
+  must_cite:
+  - ts:packages/zod/src/v4/classic/schemas.ts:transform:function
+  - ts:packages/zod/src/v4/classic/schemas.ts:pipe:function
+  - ts:packages/zod/src/v4/core/schemas.ts:$ZodPipe:function
+  - ts:packages/zod/src/v4/core/schemas.ts:handlePipeResult:function
+  - ts:packages/zod/src/v4/classic/schemas.ts:ZodTransform:function
+  answer: 'The evidence does not include the implementation of `.transform()` or the parse pipeline, so
+    it cannot fully explain the mechanism. It only shows some behavior through tests.
+
+
+    - A test shows that a schema with `.refine(() => false).transform(...)` fails on `"asdf"` with a `custom`
+    issue and does not produce a transformed result. [c1]
+
+    - For a non-string input like `1234`, the first issue is `invalid_type`, so the base schema check
+    fails before the transform. [c1]
+
+    - A v3 test checks that `superRefine` after a transform that was skipped (because the regex failed)
+    never sees a non-number value, and the parse fails. [c2]
+
+
+    The code that actually short-circuits (such as the dirty/aborted handling or how the transform is
+    called with the validated value) is not in the indexed evidence.
+
+
+    Claims:
+
+    - In v4 classic, a string schema with a failing refine followed by transform returns success false
+    for valid string input, with a custom ''Invalid input'' issue, and for input 1234 the first issue
+    code is invalid_type.
+
+    - In the v3 test, a schema with regex, then transform to Number, then superRefine fails on an empty
+    string, and the superRefine would throw if called without the transform having run.'
+  steps_correct: 1
+  coverage: 0
+  grounded: 0
+- id: f17
+  question_id: requests-flow-004
+  question: When a caller passes both `files=` and a dict `data=`, how does requests build the multipart
+    body and set its Content-Type and Content-Length headers?
+  reference_outline: '1. `Session.prepare_request` builds a `PreparedRequest` and calls its `prepare`
+    with the request''s files and data.
+
+    2. `prepare` runs the steps in order (method, URL, headers, cookies, body, auth, hooks); the body
+    step is `prepare_body`.
+
+    3. A dict is not treated as a streamed body, so `prepare_body` takes the non-streaming branch and,
+    because files were given, calls `_encode_files` with the files and data.
+
+    4. `_encode_files` rejects a missing files value or string data, turns each data field into a (name,
+    bytes) pair, turns each file entry (a bare file object or a 2-, 3- or 4-tuple of filename, file object,
+    content type, headers) into a urllib3 `RequestField`, reading file objects, and encodes everything
+    with urllib3''s `encode_multipart_formdata`, returning the body and a multipart Content-Type with
+    its boundary.
+
+    5. `prepare_body` then calls `prepare_content_length`, which measures the body with `super_len` and
+    sets Content-Length when the length is non-zero.
+
+    6. Finally `prepare_body` sets the multipart Content-Type only if the caller did not supply one, and
+    stores the body on the request.'
+  must_cite:
+  - py:src/requests/models.py:PreparedRequest.prepare:method
+  - py:src/requests/models.py:PreparedRequest.prepare_body:method
+  - py:src/requests/models.py:RequestEncodingMixin._encode_files:method
+  - py:src/requests/models.py:PreparedRequest.prepare_content_length:method
+  - py:src/requests/utils.py:super_len:function
+  answer: '**Flow in `prepare_body`:** if `data` is not a stream (str, bytes, list, tuple or Mapping all
+    take this branch) and `files` is truthy, it calls `_encode_files(files, raw_data)` and gets back `(body,
+    content_type)`. [c1] If `files` is combined with a streamed body, it raises `NotImplementedError`.
+    [c2]
+
+
+    **Building the body in `_encode_files`:**
+
+    - It raises `ValueError` if `files` is empty or `data` is a string. [c3]
+
+    - Dict `data` is turned into key/value pairs. Each value is wrapped in a list if it is a string or
+    not iterable. Non-None values are converted to `str` unless they are bytes, then UTF-8 encoded. Bytes
+    field names are decoded. These become plain `(field, bytes)` entries. [c4]
+
+    - Each file entry may be a 2-, 3- or 4-tuple of filename, file, content type and headers. Otherwise
+    the filename is guessed or falls back to the key. [c5]
+
+    - File content is read if the object has `read`. Str, bytes and bytearray are used as-is. A `None`
+    file is skipped. [c6]
+
+    - Each file becomes a `RequestField` and `make_multipart(content_type=ft)` is called on it. [c7]
+
+    - Finally `encode_multipart_formdata(new_fields)` returns the body and the content type. [c8]
+
+
+    **Headers:**
+
+    - Content-Length is set through `prepare_content_length(body)`, which uses `super_len(body)` when
+    the length is non-zero. [c9]
+
+    - The Content-Type returned by the encoder is set only if the user has not already supplied a `content-type`
+    header. [c10]
+
+
+    Claims:
+
+    - In prepare_body, when data is not a stream and files is truthy, it calls self._encode_files(files,
+    raw_data) and unpacks (body, content_type).
+
+    - If data is a streamed body and files is also given, prepare_body raises NotImplementedError.
+
+    - _encode_files raises ValueError if files is empty or data is a string.
+
+    - Data fields are normalized: non-iterable or string values are wrapped in a list, non-None values
+    are stringified unless bytes and UTF-8 encoded, and bytes field names are decoded, then appended as
+    (field, bytes) tuples.
+
+    - File entries can be 2-, 3- or 4-tuples (filename, fileobj, content type, headers); otherwise the
+    filename is guessed or falls back to the key.
+
+    - File content is read if the object has read(); str, bytes and bytearray are used directly; a None
+    file is skipped.
+
+    - Each file is wrapped in a RequestField and make_multipart is called with the content type.
+
+    - _encode_files returns the body and content type produced by encode_multipart_formdata.
+
+    - prepare_content_length sets Content-Length from super_len(body) when the length is non-zero.
+
+    - prepare_body sets Content-Type to the returned content type only if no content-type header is already
+    present.'
+  steps_correct: 2
+  coverage: 1
+  grounded: 2
+- id: f18
+  question_id: click-flow-004
+  question: When Bash asks for tab completion of a group's subcommand name (for example `cli sy<TAB>`
+    with `_CLI_COMPLETE=bash_complete`), how does Click compute and print the candidates?
+  reference_outline: '1. `Command.main` calls `_main_shell_completion` before normal parsing; it derives
+    the variable name `_{PROG_NAME}_COMPLETE`, returns if it is unset, and otherwise calls `shell_completion.shell_complete`
+    and exits with its return code.
+
+    2. `shell_complete` splits the instruction into shell and action, looks up the completion class with
+    `get_completion_class` (Bash here), and for the `complete` action echoes the result of `complete()`.
+
+    3. `ShellComplete.complete` gets the arguments and the incomplete word, calls `get_completions`, and
+    joins one formatted line per item.
+
+    4. `BashComplete.get_completion_args` splits `COMP_WORDS`, uses `COMP_CWORD` to separate the finished
+    arguments from the word being completed.
+
+    5. `ShellComplete.get_completions` builds the context with `_resolve_context`, picks the object to
+    complete with `_resolve_incomplete`, and calls that object''s `shell_complete`.
+
+    6. `_resolve_context` makes the root context with `resilient_parsing=True` and walks down through
+    any subcommands already typed, using `resolve_command` and `make_context`, without running callbacks.
+
+    7. `_resolve_incomplete` sees that the incomplete word is not an option and no argument is waiting
+    for a value, so it returns the current command (the group).
+
+    8. `Group.shell_complete` yields a `CompletionItem` for each visible subcommand whose name starts
+    with the incomplete word (with its short help), then appends whatever the base `Command.shell_complete`
+    adds (option names only when the word starts with a non-alphanumeric character, and siblings from
+    chained parent groups); `BashComplete.format_completion` writes each item as `type,value`.'
+  must_cite:
+  - py:src/click/core.py:Command._main_shell_completion:method
+  - py:src/click/shell_completion.py:shell_complete:function
+  - py:src/click/shell_completion.py:ShellComplete.complete:method
+  - py:src/click/shell_completion.py:BashComplete.get_completion_args:method
+  - py:src/click/shell_completion.py:ShellComplete.get_completions:method
+  - py:src/click/shell_completion.py:_resolve_context:function
+  - py:src/click/shell_completion.py:_resolve_incomplete:function
+  - py:src/click/core.py:Group.shell_complete:method
+  answer: 'The evidence covers most of the flow, but not the step that picks subcommand names.
+
+
+    **Trigger.** The Bash script calls the program with `<complete_var>=bash_complete`. In `Command._main_shell_completion`,
+    Click reads that environment variable. If it is set, Click calls `shell_complete` and exits with the
+    returned code [c1][c2].
+
+
+    **Dispatch.** `shell_complete` splits the instruction on `_` into shell (`bash`) and instruction (`complete`).
+    It looks up the completion class and builds it with the CLI, `ctx_args`, `prog_name` and `complete_var`.
+    For `complete` it echoes `comp.complete()` encoded to bytes [c3][c4].
+
+
+    **Candidates.** `ShellComplete.get_completions` resolves the context from the already-complete args
+    and then resolves the object being completed together with the incomplete value. It returns `obj.shell_complete(ctx,
+    incomplete)` [c5].
+
+
+    **Formatting.** For Bash, each item is formatted as `type,value`, for example `plain,sync` [c6]. The
+    generated Bash script splits on the comma and adds `plain` values to `COMPREPLY` [c7].
+
+
+    **Not shown.** The evidence does not include `ShellComplete.complete`, `_resolve_incomplete`, or the
+    group''s `shell_complete`. So it does not show how subcommand names are matched against the prefix
+    `sy`.
+
+
+    Claims:
+
+    - _main_shell_completion reads the completion instruction from the environment variable and returns
+    early if it is not set.
+
+    - When the instruction is set, _main_shell_completion calls shell_complete and exits with its return
+    code.
+
+    - shell_complete partitions the instruction on ''_'' into shell and instruction, gets the completion
+    class for the shell, and instantiates it with cli, ctx_args, prog_name and complete_var.
+
+    - For the ''complete'' instruction, shell_complete echoes comp.complete() encoded as bytes and returns
+    0.
+
+    - get_completions resolves the context and the incomplete object from the args, then returns obj.shell_complete(ctx,
+    incomplete).
+
+    - BashComplete.format_completion formats each item as ''type,value''.
+
+    - The Bash source script invokes the program with complete_var=bash_complete, splits each line on
+    a comma into type and value, and appends ''plain'' values to COMPREPLY.'
+  steps_correct: 2
+  coverage: 1
+  grounded: 2
+- id: f19
   question_id: httpx-flow-004
   question: When `Client.send` loads a non-streamed response whose `Content-Encoding` is gzip, how are
     the raw bytes pulled from the transport stream and decompressed into `response.content`?
@@ -534,82 +1338,4 @@ items:
     response.content equals the original body.'
   steps_correct: 2
   coverage: 1
-  grounded: 2
-- id: f08
-  question_id: remeda-flow-004
-  question: With the default trailing timing, how does a call to a `debounce`d function end up invoking
-    the wrapped function after the wait elapses?
-  reference_outline: '1. `debounce` validates that `maxWaitMs` is not less than `waitMs` and returns an
-    object whose `call` closes over the cool-down and max-wait timer IDs, the latest arguments, and the
-    last result.
-
-    2. On `call` with trailing timing, `handleDebouncedCall` saves the arguments as the latest call arguments
-    and, if `maxWaitMs` is set and no max-wait timer is running, starts one that will run `handleInvoke`.
-
-    3. `call` clears any running cool-down timer and starts a new one for `waitMs` (falling back to `maxWaitMs`,
-    then 0) pointing at `handleCoolDownEnd`, then returns the cached result from the previous invocation.
-
-    4. When the cool-down timer fires, `handleCoolDownEnd` clears the timer and, if latest arguments are
-    stored, calls `handleInvoke`.
-
-    5. `handleInvoke` clears the max-wait timer, takes and clears the stored arguments, calls the wrapped
-    function with them, and caches its return value as the new result.'
-  must_cite:
-  - ts:packages/remeda/src/debounce.ts:debounce:function
-  - ts:packages/remeda/src/debounce.ts:debounce.handleDebouncedCall:function
-  - ts:packages/remeda/src/debounce.ts:debounce.handleCoolDownEnd:function
-  - ts:packages/remeda/src/debounce.ts:debounce.handleInvoke:function
-  answer: 'With the default `trailing` timing, the first call starts a cool-down window and the wrapped
-    function is not called right away. It is invoked when the cool-down timer fires.
-
-
-    - `timing` defaults to `"trailing"` [c1].
-
-    - On a call with no active cool-down (`coolDownTimeoutId` undefined), trailing timing sends the call
-    to `handleDebouncedCall`, which saves the args as `latestCallArgs` [c2]. If `maxWaitMs` is set, it
-    also starts a max-wait timeout once [c3].
-
-    - `call` then arms `coolDownTimeoutId = setTimeout(handleCoolDownEnd, waitMs ?? maxWaitMs ?? 0)` [c4].
-
-    - A further call during the window is also debounced: it replaces the saved args, and the existing
-    cool-down timeout is cleared and re-armed, so the wait restarts [c5].
-
-    - When the timer fires, `handleCoolDownEnd` clears the timeout and, if `latestCallArgs` is set, calls
-    `handleInvoke` [c6].
-
-    - `handleInvoke` clears any max-wait timer, takes and resets `latestCallArgs`, calls `func(...args)`
-    and stores the return value in `result` [c7].
-
-    - `call` returns the cached `result`, which is `undefined` until the first invocation has happened
-    [c8].
-
-    - `flush` triggers the same end-of-cool-down handling manually [c9].
-
-
-    Claims:
-
-    - The `timing` option defaults to "trailing" in `debounce`.
-
-    - When no cool-down is active and timing is "trailing", `call` invokes `handleDebouncedCall(args)`
-    instead of calling `func`, and that stores the args in `latestCallArgs`.
-
-    - If `maxWaitMs` is defined, `handleDebouncedCall` starts a max-wait timeout (once) that runs `handleInvoke`.
-
-    - After handling the call, `call` sets `coolDownTimeoutId` via `setTimeout(handleCoolDownEnd, waitMs
-    ?? maxWaitMs ?? 0)`.
-
-    - A call during an in-flight cool-down (timing not "leading") is debounced and the existing cool-down
-    timeout is cleared before a new one is set.
-
-    - `handleCoolDownEnd` clears the cool-down timeout and, if `latestCallArgs` is defined, invokes `handleInvoke`.
-
-    - `handleInvoke` clears the max-wait timeout, consumes `latestCallArgs`, calls `func(...args)` and
-    stores the result in `result`.
-
-    - `call` returns the last computed `result` while debouncing, which is undefined before the first
-    invocation.
-
-    - `flush` calls `handleCoolDownEnd` to end the cool-down immediately and returns `result`.'
-  steps_correct: 2
-  coverage: 2
   grounded: 2

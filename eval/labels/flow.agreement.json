@@ -1,29 +1,29 @@
 {
-  "accuracy": 0.5,
+  "accuracy": 0.5263157894736842,
   "distribution": {},
   "exploratory": true,
   "human": false,
-  "items": 8,
-  "kappa": 0.8241758241758241,
+  "items": 19,
+  "kappa": 0.8027681660899654,
   "kind": "flow",
   "labeler": "Claude (Opus 5.5), delegated by the owner; not a human label",
-  "note": "kappa 0.82 on 8 items: results are exploratory (the labels were made by a model, not a person; fewer than 20 items).",
+  "note": "kappa 0.80 on 19 items: results are exploratory (the labels were made by a model, not a person; fewer than 20 items).",
   "per_criterion": {
     "coverage": {
-      "accuracy": 1.0,
-      "kappa": 1.0,
-      "weighted_kappa": 1.0
+      "accuracy": 0.8421052631578947,
+      "kappa": 0.7219512195121951,
+      "weighted_kappa": 0.8027681660899654
     },
     "grounded": {
-      "accuracy": 0.625,
-      "kappa": 0.25,
-      "weighted_kappa": 0.25
+      "accuracy": 0.6842105263157895,
+      "kappa": 0.4328358208955224,
+      "weighted_kappa": 0.6346153846153846
     },
     "steps_correct": {
-      "accuracy": 0.875,
-      "kappa": 0.6,
-      "weighted_kappa": 0.6
+      "accuracy": 0.8947368421052632,
+      "kappa": 0.7323943661971831,
+      "weighted_kappa": 0.7323943661971831
     }
   },
-  "total_mean_abs_diff": 0.5
+  "total_mean_abs_diff": 0.5789473684210527
 }

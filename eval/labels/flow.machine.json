@@ -1,33 +1,33 @@
 {
   "f01": {
-    "coverage": 1,
-    "grounded": 2,
-    "steps_correct": 2,
-    "system": "hybrid_graphrag"
-  },
-  "f02": {
-    "coverage": 0,
-    "grounded": 1,
-    "steps_correct": 1,
-    "system": "hybrid_graphrag"
-  },
-  "f03": {
     "coverage": 2,
     "grounded": 2,
     "steps_correct": 1,
     "system": "vector_only"
   },
+  "f02": {
+    "coverage": 1,
+    "grounded": 2,
+    "steps_correct": 2,
+    "system": "closed_book"
+  },
+  "f03": {
+    "coverage": 0,
+    "grounded": 1,
+    "steps_correct": 1,
+    "system": "hybrid_graphrag"
+  },
   "f04": {
     "coverage": 1,
     "grounded": 1,
-    "steps_correct": 2,
-    "system": "hybrid_graphrag"
+    "steps_correct": 1,
+    "system": "closed_book"
   },
   "f05": {
-    "coverage": 1,
+    "coverage": 0,
     "grounded": 1,
     "steps_correct": 2,
-    "system": "vector_only"
+    "system": "bm25_only"
   },
   "f06": {
     "coverage": 1,
@@ -37,14 +37,80 @@
   },
   "f07": {
     "coverage": 1,
+    "grounded": 2,
+    "steps_correct": 2,
+    "system": "bm25_only"
+  },
+  "f08": {
+    "coverage": 1,
+    "grounded": 0,
+    "steps_correct": 2,
+    "system": "closed_book"
+  },
+  "f09": {
+    "coverage": 1,
     "grounded": 1,
     "steps_correct": 2,
     "system": "vector_only"
   },
-  "f08": {
+  "f10": {
+    "coverage": 1,
+    "grounded": 1,
+    "steps_correct": 2,
+    "system": "hybrid_graphrag"
+  },
+  "f11": {
+    "coverage": 1,
+    "grounded": 2,
+    "steps_correct": 2,
+    "system": "bm25_only"
+  },
+  "f12": {
     "coverage": 2,
     "grounded": 2,
     "steps_correct": 2,
     "system": "hybrid_graphrag"
+  },
+  "f13": {
+    "coverage": 1,
+    "grounded": 2,
+    "steps_correct": 2,
+    "system": "hybrid_graphrag"
+  },
+  "f14": {
+    "coverage": 0,
+    "grounded": 1,
+    "steps_correct": 1,
+    "system": "bm25_only"
+  },
+  "f15": {
+    "coverage": 1,
+    "grounded": 2,
+    "steps_correct": 1,
+    "system": "closed_book"
+  },
+  "f16": {
+    "coverage": 0,
+    "grounded": 0,
+    "steps_correct": 1,
+    "system": "vector_only"
+  },
+  "f17": {
+    "coverage": 1,
+    "grounded": 2,
+    "steps_correct": 2,
+    "system": "vector_only"
+  },
+  "f18": {
+    "coverage": 1,
+    "grounded": 1,
+    "steps_correct": 2,
+    "system": "bm25_only"
+  },
+  "f19": {
+    "coverage": 1,
+    "grounded": 1,
+    "steps_correct": 2,
+    "system": "vector_only"
   }
 }
