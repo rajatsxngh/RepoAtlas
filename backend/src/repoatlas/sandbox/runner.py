@@ -11,7 +11,13 @@ from pydantic import BaseModel, ConfigDict
 
 from repoatlas.sandbox.docker import remove_image
 from repoatlas.sandbox.hardened import DEFAULT_LIMITS, Limits, SandboxRun, run_hardened
-from repoatlas.sandbox.images import IMAGE_PREFIX, SANDBOX_UID, ImageInfo, build_from_context
+from repoatlas.sandbox.images import (
+    IMAGE_PREFIX,
+    SANDBOX_UID,
+    SOURCE_MTIME,
+    ImageInfo,
+    build_from_context,
+)
 from repoatlas.sandbox.recipe import Recipe
 from repoatlas.sandbox.results import ReportError, TestResult, parse_report
 
@@ -116,7 +122,7 @@ class SandboxRunner:
                 (f"src/{mutation.path}", mutation.content, 0o644),
             ):
                 info = tarfile.TarInfo(name)
-                info.size, info.mode, info.mtime = len(data), mode, 0
+                info.size, info.mode, info.mtime = len(data), mode, SOURCE_MTIME
                 tar.addfile(info, io.BytesIO(data))
         tag_hash = hashlib.sha256(mutation.content + mutation.symbol_key.encode()).hexdigest()
         tag = f"{IMAGE_PREFIX}/{self.recipe.id}-mut:{tag_hash[:16]}"

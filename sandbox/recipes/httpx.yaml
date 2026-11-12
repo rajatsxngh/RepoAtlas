@@ -1,0 +1,17 @@
+# encode/httpx master at 2026-02-23 — Python, medium. BSD-3-Clause. Tooling is pinned in
+# requirements.txt; other dependencies resolve as of the commit's date.
+id: httpx
+url: https://github.com/encode/httpx
+commit: "b5addb64f0161ff6bfe94c124ef76f6a1fba5254"
+language: python
+base_image: python
+install:
+  - "uv pip install --exclude-newer 2026-02-23T10:40:42Z -r requirements.txt"
+test:
+  cmd: "python -m pytest -q -p no:cacheprovider --continue-on-collection-errors -m 'not network' -o junit_family=xunit1 --junitxml=/tmp/out/report tests"
+  reporter: junit
+  timeout_s: 900
+scip:
+  indexer: scip-python
+  args: ["index", ".", "--project-name", "httpx", "--project-version", "0.28.1", "--output", "/tmp/out/index.scip"]
+quarantine: []

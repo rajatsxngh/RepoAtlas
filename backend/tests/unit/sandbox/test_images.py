@@ -4,7 +4,7 @@ import io
 import tarfile
 
 from repoatlas.ingest.source import SourceTree, TreeEntry
-from repoatlas.sandbox.images import install_script, source_context, upstream_refs
+from repoatlas.sandbox.images import SOURCE_MTIME, install_script, source_context, upstream_refs
 from tests.integration.sandbox.fixtures import minipy_recipe
 
 
@@ -39,7 +39,7 @@ def test_source_context_keeps_modes_and_symlinks_and_skips_submodules() -> None:
         assert members["src/bin/run"].mode == 0o755
         assert members["src/a.py"].mode == 0o644
         assert members["src/link"].issym() and members["src/link"].linkname == "a.py"
-        assert all(m.mtime == 0 and m.uid == 10001 for m in members.values())
+        assert all(m.mtime == SOURCE_MTIME and m.uid == 10001 for m in members.values())
         handle = tar.extractfile("src/a.py")
         assert handle is not None and handle.read() == b"mutated\n"
 

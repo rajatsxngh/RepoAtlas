@@ -1,0 +1,17 @@
+# pallets/click 8.5.1 — Python, medium. BSD-3-Clause. Pinned by uv.lock. The pager tests need
+# `less`, which the image does not have; they fail in every run and are excluded as pre-failing.
+id: click
+url: https://github.com/pallets/click
+commit: "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1"
+language: python
+base_image: python
+install:
+  - "UV_PROJECT_ENVIRONMENT=/opt/venv UV_PYTHON=/opt/venv/bin/python uv sync --locked --no-default-groups --group tests"
+test:
+  cmd: "python -m pytest -q -p no:cacheprovider --continue-on-collection-errors -o junit_family=xunit1 --junitxml=/tmp/out/report tests"
+  reporter: junit
+  timeout_s: 900
+scip:
+  indexer: scip-python
+  args: ["index", ".", "--project-name", "click", "--project-version", "8.5.1", "--output", "/tmp/out/index.scip"]
+quarantine: []

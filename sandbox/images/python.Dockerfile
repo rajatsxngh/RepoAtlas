@@ -10,7 +10,7 @@ ENV UV_PYTHON_INSTALL_DIR=/opt/python \
     UV_NO_CACHE=1 \
     UV_LINK_MODE=copy
 RUN uv python install 3.12.13 \
- && uv venv --python 3.12.13 /opt/venv \
+ && uv venv --seed --python 3.12.13 /opt/venv \
  && groupadd --gid 10001 sandbox \
  && useradd --uid 10001 --gid 10001 --create-home --home-dir /home/sandbox --shell /bin/sh sandbox \
  && mkdir -p /src /tmp/out \

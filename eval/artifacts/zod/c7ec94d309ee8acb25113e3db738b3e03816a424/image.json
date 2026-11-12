@@ -1,0 +1,24 @@
+{
+  "base": {
+    "digest": "sha256:ab1d3ee90599a443dc5137669659d90fba207a663f2fd6ab966e6990af19acf3",
+    "dockerfile_sha256": "d6394a6b05efba01257c39888e658f31f90bc9dc240482183e31803533711d59",
+    "name": "node",
+    "tag": "repoatlas-sbx/base-node:9fe535eaa2c7",
+    "upstream": [
+      "docker.io/library/node:22-bookworm-slim@sha256:18052396bf1d0c6e0a8c58181b5c1457da19409efbd5032a3f4d86974e74d13c"
+    ]
+  },
+  "commit": "c7ec94d309ee8acb25113e3db738b3e03816a424",
+  "files": 713,
+  "image": {
+    "digest": "sha256:1a7f8a559cac4deac981f9e5fb34323f12e11378817aa5eae26d4147989cbedf",
+    "tag": "repoatlas-sbx/zod:c7ec94d309ee"
+  },
+  "install_seconds": 45.4,
+  "recipe_sha256": "542e2ce0a2279aa7e957eb69049f4255885d6a8179bf35c2e1b6cad0f1bcf9a7",
+  "repo_id": "zod",
+  "source": {
+    "digest": "sha256:aec95898d35f8fd65973721d528cc18e41b18b4159fab72a149e78e5c7087a73",
+    "tag": "repoatlas-sbx/zod-src:c7ec94d309ee"
+  }
+}

@@ -1,0 +1,23 @@
+# colinhacks/zod at 2026-08-29 — TypeScript, large. MIT. Pinned by pnpm-lock.yaml and the
+# pnpm version from packageManager. This is the last commit before zod moved to another package
+# manager whose lockfile pnpm cannot read. Install scripts are skipped. The three treeshake suites
+# need a build first, so they fail in every run as suite-level errors and never count.
+id: zod
+url: https://github.com/colinhacks/zod
+commit: "c7ec94d309ee8acb25113e3db738b3e03816a424"
+language: typescript
+base_image: node
+install:
+  # packageManager's pnpm, installed with npm (corepack's downloader ignores the proxy).
+  - "npm install --prefix /home/sandbox/.tools --no-save --ignore-scripts pnpm@10.12.1"
+  - "/home/sandbox/.tools/node_modules/.bin/pnpm install --frozen-lockfile --ignore-scripts"
+  # Vite and Vitest write caches into node_modules; point them at the writable /tmp.
+  - "for d in . packages/*; do mkdir -p $d/node_modules && for c in .vite-temp .vite .vitest-cache; do ln -sfn /tmp/$c $d/node_modules/$c; done; done"
+test:
+  cmd: "mkdir -p /tmp/.vite-temp /tmp/.vite /tmp/.vitest-cache && ./node_modules/.bin/vitest run --typecheck.enabled=false --reporter=json --outputFile=/tmp/out/report"
+  reporter: vitest-json
+  timeout_s: 1200
+scip:
+  indexer: scip-typescript
+  args: ["index", "--pnpm-workspaces", "--output", "/tmp/out/index.scip"]
+quarantine: []

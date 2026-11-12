@@ -1,0 +1,18 @@
+# psf/requests v2.34.2 — Python, small. Apache-2.0. No lockfile: resolution is limited to the
+# commit's date. Tests use a local httpbin server; tests that need the internet fail in every
+# baseline run (no network) and are excluded as pre-failing.
+id: requests
+url: https://github.com/psf/requests
+commit: "6e83187b8feb273ed4c6cdab5efd8d54901dfab3"
+language: python
+base_image: python
+install:
+  - "uv pip install --exclude-newer 2026-05-14T19:21:52Z -r requirements-dev.txt pytest-mock"
+test:
+  cmd: "python -m pytest -q -p no:cacheprovider --continue-on-collection-errors -o junit_family=xunit1 --junitxml=/tmp/out/report tests"
+  reporter: junit
+  timeout_s: 900
+scip:
+  indexer: scip-python
+  args: ["index", ".", "--project-name", "requests", "--project-version", "2.34.2", "--output", "/tmp/out/index.scip"]
+quarantine: []

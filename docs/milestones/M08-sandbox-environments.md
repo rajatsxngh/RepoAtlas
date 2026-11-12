@@ -111,7 +111,7 @@ Test runs use:
 - [x] **T3 — Base images and image builds.** Source baked in from `fetch_source`; digests recorded.
 - [x] **T4 — Hardened runner.** `hardened_run_args`; tests that a container has no network, can't reach the host, has a read-only root, respects memory/pids limits, and is killed at the timeout.
 - [x] **T5 — Result parsing and test mapping.** JUnit and Vitest/Jest JSON parsers; test ID → symbol key mapping with fixtures.
-- [ ] **T6 — Choose and pin five repos.** Apply the criteria; write recipes; confirm each suite runs in its container.
+- [x] **T6 — Choose and pin five repos.** Apply the criteria; write recipes; confirm each suite runs in its container.
 - [ ] **T7 — Baselines.** Three runs per repo; quarantine and pre-failing lists; `baseline.json`.
 - [ ] **T8 — SCIP indexing.** Run indexers in the images; `index.scip`, `scip.json`; manifests with digests.
 - [ ] **T9 — Mutation engines.** Python and TypeScript, with unit tests (decorated functions, methods, arrow functions, skip rules).

@@ -63,3 +63,36 @@ def build_command(recipe_path: RecipeArg) -> None:
     typer.echo(f"{info.image.tag} {info.image.digest}")
     typer.echo(f"{info.files} files; install took {info.install_seconds} s")
     typer.echo(f"Wrote {path}")
+
+
+def _image_tag(recipe: Recipe) -> str:
+    from repoatlas.sandbox.artifacts import IMAGE_JSON, read_model
+    from repoatlas.sandbox.docker import image_id
+    from repoatlas.sandbox.images import RepoImageInfo
+
+    info = read_model(recipe, IMAGE_JSON, RepoImageInfo)
+    if info is None or image_id(info.image.tag) != info.image.digest:
+        typer.echo(f"No current image for {recipe.id}; run: repoatlas sandbox build", err=True)
+        raise typer.Exit(1)
+    return info.image.tag
+
+
+@sandbox_app.command("test")
+def test_command(recipe_path: RecipeArg) -> None:
+    """Run the full suite once and print a summary (a smoke check of the recipe)."""
+    from collections import Counter
+
+    from repoatlas.sandbox.runner import SandboxRunner
+
+    recipe = _load(recipe_path)
+    run = SandboxRunner(recipe, _image_tag(recipe)).run_tests()
+    counts = Counter(run.outcomes().values())
+    typer.echo(
+        f"exit {run.exit_code} in {run.duration_s} s; "
+        + ", ".join(f"{k} {v}" for k, v in sorted(counts.items()))
+    )
+    typer.echo(f"collection errors: {len(run.collection_errors)}")
+    if run.report_error:
+        typer.echo(f"report: {run.report_error}")
+        typer.echo(run.log_tail)
+        raise typer.Exit(1)

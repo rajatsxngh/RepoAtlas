@@ -1,0 +1,24 @@
+{
+  "base": {
+    "digest": "sha256:ab1d3ee90599a443dc5137669659d90fba207a663f2fd6ab966e6990af19acf3",
+    "dockerfile_sha256": "d6394a6b05efba01257c39888e658f31f90bc9dc240482183e31803533711d59",
+    "name": "node",
+    "tag": "repoatlas-sbx/base-node:9fe535eaa2c7",
+    "upstream": [
+      "docker.io/library/node:22-bookworm-slim@sha256:18052396bf1d0c6e0a8c58181b5c1457da19409efbd5032a3f4d86974e74d13c"
+    ]
+  },
+  "commit": "ec4d3f5dad1105c522c83ec4877e04937cb2405e",
+  "files": 1171,
+  "image": {
+    "digest": "sha256:9a42b56276ec6b1dce8f34262425ad9250b171f224ce5d8a07ed4974dacd03d2",
+    "tag": "repoatlas-sbx/remeda:ec4d3f5dad11"
+  },
+  "install_seconds": 16.9,
+  "recipe_sha256": "a6f82e9b278ae6ebff68c529d8f40544dc88e8c1f0e9f809cd22fd43f2e25707",
+  "repo_id": "remeda",
+  "source": {
+    "digest": "sha256:db6dfd49a35549485fdf6acb6cd3d1cb05dfe8cb90bf4b8232078c4f10c4b57d",
+    "tag": "repoatlas-sbx/remeda-src:ec4d3f5dad11"
+  }
+}

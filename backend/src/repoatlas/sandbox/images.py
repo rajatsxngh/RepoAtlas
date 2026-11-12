@@ -37,6 +37,9 @@ SANDBOX_UID = 10001
 IMAGE_PREFIX = "repoatlas-sbx"
 INSTALL_TIMEOUT_S = 3600
 SYMLINK_MODE = "120000"
+# A fixed timestamp for every source file, so contexts are byte-identical across builds.
+# Not 0: wheel builders reject dates before 1980.
+SOURCE_MTIME = 946_684_800  # 2000-01-01T00:00:00Z
 
 
 class _Model(BaseModel):
@@ -125,7 +128,7 @@ def _tar_info(name: str, size: int, mode: int) -> tarfile.TarInfo:
     info = tarfile.TarInfo(name)
     info.size = size
     info.mode = mode
-    info.mtime = 0
+    info.mtime = SOURCE_MTIME
     info.uid = info.gid = SANDBOX_UID
     info.uname = info.gname = "sandbox"
     return info
@@ -169,7 +172,12 @@ def _source_entries(tree: SourceTree) -> Iterable[TreeEntry]:
 
 
 def build_from_context(context: bytes, tag: str) -> ImageInfo:
-    docker(["build", "-q", "--network", "none", "-t", tag, "-"], input=context, timeout=1800)
+    # --no-cache: BuildKit keys COPY on content only, so a cached layer could keep old mtimes.
+    docker(
+        ["build", "-q", "--no-cache", "--network", "none", "-t", tag, "-"],
+        input=context,
+        timeout=1800,
+    )
     found = image_id(tag)
     assert found is not None
     return ImageInfo(tag=tag, digest=found)

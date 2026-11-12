@@ -1,0 +1,25 @@
+{
+  "base": {
+    "digest": "sha256:284866b5943f864283b9db4fbd96d24821c31c3f4fbd1d59fedf8fab25878cfb",
+    "dockerfile_sha256": "4bb203865a4223aa45078cbfbba3023e83b54825ecc8f92ebab31ab43beb0c60",
+    "name": "python",
+    "tag": "repoatlas-sbx/base-python:fdb97c8b9c4a",
+    "upstream": [
+      "ghcr.io/astral-sh/uv:0.12.3@sha256:2d890623d310b57771ce840f0da5eed5fc6d657da05ffaa45d82797b53fa3abc",
+      "docker.io/library/node:22-bookworm-slim@sha256:18052396bf1d0c6e0a8c58181b5c1457da19409efbd5032a3f4d86974e74d13c"
+    ]
+  },
+  "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+  "files": 125,
+  "image": {
+    "digest": "sha256:4035baa8f6050351864b766188a5411346ff2c5f359b7f8bb94b374f6be876c9",
+    "tag": "repoatlas-sbx/httpx:b5addb64f016"
+  },
+  "install_seconds": 23.3,
+  "recipe_sha256": "c703b7f61f9f7d01bbb665a56b9c922b3a9977712031dc2fc46c577ec5d2c7e3",
+  "repo_id": "httpx",
+  "source": {
+    "digest": "sha256:e2eebe4bbcc27063b1decf10a6bf19d5540c6406bba148088a2b3c0cbf92cce7",
+    "tag": "repoatlas-sbx/httpx-src:b5addb64f016"
+  }
+}
