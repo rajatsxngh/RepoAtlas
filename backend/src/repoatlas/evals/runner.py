@@ -307,7 +307,12 @@ async def run_eval(run: EvalRun) -> RunResult:
                     await warmup["done"].wait()
                 warmup["started"] = True
                 async with lock:
-                    estimate = max(meter.largest, MIN_ESTIMATE) if meter.settled else first_estimate
+                    if meter.settled:
+                        estimate = max(meter.largest, MIN_ESTIMATE)
+                    elif output is None:
+                        estimate = first_estimate
+                    else:  # the answer is cached: only the missing enrichments will run
+                        estimate = _enrichment_estimate(run, item, output, index)
                     if not meter.reserve(estimate):
                         warmup["done"].set()
                         entry = Skipped(question_id=item.id, run=index, reason="cost cap reached")
@@ -362,6 +367,18 @@ async def run_eval(run: EvalRun) -> RunResult:
         records=ordered,
         skipped=sorted(skipped, key=lambda s: (s.run, s.question_id)),
         duration_s=round(time.perf_counter() - started, 2),
+    )
+
+
+def _enrichment_estimate(run: EvalRun, item: EvalItem, output: SystemOutput, index: int) -> float:
+    return sum(
+        enricher.estimate_usd
+        for enricher in run.enrichers
+        if enricher.applies(item, output)
+        and run.cache.get(
+            enricher.name, f"{enricher.fingerprint}-{run.fingerprint}", item.id, index
+        )
+        is None
     )
 
 

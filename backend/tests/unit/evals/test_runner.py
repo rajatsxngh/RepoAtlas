@@ -341,3 +341,19 @@ def test_enricher_results_of_different_systems_never_share_a_cache_file(tmp_path
     cache.put("support", f"{checker}-{'b' * 64}", "q1", 0, {"system": "b"})
     assert cache.get("support", f"{checker}-{'a' * 64}", "q1", 0) == {"system": "a"}
     assert cache.get("support", f"{checker}-{'b' * 64}", "q1", 0) == {"system": "b"}
+
+
+async def test_cached_answers_reserve_only_their_missing_enrichments(tmp_path: Path) -> None:
+    await run_eval(make_run(tmp_path, ScriptedSystem(script())))
+    calls: list[str] = []
+    checker = _support_enricher(calls)
+    checker.estimate_usd = 0.004
+    run = make_run(
+        tmp_path,
+        ScriptedSystem(script()),
+        enrichers=[checker],
+        max_cost_usd=0.02,
+        budget=Budget(max_cost_usd=0.25),
+    )
+    result = await run_eval(run)
+    assert sorted(calls) == ["r-callers-001", "r-lookup-001"] and result.complete
