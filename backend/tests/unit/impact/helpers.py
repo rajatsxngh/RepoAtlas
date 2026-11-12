@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from repoatlas.graph.model import EdgeKind, NodeKind
+from repoatlas.impact.data import MemoryImpactData
 from repoatlas.store.cache import EdgeRecord, NodeRecord, SnapshotGraph
+from tests.unit.graph.helpers import graph_of
 
 CALLS = EdgeKind.CALLS
 EdgeSpec = tuple[str, str] | tuple[str, str, EdgeKind] | tuple[str, str, EdgeKind, float]
@@ -56,3 +58,48 @@ def synthetic(
             EdgeRecord(5_000 + len(edge_records), ids[parent], ids[name], EdgeKind.CONTAINS, 1.0)
         )
     return SnapshotGraph(1, records, edge_records)
+
+
+# A small Python project: a public ``parse`` calling a private ``_tokenize``, a class hierarchy,
+# a CLI, a test, and sites the graph cannot resolve.
+PROJECT = {
+    "pkg/__init__.py": 'from .core import parse\n\n__all__ = ["parse"]\n',
+    "pkg/core.py": (
+        "def _tokenize(text):\n"
+        "    return text.split()\n"
+        "\n\n"
+        "def parse(text):\n"
+        "    return _tokenize(text)\n"
+        "\n\n"
+        "class Base:\n"
+        "    def run(self):\n"
+        "        return 1\n"
+        "\n\n"
+        "class Child(Base):\n"
+        "    def run(self):\n"
+        "        return 2\n"
+        "\n\n"
+        'HANDLERS = {"tok": "_tokenize"}\n'
+    ),
+    "pkg/cli.py": (
+        "from pkg.core import parse\n"
+        "\n\n"
+        "def main(argv):\n"
+        "    obj = load()\n"
+        "    obj._tokenize(argv)\n"
+        "    return parse(argv)\n"
+    ),
+    "tests/test_core.py": (
+        'from pkg.core import parse\n\n\ndef test_parse():\n    assert parse("a b") == ["a", "b"]\n'
+    ),
+}
+TOKENIZE = "py:pkg/core.py:_tokenize:function"
+PARSE = "py:pkg/core.py:parse:function"
+MAIN = "py:pkg/cli.py:main:function"
+TEST_PARSE = "py:tests/test_core.py:test_parse:test"
+BASE_RUN = "py:pkg/core.py:Base.run:method"
+CHILD_RUN = "py:pkg/core.py:Child.run:method"
+
+
+def project_data() -> MemoryImpactData:
+    return MemoryImpactData(graph_of(PROJECT), PROJECT)
