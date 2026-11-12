@@ -1,0 +1,1386 @@
+{
+  "aggregates": {
+    "claim_partial": null,
+    "claim_supported": null,
+    "claim_unsupported": null,
+    "claims_checked": 0,
+    "cost_per_question_usd": 0.00368601,
+    "dropped_claim_rate": null,
+    "eval_cost_usd": 0.0,
+    "latency_p50_s": 2.9284999999999997,
+    "latency_p95_s": 8.63925,
+    "outcomes": {
+      "answered": 15,
+      "refused_evidence": 25
+    },
+    "outputs": 40,
+    "pooled_citation_validity": null,
+    "prefilter_citation_validity": null,
+    "total_cost_usd": 0.1474404
+  },
+  "by_type": [
+    {
+      "metrics": {},
+      "outcomes": {
+        "answered": 5,
+        "refused_evidence": 5
+      },
+      "primary": {
+        "high": 0.8,
+        "low": 0.2,
+        "mean": 0.5,
+        "n": 10
+      },
+      "primary_metric": "correct",
+      "questions": 10,
+      "run_means": [
+        0.5
+      ],
+      "type": "lookup"
+    },
+    {
+      "metrics": {
+        "precision": 0.2,
+        "recall": 0.08333333333333333
+      },
+      "outcomes": {
+        "answered": 4,
+        "refused_evidence": 6
+      },
+      "primary": {
+        "high": 0.2833333333333333,
+        "low": 0.0,
+        "mean": 0.11666666666666665,
+        "n": 10
+      },
+      "primary_metric": "F1",
+      "questions": 10,
+      "run_means": [
+        0.11666666666666665
+      ],
+      "type": "callers"
+    },
+    {
+      "metrics": {
+        "precision": 0.0,
+        "recall": 0.0
+      },
+      "outcomes": {
+        "refused_evidence": 5
+      },
+      "primary": {
+        "high": 0.0,
+        "low": 0.0,
+        "mean": 0.0,
+        "n": 5
+      },
+      "primary_metric": "F1",
+      "questions": 5,
+      "run_means": [
+        0.0
+      ],
+      "type": "multihop"
+    },
+    {
+      "metrics": {
+        "real_f1": 0.0,
+        "real_precision": 0.0,
+        "real_recall": 0.0,
+        "real_recall_at_10": 0.0,
+        "static_precision": 0.2,
+        "static_recall": 0.13333333333333333
+      },
+      "outcomes": {
+        "answered": 2,
+        "refused_evidence": 3
+      },
+      "primary": {
+        "high": 0.4800000000000001,
+        "low": 0.0,
+        "mean": 0.16,
+        "n": 5
+      },
+      "primary_metric": "static F1",
+      "questions": 5,
+      "run_means": [
+        0.16
+      ],
+      "type": "impact"
+    },
+    {
+      "metrics": {},
+      "outcomes": {
+        "answered": 4,
+        "refused_evidence": 1
+      },
+      "primary": {
+        "high": 0.49000000000000005,
+        "low": 0.05,
+        "mean": 0.27,
+        "n": 5
+      },
+      "primary_metric": "must-cite recall",
+      "questions": 5,
+      "run_means": [
+        0.27
+      ],
+      "type": "flow"
+    },
+    {
+      "metrics": {
+        "api_refusal": 0.0
+      },
+      "outcomes": {
+        "refused_evidence": 5
+      },
+      "primary": {
+        "high": 1.0,
+        "low": 1.0,
+        "mean": 1.0,
+        "n": 5
+      },
+      "primary_metric": "correct refusal",
+      "questions": 5,
+      "run_means": [
+        1.0
+      ],
+      "type": "unanswerable"
+    }
+  ],
+  "complete": true,
+  "config": {
+    "effort": "medium",
+    "kind": "closed_book",
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "e3909536e199795b9a7b4619792ae8edd242ddf8e15d90ae75ff1303548707a9",
+    "schema_sha256": "b06be14dfad6a068f5a88917c9212304f530deccd3047d36dbd5bf949e06672a"
+  },
+  "config_fingerprint": "155836a7d7c1a018a4761ec0d4cdebdde5587bcd5ca66dd44f451a28da01d89b",
+  "cost_per_question_usd": 0.003686,
+  "created_at": "2026-11-12T09:34:41+00:00",
+  "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+  "environment": {
+    "cpu": "AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD",
+    "cpu_count": 16,
+    "machine": "AMD64",
+    "os": "Windows 11",
+    "python": "3.12.13",
+    "repoatlas_commit": "284309f72892adef74597389115095152e479e24",
+    "repoatlas_dirty": false,
+    "repoatlas_version": "0.1.0"
+  },
+  "errored": [],
+  "evaluators": {
+    "judge": "9492ffecec3a21f1e1fc81ea0b10addee366fc1e4ba48541c1e9c2feb27dc4ce",
+    "support": "9c45521873d7343ca64e2a6b3a7268ef4ca06d7dca1f94d049ec6c6e6d67885f"
+  },
+  "items": [
+    {
+      "mean_primary": 0.0,
+      "question_id": "click-callers-001",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0048565,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 8.627,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.6666666666666666,
+      "question_id": "click-callers-005",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/click/core.py:Parameter.handle_parse_result:method"
+          ],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0067285,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 3.872,
+          "metrics": {
+            "precision": 1.0,
+            "recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.6666666666666666,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.25,
+      "question_id": "click-flow-004",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/click/shell_completion.py:ShellComplete.get_completions:method",
+            "py:src/click/shell_completion.py:_resolve_incomplete:function"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0150285,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 8.872,
+          "metrics": {},
+          "notes": [
+            "judge failed: LLMRequestError: BadRequestError: litellm.BadRequestError: AnthropicException - {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"re"
+          ],
+          "outcome": "answered",
+          "primary": 0.25,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "flow"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "click-impact-002",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/click/core.py:Group.resolve_command:method",
+            "py:src/click/core.py:CommandCollection:class"
+          ],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0074757,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 12.468,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "click-lookup-002",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/click/parser.py:_unpack_args:function"
+          ],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0028596999999999997,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.285,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "click-lookup-004",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/click/formatting.py:HelpFormatter.write_usage:method"
+          ],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0029957,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.983,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "click-multihop-001",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0019917,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.599,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "multihop"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "click-unanswerable-002",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0019837,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.893,
+          "metrics": {
+            "api_refusal": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "unanswerable"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "httpx-callers-002",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0028956999999999997,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.643,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "httpx-callers-004",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0026677,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 3.378,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.5,
+      "question_id": "httpx-flow-004",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:httpx/_models.py:Response.iter_bytes:method",
+            "py:httpx/_models.py:Response._get_content_decoder:method",
+            "py:httpx/_models.py:Response.iter_raw:method",
+            "py:httpx/_decoders.py:GZipDecoder:class"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.010109700000000001,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 6.959,
+          "metrics": {},
+          "notes": [
+            "judge failed: LLMRequestError: BadRequestError: litellm.BadRequestError: AnthropicException - {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"re"
+          ],
+          "outcome": "answered",
+          "primary": 0.5,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "flow"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "httpx-impact-004",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0032116999999999996,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 3.429,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "httpx-lookup-002",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0020957,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.583,
+          "metrics": {},
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "httpx-lookup-006",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0019657,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.501,
+          "metrics": {},
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "httpx-multihop-003",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0023856999999999997,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 3.152,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "multihop"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "httpx-unanswerable-001",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0023117,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.088,
+          "metrics": {
+            "api_refusal": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "unanswerable"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "remeda-callers-001",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0023556999999999996,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.172,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "remeda-callers-004",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0020137,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 1.937,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "remeda-flow-004",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0031896999999999997,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 3.501,
+          "metrics": {},
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "flow"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "remeda-impact-002",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0048917,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 4.009,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "remeda-lookup-002",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0019837,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 1.924,
+          "metrics": {},
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "remeda-lookup-005",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/remeda/src/fromEntries.ts:fromEntriesImplementation:function"
+          ],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0025277,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.386,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "remeda-multihop-001",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0020097,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 1.89,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "multihop"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "remeda-unanswerable-002",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0021157,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 3.658,
+          "metrics": {
+            "api_refusal": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "unanswerable"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "requests-callers-002",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/utils.py:dotted_netmask:function",
+            "py:src/requests/utils.py:should_bypass_proxies:function"
+          ],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0057937,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 4.143,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.5,
+      "question_id": "requests-callers-006",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/structures.py:CaseInsensitiveDict.lower_items:method",
+            "py:src/requests/structures.py:CaseInsensitiveDict.__eq__:method"
+          ],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0041277,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 3.606,
+          "metrics": {
+            "precision": 1.0,
+            "recall": 0.3333333333333333
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.5,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.6,
+      "question_id": "requests-flow-004",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/models.py:PreparedRequest.prepare_body:method",
+            "py:src/requests/models.py:RequestEncodingMixin._encode_files:method",
+            "py:src/requests/models.py:PreparedRequest.prepare_content_length:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0069517,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 5.293,
+          "metrics": {},
+          "notes": [
+            "judge failed: LLMRequestError: BadRequestError: litellm.BadRequestError: AnthropicException - {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"re"
+          ],
+          "outcome": "answered",
+          "primary": 0.6,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "flow"
+    },
+    {
+      "mean_primary": 0.8,
+      "question_id": "requests-impact-002",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/cookies.py:remove_cookie_by_name:function",
+            "py:src/requests/cookies.py:RequestsCookieJar.__delitem__:method",
+            "py:src/requests/cookies.py:RequestsCookieJar.set:method"
+          ],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0065557,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 4.359,
+          "metrics": {
+            "static_precision": 1.0,
+            "static_recall": 0.6666666666666666
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.8,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "requests-lookup-001",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/adapters.py:HTTPAdapter.build_response:method"
+          ],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0030217,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.364,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "requests-lookup-005",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0015257,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 1.767,
+          "metrics": {},
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "requests-multihop-002",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0039496999999999996,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 4.248,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "multihop"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "requests-unanswerable-001",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0025256999999999996,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.964,
+          "metrics": {
+            "api_refusal": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "unanswerable"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "zod-callers-002",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0020957,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.033,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "zod-callers-003",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0024836999999999997,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.33,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "zod-flow-004",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0030077,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.859,
+          "metrics": {},
+          "notes": [
+            "judge failed: LLMRequestError: BadRequestError: litellm.BadRequestError: AnthropicException - {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"re"
+          ],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "flow"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "zod-impact-004",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0025637,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.518,
+          "metrics": {
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "zod-lookup-004",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v3/types.ts:ZodType.pipe:method",
+            "ts:packages/zod/src/v4/classic/schemas.ts:ZodType:function"
+          ],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0039417,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 3.072,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "zod-lookup-006",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0018857000000000001,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.37,
+          "metrics": {},
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "zod-multihop-004",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0024636999999999997,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 3.37,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "multihop"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "zod-unanswerable-001",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0018957,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 1.762,
+          "metrics": {
+            "api_refusal": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "unanswerable"
+    }
+  ],
+  "kind": "answer",
+  "max_cost_usd": 0.5,
+  "models": {
+    "large": "claude-sonnet-5-5",
+    "small": "claude-haiku-5-5"
+  },
+  "notes": [
+    "The claim-support checker and the flow judge use the same model family as the answering systems (a known bias); the judge is blind to system names, sees answers truncated to a fixed length, and its agreement with human labels is reported separately."
+  ],
+  "overall": {
+    "high": 0.47125000000000006,
+    "low": 0.20249999999999999,
+    "mean": 0.33291666666666664,
+    "n": 40
+  },
+  "refusals": {
+    "answerable": 35,
+    "answerable_refused_api": 0,
+    "answerable_refused_budget": 0,
+    "answerable_refused_evidence": 20,
+    "unanswerable": 5,
+    "unanswerable_answered": 0,
+    "unanswerable_refused_api": 0,
+    "unanswerable_refused_evidence": 5
+  },
+  "run_overall": [
+    0.33291666666666664
+  ],
+  "runs": 1,
+  "schema_version": "1.0",
+  "skipped": [],
+  "snapshots": [
+    {
+      "commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "click",
+      "snapshot_id": 19
+    },
+    {
+      "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "httpx",
+      "snapshot_id": 21
+    },
+    {
+      "commit": "ec4d3f5dad1105c522c83ec4877e04937cb2405e",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "remeda",
+      "snapshot_id": 22
+    },
+    {
+      "commit": "6e83187b8feb273ed4c6cdab5efd8d54901dfab3",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "requests",
+      "snapshot_id": 20
+    },
+    {
+      "commit": "c7ec94d309ee8acb25113e3db738b3e03816a424",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "zod",
+      "snapshot_id": 23
+    }
+  ],
+  "spent_usd": 0.0,
+  "split": "dev",
+  "suite": "benchmark",
+  "suite_info": {
+    "benchmark_version": "1.0.0",
+    "questions_sha256": "c121bf8d5914228d4998dc96e9e5ea675ac1b356591a2bc18f2a34c4fc8a9577",
+    "test_frozen": true,
+    "test_sha256": "163c2957919f00015870f1697e9a140903077d0fb7273beabd2f57767dd4cd08"
+  },
+  "system": "closed_book",
+  "total_cost_usd": 0.14744
+}

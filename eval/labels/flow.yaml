@@ -1,0 +1,615 @@
+kind: flow
+instructions: 'For each answer, score three criteria from 0 to 2 against the reference outline and the
+  must-cite symbols: steps_correct (2 = every step it states is right, 1 = minor errors, 0 = a wrong step),
+  coverage (2 = all outline steps, 1 = about half, 0 = few), grounded (2 = names the real functions and
+  files throughout, 1 = some, 0 = vague or invented). Set labeler at the top to your name. Don''t look
+  at the .machine.json file until you''re done.'
+source:
+  systems:
+  - bm25_only
+  - closed_book
+  - hybrid_graphrag
+  - vector_only
+  split: dev
+  judge:
+  - 9492ffecec3a21f1e1fc81ea0b10addee366fc1e4ba48541c1e9c2feb27dc4ce
+  seed: 7
+labeler: Claude (Opus 5.5), delegated by the owner; not a human label
+human: false
+items:
+- id: f01
+  question_id: requests-flow-004
+  question: When a caller passes both `files=` and a dict `data=`, how does requests build the multipart
+    body and set its Content-Type and Content-Length headers?
+  reference_outline: '1. `Session.prepare_request` builds a `PreparedRequest` and calls its `prepare`
+    with the request''s files and data.
+
+    2. `prepare` runs the steps in order (method, URL, headers, cookies, body, auth, hooks); the body
+    step is `prepare_body`.
+
+    3. A dict is not treated as a streamed body, so `prepare_body` takes the non-streaming branch and,
+    because files were given, calls `_encode_files` with the files and data.
+
+    4. `_encode_files` rejects a missing files value or string data, turns each data field into a (name,
+    bytes) pair, turns each file entry (a bare file object or a 2-, 3- or 4-tuple of filename, file object,
+    content type, headers) into a urllib3 `RequestField`, reading file objects, and encodes everything
+    with urllib3''s `encode_multipart_formdata`, returning the body and a multipart Content-Type with
+    its boundary.
+
+    5. `prepare_body` then calls `prepare_content_length`, which measures the body with `super_len` and
+    sets Content-Length when the length is non-zero.
+
+    6. Finally `prepare_body` sets the multipart Content-Type only if the caller did not supply one, and
+    stores the body on the request.'
+  must_cite:
+  - py:src/requests/models.py:PreparedRequest.prepare:method
+  - py:src/requests/models.py:PreparedRequest.prepare_body:method
+  - py:src/requests/models.py:RequestEncodingMixin._encode_files:method
+  - py:src/requests/models.py:PreparedRequest.prepare_content_length:method
+  - py:src/requests/utils.py:super_len:function
+  answer: 'When `files` and a dict `data` are both given, `prepare_body` takes the non-streamed branch,
+    because a dict is excluded from the stream check. It calls `_encode_files(files, raw_data)` to get
+    the body and the content type. [c1][c2]
+
+
+    `_encode_files` turns the data fields into `(name, bytes)` tuples. A value that is a non-string iterable
+    is expanded into multiple fields, and `None` values are skipped. [c3] Each file entry becomes a `RequestField`
+    with `make_multipart`. Entries can be a bare file, or a 2-, 3- or 4-tuple, which supplies the filename,
+    content type and extra headers. [c4] Everything is then encoded with `encode_multipart_formdata`,
+    which returns the body and the content type. [c5]
+
+
+    Back in `prepare_body`, `prepare_content_length(body)` sets `Content-Length` to `super_len(body)`
+    when that length is non-zero. [c6] `Content-Type` is set from the encoder''s result only if the caller
+    has not already supplied a `content-type` header. [c7]
+
+
+    Claims:
+
+    - With files and non-stream data, prepare_body calls self._encode_files(files, raw_data) to produce
+    the body and content_type.
+
+    - Mapping data (such as a dict) is excluded from the streamed-body branch, so it goes to the else
+    branch.
+
+    - _encode_files converts data fields into (name, bytes) tuples, expanding non-string iterable values
+    and skipping None values.
+
+    - Each file becomes a RequestField made multipart with an optional content type. Tuples of length
+    2, 3 or 4 provide the filename, content type and headers.
+
+    - The body and content type come from encode_multipart_formdata(new_fields).
+
+    - prepare_content_length sets the Content-Length header to the string of super_len(body) when the
+    length is non-zero.
+
+    - The Content-Type header is set from the encoder''s content type only if no content-type header is
+    already present.'
+  steps_correct: 2
+  coverage: 1
+  grounded: 2
+- id: f02
+  question_id: zod-flow-004
+  question: When a classic schema has `.transform(fn)` and you parse a value, how is the value validated
+    first and then handed to `fn`, and what stops `fn` from running on invalid input?
+  reference_outline: '1. The `.transform(fn)` method on classic `ZodType` builds `pipe(this, transform(fn))`:
+    `transform` creates a `ZodTransform` whose def holds `fn`, and `pipe` creates a `ZodPipe` with the
+    original schema as `in` and the transform as `out`.
+
+    2. The `parse` installed by `$ZodPipe` (forward direction) runs the `in` schema on the payload first.
+
+    3. `handlePipeResult` stops the pipe if the left result has any issue other than `unrecognized_keys`:
+    it marks the payload aborted and returns it, so `fn` never runs.
+
+    4. Otherwise it runs the `out` schema on a payload carrying the validated value and the existing issues.
+
+    5. The classic `ZodTransform` replaces the core transform''s `parse`: it throws for encode (backward)
+    direction, attaches an `addIssue` helper to the payload, calls `fn` with the value and payload, and
+    stores the result (awaiting it if `fn` returns a promise) as the new value.'
+  must_cite:
+  - ts:packages/zod/src/v4/classic/schemas.ts:transform:function
+  - ts:packages/zod/src/v4/classic/schemas.ts:pipe:function
+  - ts:packages/zod/src/v4/core/schemas.ts:$ZodPipe:function
+  - ts:packages/zod/src/v4/core/schemas.ts:handlePipeResult:function
+  - ts:packages/zod/src/v4/classic/schemas.ts:ZodTransform:function
+  answer: 'The evidence only partly answers this. It shows how `.transform` is constructed and how the
+    top-level parse treats issues, but it does not include the code that sequences validation before `fn`
+    runs.
+
+
+    - In v3, `.transform(fn)` wraps the schema in a `ZodEffects` with `schema: this` and a transform effect
+    [c1]. This suggests the inner schema is the one validated, but the code that applies the effect is
+    not in the evidence.
+
+    - In v4 classic, the standalone `transform(fn)` creates a `ZodTransform` with `type: "transform"`
+    and `transform: fn` [c2]. The core `_transform` helper does the same [c3].
+
+    - `parse` calls `schema._zod.run` on a payload `{ value, issues: [] }` [c4]. It throws if the result
+    has issues, so an invalid result never returns a value [c4]. The async variant does the same after
+    awaiting [c5].
+
+
+    The v4 `$ZodTransform` run implementation, and the pipe or check logic that stops `fn` from executing
+    on invalid input, are not in the indexed code. I can''t confirm that mechanism from this evidence.
+
+
+    Claims:
+
+    - In v3, the `transform` method returns a `ZodEffects` that wraps the original schema (`schema: this`)
+    with a transform effect holding the function.
+
+    - The classic v4 `transform` function constructs a `ZodTransform` with type "transform" and the user
+    function as `transform`.
+
+    - The core `_transform` helper builds a schema of the given Class with type "transform" and the function
+    as `transform`.
+
+    - Sync parse runs `schema._zod.run` on a payload with an empty issues array and throws an error if
+    the result has issues, otherwise returns `result.value`.
+
+    - The async parse runs the schema with `async: true`, awaits a Promise result, and throws if there
+    are issues.'
+  steps_correct: 1
+  coverage: 0
+  grounded: 1
+- id: f03
+  question_id: remeda-flow-004
+  question: With the default trailing timing, how does a call to a `debounce`d function end up invoking
+    the wrapped function after the wait elapses?
+  reference_outline: '1. `debounce` validates that `maxWaitMs` is not less than `waitMs` and returns an
+    object whose `call` closes over the cool-down and max-wait timer IDs, the latest arguments, and the
+    last result.
+
+    2. On `call` with trailing timing, `handleDebouncedCall` saves the arguments as the latest call arguments
+    and, if `maxWaitMs` is set and no max-wait timer is running, starts one that will run `handleInvoke`.
+
+    3. `call` clears any running cool-down timer and starts a new one for `waitMs` (falling back to `maxWaitMs`,
+    then 0) pointing at `handleCoolDownEnd`, then returns the cached result from the previous invocation.
+
+    4. When the cool-down timer fires, `handleCoolDownEnd` clears the timer and, if latest arguments are
+    stored, calls `handleInvoke`.
+
+    5. `handleInvoke` clears the max-wait timer, takes and clears the stored arguments, calls the wrapped
+    function with them, and caches its return value as the new result.'
+  must_cite:
+  - ts:packages/remeda/src/debounce.ts:debounce:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleDebouncedCall:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleCoolDownEnd:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleInvoke:function
+  answer: 'With the default `trailing` timing, the first call starts a cool-down window and is treated
+    as a debounced call. The args are saved, and the wrapped function is invoked later by a timer, not
+    directly.
+
+
+    1. `timing` defaults to `"trailing"`. [c1]
+
+    2. If no cool-down timeout is active, the call starts a new window. In `trailing` mode it goes to
+    `handleDebouncedCall` instead of calling `func` directly. [c2]
+
+    3. `handleDebouncedCall` stores the args in `latestCallArgs`. It also starts a `maxWaitMs` timeout
+    if one is configured and none is running. [c3]
+
+    4. `call` then schedules `handleCoolDownEnd` with `setTimeout` for `waitMs ?? maxWaitMs ?? 0`. [c4]
+
+    5. Any further call during the window is also debounced, so the latest args are saved. The current
+    timeout is cleared and a new full wait begins. [c5]
+
+    6. When the timer fires, `handleCoolDownEnd` clears the cool-down timeout. If `latestCallArgs` is
+    set, it calls `handleInvoke`. [c6]
+
+    7. `handleInvoke` clears any `maxWait` timer and takes the saved args. It resets `latestCallArgs`,
+    calls `func(...args)` and stores the result in `result`, which is later exposed as `cachedValue`.
+    [c7]
+
+
+    The test shows a trailing call invoking the function only after the wait has passed. [c8]
+
+
+    Claims:
+
+    - The `timing` option defaults to "trailing".
+
+    - When no cool-down timeout is active and timing is "trailing", the first call is passed to handleDebouncedCall
+    rather than invoking func directly.
+
+    - handleDebouncedCall saves the call args in latestCallArgs and starts the maxWait timeout once if
+    maxWaitMs is defined.
+
+    - After handling the call, call schedules handleCoolDownEnd via setTimeout with waitMs ?? maxWaitMs
+    ?? 0.
+
+    - Calls made during an in-flight cool-down window (non-leading) are debounced and clear the current
+    timeout so a full wait restarts.
+
+    - handleCoolDownEnd clears the cool-down timeout and, if latestCallArgs is defined, calls handleInvoke.
+
+    - handleInvoke clears the maxWait timeout, takes and resets latestCallArgs, and calls func with those
+    args, storing the return value in result.
+
+    - A test with trailing timing shows the mock is not called immediately but is called once after the
+    wait.'
+  steps_correct: 2
+  coverage: 2
+  grounded: 2
+- id: f04
+  question_id: httpx-flow-004
+  question: When `Client.send` loads a non-streamed response whose `Content-Encoding` is gzip, how are
+    the raw bytes pulled from the transport stream and decompressed into `response.content`?
+  reference_outline: '1. After the auth and redirect handling returns a response, `Client.send` calls
+    `response.read()` unless `stream=True` was requested, closing the response if reading fails.
+
+    2. `Response.read` sets the content to the joined output of `iter_bytes` if it was not already loaded.
+
+    3. `iter_bytes` gets a decoder from `_get_content_decoder`, which maps each `Content-Encoding` value
+    through the `SUPPORTED_DECODERS` table ("gzip" maps to `GZipDecoder`), using a `MultiDecoder` for
+    several encodings and an `IdentityDecoder` for none.
+
+    4. `iter_raw` refuses a consumed or closed stream, then iterates the response''s stream, counting
+    downloaded bytes, and closes the response when done.
+
+    5. That stream is the `BoundSyncStream` set in `_send_single_request`, whose `__iter__` simply yields
+    the chunks of the transport''s stream.
+
+    6. Each raw chunk goes through `GZipDecoder.decode`, which decompresses it with a zlib object set
+    up for gzip framing and turns zlib errors into `DecodingError`; `iter_bytes` then flushes the decoder
+    and the chunker so the trailing bytes are included.'
+  must_cite:
+  - py:httpx/_client.py:Client.send:method
+  - py:httpx/_models.py:Response.read:method
+  - py:httpx/_models.py:Response.iter_bytes:method
+  - py:httpx/_models.py:Response._get_content_decoder:method
+  - py:httpx/_models.py:Response.iter_raw:method
+  - py:httpx/_decoders.py:GZipDecoder.decode:method
+  answer: 'When `stream` is false, `Client.send` calls `response.read()` after `_send_handling_auth` returns.
+    [c1] `read()` sets `_content` to the joined output of `iter_bytes()`. [c2] `iter_bytes()` (when `_content`
+    isn''t yet set) gets a decoder from `_get_content_decoder()` and creates a `ByteChunker`. [c3] It
+    loops over `iter_raw()`, which yields the raw bytes from the transport stream, and passes each piece
+    through `decoder.decode`. The decoded output goes through the chunker. After the loop it calls `decoder.flush()`
+    and `chunker.flush()` for the remaining output. [c3] For gzip, the decoder class is `GZipDecoder`,
+    whose `flush` calls `self.decompressor.flush()` and wraps `zlib.error` in `DecodingError`. [c4][c5]
+    Once `_content` is set, the `content` property returns it. [c6]
+
+
+    The evidence doesn''t show the body of `_get_content_decoder`, `iter_raw`, or `GZipDecoder.decode`,
+    so how the Content-Encoding header selects the gzip decoder and how `iter_raw` reads from the transport
+    are not covered.
+
+
+    Claims:
+
+    - Client.send calls response.read() when stream is False, after obtaining the response from _send_handling_auth.
+
+    - Response.read sets _content to b"".join(self.iter_bytes()) if not already set.
+
+    - iter_bytes obtains a decoder via _get_content_decoder, iterates iter_raw(), decodes each raw chunk
+    with decoder.decode, passes it through a ByteChunker, then flushes the decoder and chunker.
+
+    - GZipDecoder is the decoder class that handles ''gzip'' decoding.
+
+    - GZipDecoder.flush returns self.decompressor.flush() and converts zlib.error into DecodingError.
+
+    - The content property returns the stored _content, raising ResponseNotRead if it hasn''t been read.'
+  steps_correct: 2
+  coverage: 1
+  grounded: 2
+- id: f05
+  question_id: click-flow-004
+  question: When Bash asks for tab completion of a group's subcommand name (for example `cli sy<TAB>`
+    with `_CLI_COMPLETE=bash_complete`), how does Click compute and print the candidates?
+  reference_outline: '1. `Command.main` calls `_main_shell_completion` before normal parsing; it derives
+    the variable name `_{PROG_NAME}_COMPLETE`, returns if it is unset, and otherwise calls `shell_completion.shell_complete`
+    and exits with its return code.
+
+    2. `shell_complete` splits the instruction into shell and action, looks up the completion class with
+    `get_completion_class` (Bash here), and for the `complete` action echoes the result of `complete()`.
+
+    3. `ShellComplete.complete` gets the arguments and the incomplete word, calls `get_completions`, and
+    joins one formatted line per item.
+
+    4. `BashComplete.get_completion_args` splits `COMP_WORDS`, uses `COMP_CWORD` to separate the finished
+    arguments from the word being completed.
+
+    5. `ShellComplete.get_completions` builds the context with `_resolve_context`, picks the object to
+    complete with `_resolve_incomplete`, and calls that object''s `shell_complete`.
+
+    6. `_resolve_context` makes the root context with `resilient_parsing=True` and walks down through
+    any subcommands already typed, using `resolve_command` and `make_context`, without running callbacks.
+
+    7. `_resolve_incomplete` sees that the incomplete word is not an option and no argument is waiting
+    for a value, so it returns the current command (the group).
+
+    8. `Group.shell_complete` yields a `CompletionItem` for each visible subcommand whose name starts
+    with the incomplete word (with its short help), then appends whatever the base `Command.shell_complete`
+    adds (option names only when the word starts with a non-alphanumeric character, and siblings from
+    chained parent groups); `BashComplete.format_completion` writes each item as `type,value`.'
+  must_cite:
+  - py:src/click/core.py:Command._main_shell_completion:method
+  - py:src/click/shell_completion.py:shell_complete:function
+  - py:src/click/shell_completion.py:ShellComplete.complete:method
+  - py:src/click/shell_completion.py:BashComplete.get_completion_args:method
+  - py:src/click/shell_completion.py:ShellComplete.get_completions:method
+  - py:src/click/shell_completion.py:_resolve_context:function
+  - py:src/click/shell_completion.py:_resolve_incomplete:function
+  - py:src/click/core.py:Group.shell_complete:method
+  answer: '**Entry point:** `Command._main_shell_completion` builds the env var name (`_CLI_COMPLETE`)
+    and reads its value (`bash_complete`). If the value is set, it calls `shell_complete` and exits with
+    the returned status code. [c1]
+
+
+    **Dispatch:** `shell_complete` splits the value on `_` into shell `bash` and instruction `complete`.
+    It looks up the completion class and creates it with the CLI, args and program name. For the `complete`
+    instruction it echoes `comp.complete()` encoded as bytes and returns 0. [c2]
+
+
+    **Candidate computation:** The evidence does not include `ShellComplete.complete` or `get_completions`.
+    It does show the pieces they would use. `_resolve_incomplete` picks the Click object that handles
+    the incomplete word. When no option or argument is pending, it returns the group command. [c3] `Group.shell_complete`
+    then builds a `CompletionItem` for each visible subcommand whose name matches the incomplete text,
+    with the command''s short help. It also adds the results from the base `Command.shell_complete`. [c4]
+
+
+    **Printing:** `BashComplete.format_completion` formats each item as `type,value`, for example `plain,sync`.
+    [c5] The exact loop that joins items into the final output is not shown in the evidence.
+
+
+    Claims:
+
+    - _main_shell_completion reads the completion env var (default _{PROG_NAME}_COMPLETE uppercased),
+    and if set calls shell_complete and exits with its return value.
+
+    - shell_complete partitions the instruction on "_" into shell and instruction, instantiates the completion
+    class, and for "complete" echoes comp.complete() encoded and returns 0.
+
+    - _resolve_incomplete returns ctx.command when no option or argument is pending, so a group provides
+    command name completions.
+
+    - Group.shell_complete builds CompletionItems from visible subcommands matching the incomplete text,
+    with short help, and extends them with the base class results.
+
+    - BashComplete formats each item as "type,value".'
+  steps_correct: 2
+  coverage: 1
+  grounded: 2
+- id: f06
+  question_id: click-flow-004
+  question: When Bash asks for tab completion of a group's subcommand name (for example `cli sy<TAB>`
+    with `_CLI_COMPLETE=bash_complete`), how does Click compute and print the candidates?
+  reference_outline: '1. `Command.main` calls `_main_shell_completion` before normal parsing; it derives
+    the variable name `_{PROG_NAME}_COMPLETE`, returns if it is unset, and otherwise calls `shell_completion.shell_complete`
+    and exits with its return code.
+
+    2. `shell_complete` splits the instruction into shell and action, looks up the completion class with
+    `get_completion_class` (Bash here), and for the `complete` action echoes the result of `complete()`.
+
+    3. `ShellComplete.complete` gets the arguments and the incomplete word, calls `get_completions`, and
+    joins one formatted line per item.
+
+    4. `BashComplete.get_completion_args` splits `COMP_WORDS`, uses `COMP_CWORD` to separate the finished
+    arguments from the word being completed.
+
+    5. `ShellComplete.get_completions` builds the context with `_resolve_context`, picks the object to
+    complete with `_resolve_incomplete`, and calls that object''s `shell_complete`.
+
+    6. `_resolve_context` makes the root context with `resilient_parsing=True` and walks down through
+    any subcommands already typed, using `resolve_command` and `make_context`, without running callbacks.
+
+    7. `_resolve_incomplete` sees that the incomplete word is not an option and no argument is waiting
+    for a value, so it returns the current command (the group).
+
+    8. `Group.shell_complete` yields a `CompletionItem` for each visible subcommand whose name starts
+    with the incomplete word (with its short help), then appends whatever the base `Command.shell_complete`
+    adds (option names only when the word starts with a non-alphanumeric character, and siblings from
+    chained parent groups); `BashComplete.format_completion` writes each item as `type,value`.'
+  must_cite:
+  - py:src/click/core.py:Command._main_shell_completion:method
+  - py:src/click/shell_completion.py:shell_complete:function
+  - py:src/click/shell_completion.py:ShellComplete.complete:method
+  - py:src/click/shell_completion.py:BashComplete.get_completion_args:method
+  - py:src/click/shell_completion.py:ShellComplete.get_completions:method
+  - py:src/click/shell_completion.py:_resolve_context:function
+  - py:src/click/shell_completion.py:_resolve_incomplete:function
+  - py:src/click/core.py:Group.shell_complete:method
+  answer: 'Click checks the completion environment variable, dispatches to the Bash completer, and Group.shell_complete
+    builds the subcommand candidates, which are printed one per line as `type,value`.
+
+
+    1. `_main_shell_completion` derives the variable name `_{PROG_NAME}_COMPLETE` (uppercased, with `-`
+    and `.` replaced by `_`). It reads the instruction from the environment, returns if it is unset, and
+    otherwise calls `shell_complete` and exits with its return code [c1].
+
+    2. `shell_complete` splits the instruction on `_` into shell `bash` and instruction `complete`. It
+    looks up the completion class, builds it, and for `complete` echoes `comp.complete()` encoded as bytes
+    and returns 0 [c2].
+
+    3. The completer stores the cli, ctx_args, prog_name and complete_var [c3]. `BashComplete` defines
+    `get_completion_args` and `format_completion` [c4].
+
+    4. For a group, `Group.shell_complete` creates a `CompletionItem` for each visible subcommand matching
+    the incomplete text, using the command''s short help. It then appends the results of the parent class''s
+    `shell_complete`, such as options [c5].
+
+    5. Each item is formatted for Bash as `type,value`, e.g. `plain,sync` [c6]. The Bash script reads
+    each line and, for type `plain`, appends the value to `COMPREPLY` [c7].
+
+
+    The evidence does not show the body of `ShellComplete.complete` or `get_completion_args`, so how the
+    words are parsed and the context resolved is not covered.
+
+
+    Claims:
+
+    - _main_shell_completion computes the env var name _{PROG_NAME}_COMPLETE, reads the instruction, returns
+    if unset, otherwise calls shell_complete and exits with its result.
+
+    - shell_complete partitions the instruction into shell and instruction, gets the completion class,
+    and for "complete" echoes comp.complete() encoded and returns 0.
+
+    - The ShellComplete constructor stores cli, ctx_args, prog_name and complete_var.
+
+    - BashComplete has name "bash" and defines get_completion_args and format_completion.
+
+    - Group.shell_complete builds CompletionItems for visible subcommands matching the incomplete text,
+    with short help, then extends with the parent class''s completions.
+
+    - BashComplete.format_completion renders each item as "type,value".
+
+    - The Bash source script reads each response line as type,value and appends the value to COMPREPLY
+    when the type is plain.'
+  steps_correct: 2
+  coverage: 1
+  grounded: 2
+- id: f07
+  question_id: httpx-flow-004
+  question: When `Client.send` loads a non-streamed response whose `Content-Encoding` is gzip, how are
+    the raw bytes pulled from the transport stream and decompressed into `response.content`?
+  reference_outline: '1. After the auth and redirect handling returns a response, `Client.send` calls
+    `response.read()` unless `stream=True` was requested, closing the response if reading fails.
+
+    2. `Response.read` sets the content to the joined output of `iter_bytes` if it was not already loaded.
+
+    3. `iter_bytes` gets a decoder from `_get_content_decoder`, which maps each `Content-Encoding` value
+    through the `SUPPORTED_DECODERS` table ("gzip" maps to `GZipDecoder`), using a `MultiDecoder` for
+    several encodings and an `IdentityDecoder` for none.
+
+    4. `iter_raw` refuses a consumed or closed stream, then iterates the response''s stream, counting
+    downloaded bytes, and closes the response when done.
+
+    5. That stream is the `BoundSyncStream` set in `_send_single_request`, whose `__iter__` simply yields
+    the chunks of the transport''s stream.
+
+    6. Each raw chunk goes through `GZipDecoder.decode`, which decompresses it with a zlib object set
+    up for gzip framing and turns zlib errors into `DecodingError`; `iter_bytes` then flushes the decoder
+    and the chunker so the trailing bytes are included.'
+  must_cite:
+  - py:httpx/_client.py:Client.send:method
+  - py:httpx/_models.py:Response.read:method
+  - py:httpx/_models.py:Response.iter_bytes:method
+  - py:httpx/_models.py:Response._get_content_decoder:method
+  - py:httpx/_models.py:Response.iter_raw:method
+  - py:httpx/_decoders.py:GZipDecoder.decode:method
+  answer: 'The evidence does not include `Client.send` or the transport-stream reading code, so I can
+    only describe the decoding half of the path.
+
+
+    - `Response.read` builds `_content` by joining the output of `iter_bytes()` if `_content` is not yet
+    set. [c1] The async version, `aread`, does the same with `aiter_bytes()`. [c2]
+
+    - `iter_bytes` gets a content decoder with `_get_content_decoder()` and creates a `ByteChunker`. [c3]
+    It loops over `iter_raw()` and passes each raw chunk to `decoder.decode`, then runs the result through
+    the chunker. [c3] After the loop it calls `decoder.flush()` and `chunker.flush()` to emit what remains.
+    [c3] `aiter_bytes` follows the same steps using `aiter_raw()`. [c4]
+
+    - For gzip, the decoder is `GZipDecoder`. [c5] Its `decode` calls `self.decompressor.decompress(data)`
+    and turns a `zlib.error` into `DecodingError`. [c6] Its `flush` calls `self.decompressor.flush()`
+    and wraps errors the same way. [c7]
+
+    - The tests show this behaviour. A gzip-compressed body with `Content-Encoding: gzip` yields the original
+    bytes from `response.content`. [c8]
+
+
+    The evidence does not show how `Client.send` triggers the read, how `iter_raw` and `aiter_raw` pull
+    from the transport stream, or how `_get_content_decoder` chooses `GZipDecoder`.
+
+
+    Claims:
+
+    - Response.read sets _content to the join of iter_bytes() output if _content is not already set.
+
+    - Response.aread sets _content by joining the parts from aiter_bytes() if _content is not already
+    set.
+
+    - iter_bytes gets a decoder via _get_content_decoder, feeds each chunk from iter_raw through decoder.decode
+    and a ByteChunker, then flushes the decoder and chunker.
+
+    - aiter_bytes does the same as iter_bytes but iterates over aiter_raw asynchronously.
+
+    - GZipDecoder is the class that handles ''gzip'' decoding.
+
+    - GZipDecoder.decode decompresses data with self.decompressor.decompress and raises DecodingError
+    on zlib.error.
+
+    - GZipDecoder.flush calls self.decompressor.flush and raises DecodingError on zlib.error.
+
+    - The test_gzip test builds a gzip-compressed body with a Content-Encoding: gzip header and asserts
+    response.content equals the original body.'
+  steps_correct: 2
+  coverage: 1
+  grounded: 2
+- id: f08
+  question_id: remeda-flow-004
+  question: With the default trailing timing, how does a call to a `debounce`d function end up invoking
+    the wrapped function after the wait elapses?
+  reference_outline: '1. `debounce` validates that `maxWaitMs` is not less than `waitMs` and returns an
+    object whose `call` closes over the cool-down and max-wait timer IDs, the latest arguments, and the
+    last result.
+
+    2. On `call` with trailing timing, `handleDebouncedCall` saves the arguments as the latest call arguments
+    and, if `maxWaitMs` is set and no max-wait timer is running, starts one that will run `handleInvoke`.
+
+    3. `call` clears any running cool-down timer and starts a new one for `waitMs` (falling back to `maxWaitMs`,
+    then 0) pointing at `handleCoolDownEnd`, then returns the cached result from the previous invocation.
+
+    4. When the cool-down timer fires, `handleCoolDownEnd` clears the timer and, if latest arguments are
+    stored, calls `handleInvoke`.
+
+    5. `handleInvoke` clears the max-wait timer, takes and clears the stored arguments, calls the wrapped
+    function with them, and caches its return value as the new result.'
+  must_cite:
+  - ts:packages/remeda/src/debounce.ts:debounce:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleDebouncedCall:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleCoolDownEnd:function
+  - ts:packages/remeda/src/debounce.ts:debounce.handleInvoke:function
+  answer: 'With the default `trailing` timing, the first call starts a cool-down window and the wrapped
+    function is not called right away. It is invoked when the cool-down timer fires.
+
+
+    - `timing` defaults to `"trailing"` [c1].
+
+    - On a call with no active cool-down (`coolDownTimeoutId` undefined), trailing timing sends the call
+    to `handleDebouncedCall`, which saves the args as `latestCallArgs` [c2]. If `maxWaitMs` is set, it
+    also starts a max-wait timeout once [c3].
+
+    - `call` then arms `coolDownTimeoutId = setTimeout(handleCoolDownEnd, waitMs ?? maxWaitMs ?? 0)` [c4].
+
+    - A further call during the window is also debounced: it replaces the saved args, and the existing
+    cool-down timeout is cleared and re-armed, so the wait restarts [c5].
+
+    - When the timer fires, `handleCoolDownEnd` clears the timeout and, if `latestCallArgs` is set, calls
+    `handleInvoke` [c6].
+
+    - `handleInvoke` clears any max-wait timer, takes and resets `latestCallArgs`, calls `func(...args)`
+    and stores the return value in `result` [c7].
+
+    - `call` returns the cached `result`, which is `undefined` until the first invocation has happened
+    [c8].
+
+    - `flush` triggers the same end-of-cool-down handling manually [c9].
+
+
+    Claims:
+
+    - The `timing` option defaults to "trailing" in `debounce`.
+
+    - When no cool-down is active and timing is "trailing", `call` invokes `handleDebouncedCall(args)`
+    instead of calling `func`, and that stores the args in `latestCallArgs`.
+
+    - If `maxWaitMs` is defined, `handleDebouncedCall` starts a max-wait timeout (once) that runs `handleInvoke`.
+
+    - After handling the call, `call` sets `coolDownTimeoutId` via `setTimeout(handleCoolDownEnd, waitMs
+    ?? maxWaitMs ?? 0)`.
+
+    - A call during an in-flight cool-down (timing not "leading") is debounced and the existing cool-down
+    timeout is cleared before a new one is set.
+
+    - `handleCoolDownEnd` clears the cool-down timeout and, if `latestCallArgs` is defined, invokes `handleInvoke`.
+
+    - `handleInvoke` clears the max-wait timeout, consumes `latestCallArgs`, calls `func(...args)` and
+    stores the result in `result`.
+
+    - `call` returns the last computed `result` while debouncing, which is undefined before the first
+    invocation.
+
+    - `flush` calls `handleCoolDownEnd` to end the cool-down immediately and returns `result`.'
+  steps_correct: 2
+  coverage: 2
+  grounded: 2

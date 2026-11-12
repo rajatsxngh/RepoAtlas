@@ -1,0 +1,50 @@
+{
+  "f01": {
+    "coverage": 1,
+    "grounded": 2,
+    "steps_correct": 2,
+    "system": "hybrid_graphrag"
+  },
+  "f02": {
+    "coverage": 0,
+    "grounded": 1,
+    "steps_correct": 1,
+    "system": "hybrid_graphrag"
+  },
+  "f03": {
+    "coverage": 2,
+    "grounded": 2,
+    "steps_correct": 1,
+    "system": "vector_only"
+  },
+  "f04": {
+    "coverage": 1,
+    "grounded": 1,
+    "steps_correct": 2,
+    "system": "hybrid_graphrag"
+  },
+  "f05": {
+    "coverage": 1,
+    "grounded": 1,
+    "steps_correct": 2,
+    "system": "vector_only"
+  },
+  "f06": {
+    "coverage": 1,
+    "grounded": 2,
+    "steps_correct": 2,
+    "system": "hybrid_graphrag"
+  },
+  "f07": {
+    "coverage": 1,
+    "grounded": 1,
+    "steps_correct": 2,
+    "system": "vector_only"
+  },
+  "f08": {
+    "coverage": 2,
+    "grounded": 2,
+    "steps_correct": 2,
+    "system": "hybrid_graphrag"
+  }
+}

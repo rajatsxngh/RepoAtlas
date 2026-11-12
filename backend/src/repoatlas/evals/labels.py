@@ -28,6 +28,7 @@ from repoatlas.canonical import pretty_json, write_text_lf
 from repoatlas.evals.outputs import JudgeScore, SupportLabel, SystemOutput
 
 EXPLORATORY_KAPPA = 0.6  # "substantial" agreement or better is reported as measured
+MIN_ITEMS = 20  # fewer labeled items than this: exploratory whatever the kappa
 SUPPORT_LABELS = ("supported", "partial", "unsupported")
 RUBRIC = ("steps_correct", "coverage", "grounded")
 
@@ -85,6 +86,7 @@ class LabelFile(BaseModel):
     instructions: str
     source: dict[str, Any]
     labeler: str | None = None  # who filled it in
+    human: bool = True  # False when the labels were delegated to a model
     items: list[dict[str, Any]]
 
 
@@ -289,6 +291,7 @@ class Agreement(BaseModel):
     per_criterion: dict[str, dict[str, float | None]] = Field(default_factory=dict)
     total_mean_abs_diff: float | None = None
     distribution: dict[str, dict[str, int]] = Field(default_factory=dict)
+    human: bool
     exploratory: bool
     note: str
 
@@ -303,7 +306,6 @@ def agreement(labels: LabelFile, machine: dict[str, Any]) -> Agreement:
         human = [h for h, _ in pairs]
         auto = [m for _, m in pairs]
         kappa = cohen_kappa(human, auto, categories=SUPPORT_LABELS)
-        exploratory = kappa is None or kappa < EXPLORATORY_KAPPA
         return Agreement(
             kind="claim_support",
             labeler=labels.labeler,
@@ -311,11 +313,12 @@ def agreement(labels: LabelFile, machine: dict[str, Any]) -> Agreement:
             accuracy=accuracy(human, auto),
             kappa=kappa,
             distribution={
-                "human": dict(Counter(human)),
+                "labeler": dict(Counter(human)),
                 "machine": dict(Counter(auto)),
             },
-            exploratory=exploratory,
-            note=_note(kappa, len(pairs)),
+            human=labels.human,
+            exploratory=_exploratory(kappa, len(pairs), labels.human),
+            note=_note(kappa, len(pairs), labels.human),
         )
     rows = [
         (item, machine[item["id"]])
@@ -345,16 +348,29 @@ def agreement(labels: LabelFile, machine: dict[str, Any]) -> Agreement:
         kappa=kappa,
         per_criterion=per,
         total_mean_abs_diff=sum(totals) / len(totals) if totals else None,
-        exploratory=kappa is None or kappa < EXPLORATORY_KAPPA,
-        note=_note(kappa, len(rows)),
+        human=labels.human,
+        exploratory=_exploratory(kappa, len(rows), labels.human),
+        note=_note(kappa, len(rows), labels.human),
     )
 
 
-def _note(kappa: float | None, n: int) -> str:
+def _exploratory(kappa: float | None, n: int, human: bool) -> bool:
+    return not human or n < MIN_ITEMS or kappa is None or kappa < EXPLORATORY_KAPPA
+
+
+def _note(kappa: float | None, n: int, human: bool = True) -> str:
     if kappa is None:
-        return "No human labels yet: results are exploratory."
-    level = "measured" if kappa >= EXPLORATORY_KAPPA else "exploratory"
-    return f"kappa {kappa:.2f} on {n} items: results are reported as {level}."
+        return "No labels yet: results are exploratory."
+    reasons = []
+    if not human:
+        reasons.append("the labels were made by a model, not a person")
+    if n < MIN_ITEMS:
+        reasons.append(f"fewer than {MIN_ITEMS} items")
+    if kappa < EXPLORATORY_KAPPA:
+        reasons.append(f"kappa below {EXPLORATORY_KAPPA}")
+    if reasons:
+        return f"kappa {kappa:.2f} on {n} items: results are exploratory ({'; '.join(reasons)})."
+    return f"kappa {kappa:.2f} on {n} items: results are reported as measured."
 
 
 def render_agreement(result: Agreement) -> str:

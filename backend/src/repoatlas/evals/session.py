@@ -169,6 +169,11 @@ JUDGE_BIAS_NOTE = (
     "systems (a known bias); the judge is blind to system names, sees answers truncated to a "
     "fixed length, and its agreement with human labels is reported separately."
 )
+LABELS_NOTE = (
+    "Claim-support and judge results are exploratory: the reference labels in eval/labels/ were "
+    "made by Claude at the owner's request, not by a person (agreement in "
+    "eval/labels/*.agreement.md)."
+)
 
 
 def report_meta(prepared: Prepared) -> ReportMeta:
@@ -180,6 +185,7 @@ def report_meta(prepared: Prepared) -> ReportMeta:
     notes = []
     if prepared.enrichers:
         notes.append(JUDGE_BIAS_NOTE)
+        notes.append(LABELS_NOTE)
     return ReportMeta(
         suite_info=prepared.suite_info,
         models=models,

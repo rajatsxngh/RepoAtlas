@@ -1,0 +1,696 @@
+kind: claim_support
+instructions: For each item, read the claim and only the code shown, then set label to supported (the
+  code shows everything the claim says), partial (it shows part of it, or the claim goes further), or
+  unsupported (it doesn't show it, or contradicts it). Set labeler at the top to your name. Don't look
+  at the .machine.json file until you're done.
+source:
+  report_system: hybrid_graphrag
+  split: dev
+  config_fingerprint: 336d0e522fb752837ef2accd42bc67b42d7ad521ef466ddc82a75a5b68769301
+  checker: 9c45521873d7343ca64e2a6b3a7268ef4ca06d7dca1f94d049ec6c6e6d67885f
+  seed: 7
+labeler: Claude (Opus 5.5), delegated by the owner; not a human label
+human: false
+items:
+- id: s01
+  question_id: requests-callers-006
+  run: 0
+  claim_id: c2
+  claim: The test_lower_items test in tests/test_structures.py calls case_insensitive_dict.lower_items()
+    and asserts it equals [("accept", "application/json")].
+  code:
+    tests/test_structures.py#L29-L32@3065057: "    def test_lower_items(self):\n        assert list(self.case_insensitive_dict.lower_items())\
+      \ == [\n            (\"accept\", \"application/json\")\n        ]"
+  label: supported
+- id: s02
+  question_id: requests-impact-002
+  run: 0
+  claim_id: c3
+  claim: remove_cookie_by_name collects the (domain, path, name) of matching cookies and then calls cookiejar.clear
+    for each.
+  code:
+    src/requests/cookies.py#L164-L182@2e3fc21: "def remove_cookie_by_name(\n    cookiejar: CookieJar,\
+      \ name: str, domain: str | None = None, path: str | None = None\n) -> None:\n    \"\"\"Unsets a\
+      \ cookie by name, by default over all domains and paths.\n\n    Wraps CookieJar.clear(), is O(n).\n\
+      \    \"\"\"\n    clearables: list[tuple[str, str, str]] = []\n    for cookie in cookiejar:\n   \
+      \     if cookie.name != name:\n            continue\n        if domain is not None and domain !=\
+      \ cookie.domain:\n            continue\n        if path is not None and path != cookie.path:\n \
+      \           continue\n        clearables.append((cookie.domain, cookie.path, cookie.name))\n\n \
+      \   for domain, path, name in clearables:\n        cookiejar.clear(domain, path, name)"
+  label: supported
+- id: s03
+  question_id: remeda-callers-004
+  run: 0
+  claim_id: c1
+  claim: The data-first test named "concat" calls concat([1, 2, 3], ["a"]).
+  code:
+    packages/remeda/src/concat.test.ts#L8-L12@745dd44: "  test(\"concat\", () => {\n    const actual =\
+      \ concat([1, 2, 3] as const, [\"a\"] as const);\n\n    expect(actual).toStrictEqual([1, 2, 3, \"\
+      a\"] as const);\n  });"
+  label: supported
+- id: s04
+  question_id: httpx-impact-004
+  run: 0
+  claim_id: c3
+  claim: _build_request_auth calls self._build_auth(auth) when the per-request auth is not UseClientDefault.
+  code:
+    httpx/_client.py#L457-L473@13cd933: "    def _build_request_auth(\n        self,\n        request:\
+      \ Request,\n        auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,\n    ) -> Auth:\n\
+      \        auth = (\n            self._auth if isinstance(auth, UseClientDefault) else self._build_auth(auth)\n\
+      \        )\n\n        if auth is not None:\n            return auth\n\n        username, password\
+      \ = request.url.username, request.url.password\n        if username or password:\n            return\
+      \ BasicAuth(username=username, password=password)\n\n        return Auth()"
+  label: supported
+- id: s05
+  question_id: requests-multihop-002
+  run: 0
+  claim_id: c2
+  claim: The conftest prepare_url is a separate helper that builds a URL-joining closure, not PreparedRequest.prepare_url.
+  code:
+    tests/conftest.py#L15-L22@bfb44b9: "def prepare_url(value):\n    # Issue #1483: Make sure the URL\
+      \ always has a trailing slash\n    httpbin_url = value.url.rstrip(\"/\") + \"/\"\n\n    def inner(*suffix):\n\
+      \        return urljoin(httpbin_url, \"/\".join(suffix))\n\n    return inner"
+  label: supported
+- id: s06
+  question_id: httpx-callers-004
+  run: 0
+  claim_id: c5
+  claim: QueryParams.add calls primitive_value_to_str on the appended value.
+  code:
+    httpx/_urls.py#L552-L565@301d087: "    def add(self, key: str, value: typing.Any = None) -> QueryParams:\n\
+      \        \"\"\"\n        Return a new QueryParams instance, setting or appending the value of a\
+      \ key.\n\n        Usage:\n\n        q = httpx.QueryParams(\"a=123\")\n        q = q.add(\"a\", \"\
+      456\")\n        assert q == httpx.QueryParams(\"a=123&a=456\")\n        \"\"\"\n        q = QueryParams()\n\
+      \        q._dict = dict(self._dict)\n        q._dict[str(key)] = q.get_list(key) + [primitive_value_to_str(value)]\n\
+      \        return q"
+  label: supported
+- id: s07
+  question_id: httpx-flow-004
+  run: 0
+  claim_id: c2
+  claim: Response.read sets _content to b"".join(self.iter_bytes()) if not already set.
+  code:
+    httpx/_models.py#L876-L882@2cc8632: "    def read(self) -> bytes:\n        \"\"\"\n        Read and\
+      \ return the response content.\n        \"\"\"\n        if not hasattr(self, \"_content\"):\n  \
+      \          self._content = b\"\".join(self.iter_bytes())\n        return self._content"
+  label: supported
+- id: s08
+  question_id: remeda-flow-004
+  run: 0
+  claim_id: c8
+  claim: '`call` returns the last computed `result` while debouncing, which is undefined before the first
+    invocation.'
+  code:
+    packages/remeda/src/debounce.ts#L221-L289@6d9de4c: "          // @ts-expect-error [ts2345, ts2322]\
+      \ -- TypeScript infers the generic\n          // sub-types too eagerly, making itself blind to the\
+      \ fact that the\n          // types match here.\n          result = func(...args);\n        }\n\
+      \      } else {\n        // There's an inflight cool-down window.\n\n        if (timing !== \"leading\"\
+      ) {\n          // When the timing is 'leading' all following calls are just ignored\n          //\
+      \ until the cool-down period ends. But for the other timings the call\n          // is \"debounced\"\
+      .\n          handleDebouncedCall(args);\n        }\n\n        // The current timeout is no longer\
+      \ relevant because we need to wait the\n        // full `waitMs` time from this call.\n        const\
+      \ timeoutId = coolDownTimeoutId;\n        coolDownTimeoutId = undefined;\n        clearTimeout(timeoutId);\n\
+      \      }\n\n      coolDownTimeoutId = setTimeout(\n        handleCoolDownEnd,\n        // If waitMs\
+      \ is not defined but maxWaitMs *is* it means the user is only\n        // interested in the leaky-bucket\
+      \ nature of the debouncer which is\n        // achieved by setting waitMs === maxWaitMs. If both\
+      \ are not defined we\n        // default to 0 which would wait until the end of the execution frame.\n\
+      \        waitMs ?? maxWaitMs ?? 0,\n      );\n\n      // Return the last computed result while we\
+      \ \"debounce\" further calls.\n      return result;\n    },\n\n    cancel: () => {\n      // Reset\
+      \ all \"in-flight\" state of the debouncer. Notice that we keep the\n      // cached value!\n\n\
+      \      if (coolDownTimeoutId !== undefined) {\n        const timeoutId = coolDownTimeoutId;\n  \
+      \      coolDownTimeoutId = undefined;\n        clearTimeout(timeoutId);\n      }\n\n      if (maxWaitTimeoutId\
+      \ !== undefined) {\n        const timeoutId = maxWaitTimeoutId;\n        maxWaitTimeoutId = undefined;\n\
+      \        clearTimeout(timeoutId);\n      }\n\n      latestCallArgs = undefined;\n    },\n\n    flush:\
+      \ () => {\n      // Flush is just a manual way to trigger the end of the cool-down window.\n   \
+      \   handleCoolDownEnd();\n      return result;\n    },\n\n    get isPending() {\n      return coolDownTimeoutId\
+      \ !== undefined;\n    },\n\n    get cachedValue() {\n      return result;\n    },\n  };\n}"
+    packages/remeda/src/debounce.ts#L113-L230@6d9de4c: "export function debounce<F extends StrictFunction>(\n\
+      \  func: F,\n  {\n    waitMs,\n    timing = \"trailing\",\n    maxWaitMs,\n  }: DebounceOptions\
+      \ & {\n    readonly timing?: \"both\" | \"leading\" | \"trailing\";\n  },\n): Debouncer<F> {\n \
+      \ if (maxWaitMs !== undefined && waitMs !== undefined && maxWaitMs < waitMs) {\n    throw new Error(\n\
+      \      `debounce: maxWaitMs (${maxWaitMs.toString()}) cannot be less than waitMs (${waitMs.toString()})`,\n\
+      \    );\n  }\n\n  // All these are part of the debouncer runtime state:\n\n  // The timeout is the\
+      \ main object we use to tell if there's an active cool-\n  // down period or not.\n  let coolDownTimeoutId:\
+      \ ReturnType<typeof setTimeout> | undefined;\n\n  // We use an additional timeout to track how long\
+      \ the last debounced call is\n  // waiting.\n  let maxWaitTimeoutId: ReturnType<typeof setTimeout>\
+      \ | undefined;\n\n  // For 'trailing' invocations we need to keep the args around until we\n  //\
+      \ actually invoke the function.\n  let latestCallArgs: Parameters<F> | undefined;\n\n  // To make\
+      \ any value of the debounced function we need to be able to return a\n  // value. For any invocation\
+      \ except the first one when 'leading' is enabled we\n  // will return this cached value.\n  let\
+      \ result: ReturnType<F> | undefined;\n\n  const handleInvoke = (): void => {\n    if (maxWaitTimeoutId\
+      \ !== undefined) {\n      // We are invoking the function so the wait is over...\n      const timeoutId\
+      \ = maxWaitTimeoutId;\n      maxWaitTimeoutId = undefined;\n      clearTimeout(timeoutId);\n   \
+      \ }\n\n    /* v8 ignore if -- This protects us against changes to the logic, there is no known flow\
+      \ we can simulate to reach this condition. It can only happen if a previous timeout isn't cleared\
+      \ (or faces a race condition clearing). @preserve */\n    if (latestCallArgs === undefined) {\n\
+      \      // If you see this error pop up when using this function please report\n      // it on the\
+      \ Remeda github page!\n      throw new Error(\n        \"REMEDA[debounce]: latestCallArgs was unexpectedly\
+      \ undefined.\",\n      );\n    }\n\n    const args = latestCallArgs;\n    // Make sure the args\
+      \ aren't accidentally used again, this is mainly\n    // relevant for the check above where we'll\
+      \ fail a subsequent call to\n    // 'trailingEdge'.\n    latestCallArgs = undefined;\n\n    // Invoke\
+      \ the function and store the results locally.\n    // @ts-expect-error [ts2345, ts2322] -- TypeScript\
+      \ infers the generic sub-\n    // types too eagerly, making itself blind to the fact that the types\
+      \ match\n    // here.\n    result = func(...args);\n  };\n\n  const handleCoolDownEnd = (): void\
+      \ => {\n    if (coolDownTimeoutId === undefined) {\n      // It's rare to get here, it should only\
+      \ happen when `flush` is called\n      // when the cool-down window isn't active.\n      return;\n\
+      \    }\n\n    // Make sure there are no more timers running.\n    const timeoutId = coolDownTimeoutId;\n\
+      \    coolDownTimeoutId = undefined;\n    clearTimeout(timeoutId);\n    // Then reset state so a\
+      \ new cool-down window can begin on the next call.\n\n    if (latestCallArgs !== undefined) {\n\
+      \      // If we have a debounced call waiting to be invoked at the end of the\n      // cool-down\
+      \ period we need to invoke it now.\n      handleInvoke();\n    }\n  };\n\n  const handleDebouncedCall\
+      \ = (args: Parameters<F>): void => {\n    // We save the latest call args so that (if and) when\
+      \ we invoke the function\n    // in the future, we have args to invoke it with.\n    latestCallArgs\
+      \ = args;\n\n    if (maxWaitMs !== undefined && maxWaitTimeoutId === undefined) {\n      // We only\
+      \ need to start the maxWait timeout once, on the first debounced\n      // call that is now being\
+      \ delayed.\n      maxWaitTimeoutId = setTimeout(handleInvoke, maxWaitMs);\n    }\n  };\n\n  return\
+      \ {\n    call: (...args) => {\n      if (coolDownTimeoutId === undefined) {\n        // This call\
+      \ is starting a new cool-down window!\n\n        if (timing === \"trailing\") {\n          // Only\
+      \ when the timing is \"trailing\" is the first call \"debounced\".\n          handleDebouncedCall(args);\n\
+      \        } else {\n          // Otherwise for \"leading\" and \"both\" the first call is actually\n\
+      \          // called directly and not via a timeout.\n          // @ts-expect-error [ts2345, ts2322]\
+      \ -- TypeScript infers the generic\n          // sub-types too eagerly, making itself blind to the\
+      \ fact that the\n          // types match here.\n          result = func(...args);\n        }\n\
+      \      } else {\n        // There's an inflight cool-down window.\n\n        if (timing !== \"leading\"\
+      ) {\n          // When the timing is 'leading' all following calls are just ignored"
+  label: supported
+- id: s09
+  question_id: zod-multihop-004
+  run: 0
+  claim_id: c5
+  claim: The mini test "z.never" calls z.never().
+  code:
+    packages/zod/src/v4/mini/tests/index.test.ts#L206-L209@87b31af: "test(\"z.never\", () => {\n  const\
+      \ a = z.never();\n  expect(() => z.parse(a, \"hello\")).toThrow();\n});"
+  label: supported
+- id: s10
+  question_id: requests-flow-004
+  run: 0
+  claim_id: c2
+  claim: Mapping data (such as a dict) is excluded from the streamed-body branch, so it goes to the else
+    branch.
+  code:
+    src/requests/models.py#L574-L650@59b5615: "    def prepare_body(\n        self, data: _t.DataType,\
+      \ files: _t.FilesType, json: _t.JsonType = None\n    ) -> None:\n        \"\"\"Prepares the given\
+      \ HTTP body data.\"\"\"\n\n        # Check if file, fo, generator, iterator.\n        # If not,\
+      \ run through normal process.\n\n        # Nottin' on you.\n        body = None\n        content_type\
+      \ = None\n\n        if not data and json is not None:\n            # urllib3 requires a bytes-like\
+      \ body. Python 2's json.dumps\n            # provides this natively, but Python 3 gives a Unicode\
+      \ string.\n            content_type = \"application/json\"\n\n            try:\n               \
+      \ body = complexjson.dumps(json, allow_nan=False)\n            except ValueError as ve:\n      \
+      \          raise InvalidJSONError(ve, request=self)\n\n            if not isinstance(body, bytes):\n\
+      \                body = body.encode(\"utf-8\")\n\n        # data that proxies attributes to underlying\
+      \ objects needs hasattr\n        is_iterable = isinstance(data, Iterable) or hasattr(data, \"__iter__\"\
+      )\n        if is_iterable and not isinstance(data, (str, bytes, list, tuple, Mapping)):\n      \
+      \      try:\n                length = super_len(data)\n            except (TypeError, AttributeError,\
+      \ UnsupportedOperation):\n                length = None\n\n            body = data\n\n         \
+      \   if getattr(body, \"tell\", None) is not None:\n                # Record the current file position\
+      \ before reading.\n                # This will allow us to rewind a file in the event\n        \
+      \        # of a redirect.\n                try:\n                    self._body_position = body.tell()\
+      \  # type: ignore[union-attr]  # guarded by getattr check\n                except OSError:\n   \
+      \                 # This differentiates from None, allowing us to catch\n                    # a\
+      \ failed `tell()` later when trying to rewind the body\n                    self._body_position\
+      \ = object()\n\n            if files:\n                raise NotImplementedError(\n            \
+      \        \"Streamed bodies and files are mutually exclusive.\"\n                )\n\n          \
+      \  if length:\n                self.headers[\"Content-Length\"] = builtin_str(length)\n        \
+      \    else:\n                self.headers[\"Transfer-Encoding\"] = \"chunked\"\n        else:\n \
+      \           # After is_stream filtering, remaining data is raw (not streamed)\n            raw_data\
+      \ = cast(\"_t.RawDataType | None\", data)\n\n            # Multi-part file uploads.\n          \
+      \  if files:\n                (body, content_type) = self._encode_files(files, raw_data)\n     \
+      \       else:\n                if raw_data:\n                    body = self._encode_params(raw_data)\n\
+      \                    if isinstance(data, basestring) or isinstance(data, _SupportsRead):\n     \
+      \                   content_type = None\n                    else:\n                        content_type\
+      \ = \"application/x-www-form-urlencoded\"\n\n            self.prepare_content_length(body)\n\n \
+      \           # Add content-type if it wasn't explicitly provided.\n            if content_type and\
+      \ (\"content-type\" not in self.headers):\n                self.headers[\"Content-Type\"] = content_type\n\
+      \n        self.body = body  # type: ignore[assignment]  # body transforms from DataType to BodyType"
+  label: supported
+- id: s11
+  question_id: click-multihop-001
+  run: 0
+  claim_id: c1
+  claim: test_pipepager_less_detection_case_insensitive_on_windows calls click._termui_impl._pipepager
+    directly in a with statement.
+  code:
+    tests/test_termui.py#L805-L821@e4e0d6c: "@pytest.mark.skipif(WIN, reason=\"The fake pager is a shell\
+      \ script.\")\ndef test_pipepager_less_detection_case_insensitive_on_windows(monkeypatch, tmp_path):\n\
+      \    \"\"\"Windows filesystems are case-insensitive, so ``which`` resolves\n    whatever case the\
+      \ file carries: the ``less`` match casefolds there.\n\n    Runs ``_pipepager`` directly: faking\
+      \ ``WIN`` makes\n    ``_pager_contextmanager`` route to the temp file strategy instead.\n    \"\"\
+      \"\n    fake_pager = tmp_path / \"LESS.EXE\"\n    fake_pager.write_text(\"#!/bin/sh\\ncat\\n\",\
+      \ encoding=\"UTF-8\")\n    fake_pager.chmod(0o755)\n\n    monkeypatch.setattr(click._termui_impl,\
+      \ \"WIN\", True)\n    monkeypatch.delitem(click._termui_impl.os.environ, \"LESS\", raising=False)\n\
+      \n    with click._termui_impl._pipepager(fake_pager, []) as (_, color):\n        assert color is\
+      \ True"
+  label: supported
+- id: s12
+  question_id: requests-lookup-001
+  run: 0
+  claim_id: c2
+  claim: The build_response method body constructs a Response from a urllib3 response, setting status_code,
+    headers, encoding, raw, reason, url, cookies, request and connection.
+  code:
+    src/requests/adapters.py#L365-L401@40fe8a6: "    def build_response(self, req: PreparedRequest, resp:\
+      \ Any) -> Response:\n        \"\"\"Builds a :class:`Response <requests.Response>` object from a\
+      \ urllib3\n        response. This should not be called from user code, and is only exposed\n   \
+      \     for use when subclassing the\n        :class:`HTTPAdapter <requests.adapters.HTTPAdapter>`\n\
+      \n        :param req: The :class:`PreparedRequest <PreparedRequest>` used to generate the response.\n\
+      \        :param resp: The urllib3 response object.\n        :rtype: requests.Response\n        \"\
+      \"\"\n        assert _is_prepared(req)\n        response = Response()\n\n        # Fallback to None\
+      \ if there's no status_code, for whatever reason.\n        response.status_code = getattr(resp,\
+      \ \"status\", None)  # type: ignore[assignment]\n\n        # Make headers case-insensitive.\n  \
+      \      response.headers = CaseInsensitiveDict(getattr(resp, \"headers\", {}))\n\n        # Set encoding.\n\
+      \        response.encoding = get_encoding_from_headers(response.headers)\n        response.raw =\
+      \ resp\n        response.reason = response.raw.reason\n\n        if isinstance(req.url, bytes):\n\
+      \            response.url = req.url.decode(\"utf-8\")\n        else:\n            response.url =\
+      \ req.url\n\n        # Add new cookies from the server.\n        extract_cookies_to_jar(response.cookies,\
+      \ req, resp)\n\n        # Give the Response some context.\n        response.request = req\n    \
+      \    response.connection = self\n\n        return response"
+  label: supported
+- id: s13
+  question_id: requests-callers-002
+  run: 0
+  claim_id: c3
+  claim: dotted_netmask is imported from requests.utils in tests/test_utils.py.
+  code:
+    tests/test_utils.py#L1-L539@091a9fd: "import copy\nimport filecmp\nimport os\nimport tarfile\nimport\
+      \ zipfile\nfrom collections import deque\nfrom io import BytesIO\nfrom unittest import mock\n\n\
+      import pytest\n\nfrom requests import compat\nfrom requests._internal_utils import unicode_is_ascii\n\
+      from requests.cookies import RequestsCookieJar\nfrom requests.structures import CaseInsensitiveDict\n\
+      from requests.utils import (\n    _parse_content_type_header,\n    add_dict_to_cookiejar,\n    address_in_network,\n\
+      \    dotted_netmask,\n    extract_zipped_paths,\n    get_auth_from_url,\n    get_encoding_from_headers,\n\
+      \    get_encodings_from_content,\n    get_environ_proxies,\n    get_netrc_auth,\n    guess_filename,\n\
+      \    guess_json_utf,\n    is_ipv4_address,\n    is_valid_cidr,\n    iter_slices,\n    parse_dict_header,\n\
+      \    parse_header_links,\n    prepend_scheme_if_needed,\n    requote_uri,\n    select_proxy,\n \
+      \   set_environ,\n    should_bypass_proxies,\n    super_len,\n    to_key_val_list,\n    to_native_string,\n\
+      \    unquote_header_value,\n    unquote_unreserved,\n    urldefragauth,\n)\n\nfrom .compat import\
+      \ StringIO, cStringIO\n\n\nclass TestSuperLen:\n    @pytest.mark.parametrize(\n        \"stream,\
+      \ value\",\n        (\n            (StringIO.StringIO, \"Test\"),\n            (BytesIO, b\"Test\"\
+      ),\n            pytest.param(\n                cStringIO, \"Test\", marks=pytest.mark.skipif(\"\
+      cStringIO is None\")\n            ),\n        ),\n    )\n    def test_io_streams(self, stream, value):\n\
+      \        \"\"\"Ensures that we properly deal with different kinds of IO streams.\"\"\"\n       \
+      \ assert super_len(stream()) == 0\n        assert super_len(stream(value)) == 4\n\n    def test_super_len_correctly_calculates_len_of_partially_read_file(self):\n\
+      \        \"\"\"Ensure that we handle partially consumed file like objects.\"\"\"\n        s = StringIO.StringIO()\n\
+      \        s.write(\"foobarbogus\")\n        assert super_len(s) == 0\n\n    @pytest.mark.parametrize(\"\
+      error\", [IOError, OSError])\n    def test_super_len_handles_files_raising_weird_errors_in_tell(self,\
+      \ error):\n        \"\"\"If tell() raises errors, assume the cursor is at position zero.\"\"\"\n\
+      \n        class BoomFile:\n            def __len__(self):\n                return 5\n\n        \
+      \    def tell(self):\n                raise error()\n\n        assert super_len(BoomFile()) == 0\n\
+      \n    @pytest.mark.parametrize(\"error\", [IOError, OSError])\n    def test_super_len_tell_ioerror(self,\
+      \ error):\n        \"\"\"Ensure that if tell gives an IOError super_len doesn't fail\"\"\"\n\n \
+      \       class NoLenBoomFile:\n            def tell(self):\n                raise error()\n\n   \
+      \         def seek(self, offset, whence):\n                pass\n\n        assert super_len(NoLenBoomFile())\
+      \ == 0\n\n    def test_string(self):\n        assert super_len(\"Test\") == 4\n\n    @pytest.mark.parametrize(\n\
+      \        \"mode, warnings_num\",\n        (\n            (\"r\", 1),\n            (\"rb\", 0),\n\
+      \        ),\n    )\n    def test_file(self, tmpdir, mode, warnings_num, recwarn):\n        file_obj\
+      \ = tmpdir.join(\"test.txt\")\n        file_obj.write(\"Test\")\n        with file_obj.open(mode)\
+      \ as fd:\n            assert super_len(fd) == 4\n        assert len(recwarn) == warnings_num\n\n\
+      \    def test_tarfile_member(self, tmpdir):\n        file_obj = tmpdir.join(\"test.txt\")\n    \
+      \    file_obj.write(\"Test\")\n\n        tar_obj = str(tmpdir.join(\"test.tar\"))\n        with\
+      \ tarfile.open(tar_obj, \"w\") as tar:"
+  label: supported
+- id: s14
+  question_id: zod-flow-004
+  run: 0
+  claim_id: c1
+  claim: 'In v3, the `transform` method returns a `ZodEffects` that wraps the original schema (`schema:
+    this`) with a transform effect holding the function.'
+  code:
+    packages/zod/src/v3/types.ts#L468-L477@17bef73: "  transform<NewOut>(\n    transform: (arg: Output,\
+      \ ctx: RefinementCtx) => NewOut | Promise<NewOut>\n  ): ZodEffects<this, NewOut> {\n    return new\
+      \ ZodEffects({\n      ...processCreateParams(this._def),\n      schema: this,\n      typeName: ZodFirstPartyTypeKind.ZodEffects,\n\
+      \      effect: { type: \"transform\", transform },\n    }) as any;\n  }"
+  label: supported
+- id: s15
+  question_id: click-callers-001
+  run: 0
+  claim_id: c2
+  claim: '`confirmation_option` is defined to return `option(*param_decls, **kwargs)`, so it delegates
+    to `option` rather than calling any test.'
+  code:
+    src/click/decorators.py#L380-L401@0c7b6c4: "def confirmation_option(*param_decls: str, **kwargs: t.Any)\
+      \ -> t.Callable[[FC], FC]:\n    \"\"\"Add a ``--yes`` option which shows a prompt before continuing\
+      \ if\n    not passed. If the prompt is declined, the program will exit.\n\n    :param param_decls:\
+      \ One or more option names. Defaults to the single\n        value ``\"--yes\"``.\n    :param kwargs:\
+      \ Extra arguments are passed to :func:`option`.\n    \"\"\"\n\n    def callback(ctx: Context, param:\
+      \ Parameter, value: bool) -> None:\n        if not value:\n            ctx.abort()\n\n    if not\
+      \ param_decls:\n        param_decls = (\"--yes\",)\n\n    kwargs.setdefault(\"is_flag\", True)\n\
+      \    kwargs.setdefault(\"callback\", callback)\n    kwargs.setdefault(\"expose_value\", False)\n\
+      \    kwargs.setdefault(\"prompt\", _(\"Do you want to continue?\"))\n    kwargs.setdefault(\"help\"\
+      , _(\"Confirm the action without prompting.\"))\n    return option(*param_decls, **kwargs)"
+  label: supported
+- id: s16
+  question_id: remeda-impact-002
+  run: 0
+  claim_id: c1
+  claim: mapWithFeedback delegates to purryWithLazy with mapWithFeedbackImplementation, arity 3 and lazyImplementation.
+  code:
+    packages/remeda/src/mapWithFeedback.ts#L70-L77@dbcbb04: "export function mapWithFeedback(...args:\
+      \ readonly unknown[]): unknown {\n  return purryWithLazy(\n    mapWithFeedbackImplementation,\n\
+      \    3,\n    lazyImplementation,\n    args,\n  );\n}"
+  label: supported
+- id: s17
+  question_id: click-lookup-002
+  run: 0
+  claim_id: c1
+  claim: The function `_unpack_args` is defined at module level in src/click/parser.py, taking args and
+    nargs_spec sequences and returning a tuple of unpacked arguments and a list of remaining arguments.
+  code:
+    src/click/parser.py#L51-L108@4fcbf7c: "def _unpack_args(\n    args: cabc.Sequence[str], nargs_spec:\
+      \ cabc.Sequence[int]\n) -> tuple[cabc.Sequence[str | cabc.Sequence[str | T_UNSET] | T_UNSET], list[str]]:\n\
+      \    \"\"\"Given an iterable of arguments and an iterable of nargs specifications,\n    it returns\
+      \ a tuple with all the unpacked arguments at the first index\n    and all remaining arguments as\
+      \ the second.\n\n    The nargs specification is the number of arguments that should be consumed\n\
+      \    or `-1` to indicate that this position should eat up all the remainders.\n\n    Missing items\
+      \ are filled with ``UNSET``.\n    \"\"\"\n    args = deque(args)\n    nargs_spec = deque(nargs_spec)\n\
+      \    rv: list[str | tuple[str | T_UNSET, ...] | T_UNSET] = []\n    spos: int | None = None\n\n \
+      \   def _fetch(c: deque[str]) -> str | T_UNSET:\n        try:\n            if spos is None:\n  \
+      \              return c.popleft()\n            else:\n                return c.pop()\n        except\
+      \ IndexError:\n            return UNSET\n\n    while nargs_spec:\n        if spos is None:\n   \
+      \         nargs = nargs_spec.popleft()\n        else:\n            nargs = nargs_spec.pop()\n\n\
+      \        if nargs == 1:\n            rv.append(_fetch(args))\n        elif nargs > 1:\n        \
+      \    x: list[str | T_UNSET] = [_fetch(args) for _ in range(nargs)]\n\n            # If we're reversed,\
+      \ we're pulling in the arguments in reverse,\n            # so we need to turn them around.\n  \
+      \          if spos is not None:\n                x.reverse()\n\n            rv.append(tuple(x))\n\
+      \        elif nargs < 0:\n            if spos is not None:\n                raise TypeError(\"Cannot\
+      \ have two nargs < 0\")\n\n            spos = len(rv)\n            rv.append(UNSET)\n\n    # spos\
+      \ is the position of the wildcard (star).  If it's not `None`,\n    # we fill it with the remainder.\n\
+      \    if spos is not None:\n        rv[spos] = tuple(args)\n        args = []\n        rv[spos +\
+      \ 1 :] = reversed(rv[spos + 1 :])\n\n    return tuple(rv), list(args)"
+  label: supported
+- id: s18
+  question_id: zod-lookup-006
+  run: 0
+  claim_id: c1
+  claim: The function attachSchema is defined and exported in packages/zod/src/v4/core/util.ts, taking
+    issues, a start index, and a schema instance.
+  code:
+    packages/zod/src/v4/core/util.ts#L894-L898@747494a: "export function attachSchema(issues: errors.$ZodRawIssue[],\
+      \ start: number, inst: schemas.$ZodType): void {\n  for (let i = start; i < issues.length; i++)\
+      \ {\n    (issues[i] as any).schema ??= inst;\n  }\n}"
+  label: supported
+- id: s19
+  question_id: remeda-multihop-001
+  run: 0
+  claim_id: c1
+  claim: The test.each in dataLastImplementation.test.ts calls dataLastImplementation directly with the
+    collectArguments function and the args.
+  code:
+    packages/remeda/src/internal/dataLastImplementation.test.ts#L1-L11@288bbd7: "import { expect, test\
+      \ } from \"vitest\";\nimport { dataLastImplementation } from \"./dataLastImplementation\";\n\ntest.each([[[]],\
+      \ [[1]], [[1, 2]]])(\n  \"passes the data and every argument of %j through\",\n  (args) => {\n \
+      \   expect(\n      dataLastImplementation(collectArguments, args)(\"data\"),\n    ).toStrictEqual([\"\
+      data\", ...args]);\n  },\n);"
+  label: supported
+- id: s20
+  question_id: zod-impact-004
+  run: 0
+  claim_id: c1
+  claim: '`_e164` constructs `new Class` with type "string", format "e164", check "string_format", abort
+    false, spread with normalizeParams(params).'
+  code:
+    packages/zod/src/v4/core/api.ts#L471-L482@48c26d4: "export function _e164<T extends schemas.$ZodE164>(\n\
+      \  Class: util.SchemaClass<T>,\n  params?: string | $ZodE164Params | $ZodCheckE164Params\n): T {\n\
+      \  return new Class({\n    type: \"string\",\n    format: \"e164\",\n    check: \"string_format\"\
+      ,\n    abort: false,\n    ...util.normalizeParams(params),\n  });\n}"
+  label: supported
+- id: s21
+  question_id: zod-lookup-004
+  run: 0
+  claim_id: c1
+  claim: The v3 method `pipe` takes a target schema and returns `ZodPipeline.create(this, target)`.
+  code:
+    packages/zod/src/v3/types.ts#L522-L524@17bef73: "  pipe<T extends ZodTypeAny>(target: T): ZodPipeline<this,\
+      \ T> {\n    return ZodPipeline.create(this, target);\n  }"
+  label: supported
+- id: s22
+  question_id: httpx-callers-002
+  run: 0
+  claim_id: c2
+  claim: DataField.render_data caches and returns the bytes of the field value via to_bytes.
+  code:
+    httpx/_multipart.py#L99-L103@b4761af: "    def render_data(self) -> bytes:\n        if not hasattr(self,\
+      \ \"_data\"):\n            self._data = to_bytes(self.value)\n\n        return self._data"
+  label: supported
+- id: s23
+  question_id: click-callers-005
+  run: 0
+  claim_id: c2
+  claim: Option.consume_value calls super().consume_value(ctx, opts), which invokes Parameter.consume_value.
+  code:
+    src/click/core.py#L3627-L3681@e4b6b57: "    def consume_value(\n        self, ctx: Context, opts:\
+      \ cabc.Mapping[str, Parameter]\n    ) -> tuple[t.Any, ParameterSource]:\n        \"\"\"For :class:`Option`,\
+      \ the value can be collected from an interactive prompt\n        if the option is a flag that needs\
+      \ a value (and the :attr:`prompt` property is\n        set).\n\n        Additionally, this method\
+      \ handles flag option that are activated without a\n        value, in which case the :attr:`flag_value`\
+      \ is returned.\n\n        :meta private:\n        \"\"\"\n        value, source = super().consume_value(ctx,\
+      \ opts)\n\n        # The parser emits a sentinel when a flag is allowed to be used without a value.\n\
+      \        # Resolve it to a prompt or to the activation value depending on the option's\n       \
+      \ # configuration.\n        if value is FLAG_NEEDS_VALUE:\n            # If the option allows for\
+      \ a prompt, start an interaction with the user.\n            if self.prompt is not None and not\
+      \ ctx.resilient_parsing:\n                value = self.prompt_for_value(ctx)\n                source\
+      \ = ParameterSource.PROMPT\n            # Else the flag takes its activation value (resolves UNSET).\n\
+      \            else:\n                value = self.flag_activation_value\n                source =\
+      \ ParameterSource.COMMANDLINE\n\n        # Re-interpret a multiple option that the parser sent through\
+      \ as a list still\n        # containing the FLAG_NEEDS_VALUE sentinel, replacing each occurrence\
+      \ with the\n        # activation value.\n        elif (\n            self.multiple\n           \
+      \ and value is not UNSET\n            and isinstance(value, cabc.Iterable)\n            and source\
+      \ < ParameterSource.DEFAULT_MAP\n            and any(v is FLAG_NEEDS_VALUE for v in value)\n   \
+      \     ):\n            value = [\n                self.flag_activation_value if v is FLAG_NEEDS_VALUE\
+      \ else v\n                for v in value\n            ]\n            source = ParameterSource.COMMANDLINE\n\
+      \n        # The value wasn't set, or used the param's default, prompt for one to the user\n    \
+      \    # if prompting is enabled.\n        elif (\n            (value is UNSET or source >= ParameterSource.DEFAULT_MAP)\n\
+      \            and self.prompt is not None\n            and (self.required or self.prompt_required)\n\
+      \            and not ctx.resilient_parsing\n        ):\n            value = self.prompt_for_value(ctx)\n\
+      \            source = ParameterSource.PROMPT\n\n        return value, source"
+  label: partial
+- id: s24
+  question_id: httpx-lookup-006
+  run: 0
+  claim_id: c2
+  claim: handle_help is used as the callback of the eager --help click option.
+  code:
+    httpx/_main.py#L313-L451@cffa4bb: "@click.command(add_help_option=False)\n@click.argument(\"url\"\
+      , type=str)\n@click.option(\n    \"--method\",\n    \"-m\",\n    \"method\",\n    type=str,\n  \
+      \  help=(\n        \"Request method, such as GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD. \"\n\
+      \        \"[Default: GET, or POST if a request body is included]\"\n    ),\n)\n@click.option(\n\
+      \    \"--params\",\n    \"-p\",\n    \"params\",\n    type=(str, str),\n    multiple=True,\n   \
+      \ help=\"Query parameters to include in the request URL.\",\n)\n@click.option(\n    \"--content\"\
+      ,\n    \"-c\",\n    \"content\",\n    type=str,\n    help=\"Byte content to include in the request\
+      \ body.\",\n)\n@click.option(\n    \"--data\",\n    \"-d\",\n    \"data\",\n    type=(str, str),\n\
+      \    multiple=True,\n    help=\"Form data to include in the request body.\",\n)\n@click.option(\n\
+      \    \"--files\",\n    \"-f\",\n    \"files\",\n    type=(str, click.File(mode=\"rb\")),\n    multiple=True,\n\
+      \    help=\"Form files to include in the request body.\",\n)\n@click.option(\n    \"--json\",\n\
+      \    \"-j\",\n    \"json\",\n    type=str,\n    callback=validate_json,\n    help=\"JSON data to\
+      \ include in the request body.\",\n)\n@click.option(\n    \"--headers\",\n    \"-h\",\n    \"headers\"\
+      ,\n    type=(str, str),\n    multiple=True,\n    help=\"Include additional HTTP headers in the request.\"\
+      ,\n)\n@click.option(\n    \"--cookies\",\n    \"cookies\",\n    type=(str, str),\n    multiple=True,\n\
+      \    help=\"Cookies to include in the request.\",\n)\n@click.option(\n    \"--auth\",\n    \"auth\"\
+      ,\n    type=(str, str),\n    default=(None, None),\n    callback=validate_auth,\n    help=(\n  \
+      \      \"Username and password to include in the request. \"\n        \"Specify '-' for the password\
+      \ to use a password prompt. \"\n        \"Note that using --verbose/-v will expose the Authorization\
+      \ header, \"\n        \"including the password encoding in a trivially reversible format.\"\n  \
+      \  ),\n)\n@click.option(\n    \"--proxy\",\n    \"proxy\",\n    type=str,\n    default=None,\n \
+      \   help=\"Send the request via a proxy. Should be the URL giving the proxy address.\",\n)\n@click.option(\n\
+      \    \"--timeout\",\n    \"timeout\",\n    type=float,\n    default=5.0,\n    help=(\n        \"\
+      Timeout value to use for network operations, such as establishing the \"\n        \"connection,\
+      \ reading some data, etc... [Default: 5.0]\"\n    ),\n)\n@click.option(\n    \"--follow-redirects\"\
+      ,\n    \"follow_redirects\",\n    is_flag=True,\n    default=False,\n    help=\"Automatically follow\
+      \ redirects.\",\n)\n@click.option(\n    \"--no-verify\",\n    \"verify\",\n    is_flag=True,\n \
+      \   default=True,\n    help=\"Disable SSL verification.\",\n)\n@click.option(\n    \"--http2\",\n\
+      \    \"http2\",\n    type=bool,\n    is_flag=True,\n    default=False,\n    help=\"Send the request\
+      \ using HTTP/2, if the remote server supports it.\",\n)\n@click.option(\n    \"--download\","
+  label: unsupported
+- id: s25
+  question_id: remeda-callers-001
+  run: 0
+  claim_id: c3
+  claim: swapArray in swapIndices.ts builds a copy with concat and assigns the swapped elements directly,
+    without calling swapInPlace.
+  code:
+    packages/remeda/src/swapIndices.ts#L161-L186@0581148: "function swapArray(\n  data: readonly unknown[],\n\
+      \  index1: number,\n  index2: number,\n): unknown[] {\n  const result = data.concat();\n\n  if (Number.isNaN(index1)\
+      \ || Number.isNaN(index2)) {\n    return result;\n  }\n\n  const positiveIndexA = index1 < 0 ? data.length\
+      \ + index1 : index1;\n  if (positiveIndexA < 0 || positiveIndexA >= data.length) {\n    return result;\n\
+      \  }\n\n  const positiveIndexB = index2 < 0 ? data.length + index2 : index2;\n  if (positiveIndexB\
+      \ < 0 || positiveIndexB >= data.length) {\n    return result;\n  }\n\n  result[positiveIndexA] =\
+      \ data[positiveIndexB];\n  result[positiveIndexB] = data[positiveIndexA];\n\n  return result;\n}"
+  label: supported
+- id: s26
+  question_id: click-flow-004
+  run: 0
+  claim_id: c1
+  claim: _main_shell_completion computes the env var name _{PROG_NAME}_COMPLETE, reads the instruction,
+    returns if unset, otherwise calls shell_complete and exits with its result.
+  code:
+    src/click/core.py#L1619-L1649@e4b6b57: "    def _main_shell_completion(\n        self,\n        ctx_args:\
+      \ cabc.MutableMapping[str, t.Any],\n        prog_name: str,\n        complete_var: str | None =\
+      \ None,\n    ) -> None:\n        \"\"\"Check if the shell is asking for tab completion, process\n\
+      \        that, then exit early. Called from :meth:`main` before the\n        program is invoked.\n\
+      \n        :param prog_name: Name of the executable in the shell.\n        :param complete_var: Name\
+      \ of the environment variable that holds\n            the completion instruction. Defaults to\n\
+      \            ``_{PROG_NAME}_COMPLETE``.\n\n        .. versionchanged:: 8.2.0\n            Dots (``.``)\
+      \ in ``prog_name`` are replaced with underscores (``_``).\n        \"\"\"\n        if complete_var\
+      \ is None:\n            complete_name = prog_name.replace(\"-\", \"_\").replace(\".\", \"_\")\n\
+      \            complete_var = f\"_{complete_name}_COMPLETE\".upper()\n\n        instruction = os.environ.get(complete_var)\n\
+      \n        if not instruction:\n            return\n\n        from .shell_completion import shell_complete\n\
+      \n        rv = shell_complete(self, ctx_args, prog_name, complete_var, instruction)\n        sys.exit(rv)"
+  label: supported
+- id: s27
+  question_id: remeda-lookup-005
+  run: 0
+  claim_id: c2
+  claim: The exported fromEntries function calls purry with fromEntriesImplementation.
+  code:
+    packages/remeda/src/fromEntries.ts#L141-L143@64c2218: "export function fromEntries(...args: readonly\
+      \ unknown[]): unknown {\n  return purry(fromEntriesImplementation, 1, args);\n}"
+  label: supported
+- id: s28
+  question_id: zod-callers-003
+  run: 0
+  claim_id: c3
+  claim: The ZodBigInt class outline declares gte, gt, min (= gte) and max (= lte) with bodies elided,
+    so their use of setLimit is not shown.
+  code:
+    packages/zod/src/v3/types.ts#L1635-L1819@17bef73: "export class ZodBigInt extends ZodType<bigint,\
+      \ ZodBigIntDef, bigint> {\n  _parse(input: ParseInput): ParseReturnType<bigint> {\n    if (this._def.coerce)\
+      \ {\n      try {\n        input.data = BigInt(input.data);\n      } catch {\n        return this._getInvalidInput(input);\n\
+      \      }\n    }\n    const parsedType = this._getType(input);\n    if (parsedType !== ZodParsedType.bigint)\
+      \ {\n      return this._getInvalidInput(input);\n    }\n\n    let ctx: undefined | ParseContext\
+      \ = undefined;\n    const status = new ParseStatus();\n\n    for (const check of this._def.checks)\
+      \ {\n      if (check.kind === \"min\") {\n        const tooSmall = check.inclusive ? input.data\
+      \ < check.value : input.data <= check.value;\n        if (tooSmall) {\n          ctx = this._getOrReturnCtx(input,\
+      \ ctx);\n          addIssueToContext(ctx, {\n            code: ZodIssueCode.too_small,\n       \
+      \     type: \"bigint\",\n            minimum: check.value,\n            inclusive: check.inclusive,\n\
+      \            message: check.message,\n          });\n          status.dirty();\n        }\n    \
+      \  } else if (check.kind === \"max\") {\n        const tooBig = check.inclusive ? input.data > check.value\
+      \ : input.data >= check.value;\n        if (tooBig) {\n          ctx = this._getOrReturnCtx(input,\
+      \ ctx);\n          addIssueToContext(ctx, {\n            code: ZodIssueCode.too_big,\n         \
+      \   type: \"bigint\",\n            maximum: check.value,\n            inclusive: check.inclusive,\n\
+      \            message: check.message,\n          });\n          status.dirty();\n        }\n    \
+      \  } else if (check.kind === \"multipleOf\") {\n        if (input.data % check.value !== BigInt(0))\
+      \ {\n          ctx = this._getOrReturnCtx(input, ctx);\n          addIssueToContext(ctx, {\n   \
+      \         code: ZodIssueCode.not_multiple_of,\n            multipleOf: check.value,\n          \
+      \  message: check.message,\n          });\n          status.dirty();\n        }\n      } else {\n\
+      \        util.assertNever(check);\n      }\n    }\n\n    return { status: status.value, value: input.data\
+      \ };\n  }\n\n  _getInvalidInput(input: ParseInput) {\n    const ctx = this._getOrReturnCtx(input);\n\
+      \    addIssueToContext(ctx, {\n      code: ZodIssueCode.invalid_type,\n      expected: ZodParsedType.bigint,\n\
+      \      received: ctx.parsedType,\n    });\n    return INVALID;\n  }\n\n  static create = (params?:\
+      \ RawCreateParams & { coerce?: boolean }): ZodBigInt => {\n    return new ZodBigInt({\n      checks:\
+      \ [],\n      typeName: ZodFirstPartyTypeKind.ZodBigInt,\n      coerce: params?.coerce ?? false,\n\
+      \      ...processCreateParams(params),\n    });\n  };\n\n  gte(value: bigint, message?: errorUtil.ErrMessage)\
+      \ {\n    return this.setLimit(\"min\", value, true, errorUtil.toString(message));\n  }\n  min =\
+      \ this.gte;\n\n  gt(value: bigint, message?: errorUtil.ErrMessage) {\n    return this.setLimit(\"\
+      min\", value, false, errorUtil.toString(message));\n  }\n\n  lte(value: bigint, message?: errorUtil.ErrMessage)\
+      \ {\n    return this.setLimit(\"max\", value, true, errorUtil.toString(message));\n  }\n  max =\
+      \ this.lte;\n\n  lt(value: bigint, message?: errorUtil.ErrMessage) {\n    return this.setLimit(\"\
+      max\", value, false, errorUtil.toString(message));\n  }\n\n  protected setLimit(kind: \"min\" |\
+      \ \"max\", value: bigint, inclusive: boolean, message?: string) {\n    return new ZodBigInt({\n\
+      \      ...this._def,\n      checks: [\n        ...this._def.checks,\n        {\n          kind,\n\
+      \          value,\n          inclusive,\n          message: errorUtil.toString(message),\n     \
+      \   },\n      ],\n    });\n  }\n\n  _addCheck(check: ZodBigIntCheck) {\n    return new ZodBigInt({\n\
+      \      ...this._def,\n      checks: [...this._def.checks, check],\n    });\n  }"
+  label: unsupported
+- id: s29
+  question_id: requests-lookup-005
+  run: 0
+  claim_id: c2
+  claim: '`list_paths` is declared as a method inside the `RequestsCookieJar` class, which spans lines
+    191-476 of src/requests/cookies.py.'
+  code:
+    src/requests/cookies.py#L191-L476@2e3fc21: "class RequestsCookieJar(CookieJar, MutableMapping[str,\
+      \ str | None]):  # type: ignore[misc]\n    \"\"\"Compatibility class; is a http.cookiejar.CookieJar,\
+      \ but exposes a dict\n    interface.\n\n    This is the CookieJar we create by default for requests\
+      \ and sessions that\n    don't specify one, since some clients may expect response.cookies and\n\
+      \    session.cookies to support dict operations.\n\n    Requests does not use the dict interface\
+      \ internally; it's just for\n    compatibility with external client code. All requests code should\
+      \ work\n    out of the box with externally provided instances of ``CookieJar``, e.g.\n    ``LWPCookieJar``\
+      \ and ``FileCookieJar``.\n\n    Unlike a regular CookieJar, this class is pickleable.\n\n    ..\
+      \ warning:: dictionary operations that are normally O(1) may be O(n).\n    \"\"\"\n\n    _policy:\
+      \ CookiePolicy\n\n    def get(  # type: ignore[override]\n        self,\n        name: str,\n  \
+      \      default: str | None = None,\n        domain: str | None = None,\n        path: str | None\
+      \ = None,\n    ) -> str | None:\n        \"\"\"Dict-like get() that also supports optional domain\
+      \ and path args in\n        order to resolve naming collisions from using one cookie jar over\n\
+      \        multiple domains.\n\n        .. warning:: operation is O(n), not O(1).\n        \"\"\"\n\
+      \        try:\n            return self._find_no_duplicates(name, domain, path)\n        except KeyError:\n\
+      \            return default\n\n    def set(\n        self, name: str, value: str | Morsel[dict[str,\
+      \ str]] | None, **kwargs: Any\n    ) -> Cookie | None:\n        \"\"\"Dict-like set() that also\
+      \ supports optional domain and path args in\n        order to resolve naming collisions from using\
+      \ one cookie jar over\n        multiple domains.\n        \"\"\"\n        # support client code\
+      \ that unsets cookies by assignment of a None value:\n        if value is None:\n            remove_cookie_by_name(\n\
+      \                self, name, domain=kwargs.get(\"domain\"), path=kwargs.get(\"path\")\n        \
+      \    )\n            return\n\n        if isinstance(value, Morsel):\n            c = morsel_to_cookie(value)\n\
+      \        else:\n            c = create_cookie(name, value, **kwargs)\n        self.set_cookie(c)\n\
+      \        return c\n\n    def iterkeys(self) -> Iterator[str]:\n        \"\"\"Dict-like iterkeys()\
+      \ that returns an iterator of names of cookies\n        from the jar.\n\n        .. seealso:: itervalues()\
+      \ and iteritems().\n        \"\"\"\n        for cookie in iter(self):\n            yield cookie.name\n\
+      \n    def keys(self) -> list[str]:  # type: ignore[override]\n        \"\"\"Dict-like keys() that\
+      \ returns a list of names of cookies from the\n        jar.\n\n        .. seealso:: values() and\
+      \ items().\n        \"\"\"\n        return list(self.iterkeys())\n\n    def itervalues(self) ->\
+      \ Iterator[str | None]:\n        \"\"\"Dict-like itervalues() that returns an iterator of values\
+      \ of cookies\n        from the jar.\n\n        .. seealso:: iterkeys() and iteritems().\n      \
+      \  \"\"\"\n        for cookie in iter(self):\n            yield cookie.value\n\n    def values(self)\
+      \ -> list[str | None]:  # type: ignore[override]\n        \"\"\"Dict-like values() that returns\
+      \ a list of values of cookies from the\n        jar.\n\n        .. seealso:: keys() and items().\n\
+      \        \"\"\"\n        return list(self.itervalues())\n\n    def iteritems(self) -> Iterator[tuple[str,\
+      \ str | None]]:\n        \"\"\"Dict-like iteritems() that returns an iterator of name-value tuples\n\
+      \        from the jar.\n\n        .. seealso:: iterkeys() and itervalues().\n        \"\"\"\n  \
+      \      for cookie in iter(self):\n            yield cookie.name, cookie.value\n\n    def items(self)\
+      \ -> list[tuple[str, str | None]]:  # type: ignore[override]\n        \"\"\"Dict-like items() that\
+      \ returns a list of name-value tuples from the\n        jar. Allows client-code to call ``dict(RequestsCookieJar)``\
+      \ and get a\n        vanilla python dict of key value pairs.\n\n        .. seealso:: keys() and\
+      \ values().\n        \"\"\"\n        return list(self.iteritems())\n\n    def list_domains(self)\
+      \ -> list[str]:\n        \"\"\"Utility method to list all the domains in the jar.\"\"\"\n      \
+      \  domains: list[str] = []\n        for cookie in iter(self):\n            if cookie.domain not\
+      \ in domains:\n                domains.append(cookie.domain)\n        return domains\n\n    def\
+      \ list_paths(self) -> list[str]:"
+  label: supported
+- id: s30
+  question_id: click-lookup-004
+  run: 0
+  claim_id: c1
+  claim: HelpFormatter declares a write_usage method with the signature (self, prog, args='', prefix=None).
+  code:
+    src/click/formatting.py#L110-L299@c4aa2de: "class HelpFormatter:\n    \"\"\"This class helps with\
+      \ formatting text-based help pages.  It's\n    usually just needed for very special internal cases,\
+      \ but it's also\n    exposed so that developers can write their own fancy outputs.\n\n    At present,\
+      \ it always writes into memory.\n\n    :param indent_increment: the additional increment for each\
+      \ level.\n    :param width: the width for the text.  This defaults to the terminal\n           \
+      \       width clamped to a maximum of 78.\n    \"\"\"\n\n    indent_increment: int\n    width: int\n\
+      \    current_indent: int\n    buffer: list[str]\n\n    def __init__(\n        self,\n        indent_increment:\
+      \ int = 2,\n        width: int | None = None,\n        max_width: int | None = None,\n    ) -> None:\n\
+      \        self.indent_increment = indent_increment\n        if max_width is None:\n            max_width\
+      \ = 80\n        if width is None:\n            import shutil\n\n            width = FORCED_WIDTH\n\
+      \            if width is None:\n                width = max(min(shutil.get_terminal_size().columns,\
+      \ max_width) - 2, 50)\n        self.width = width\n        self.current_indent = 0\n        self.buffer\
+      \ = []\n\n    def write(self, string: str) -> None:\n        \"\"\"Writes a unicode string into\
+      \ the internal buffer.\"\"\"\n        self.buffer.append(string)\n\n    def indent(self) -> None:\n\
+      \        \"\"\"Increases the indentation.\"\"\"\n        self.current_indent += self.indent_increment\n\
+      \n    def dedent(self) -> None:\n        \"\"\"Decreases the indentation.\"\"\"\n        self.current_indent\
+      \ -= self.indent_increment\n\n    def write_usage(self, prog: str, args: str = \"\", prefix: str\
+      \ | None = None) -> None:\n        \"\"\"Writes a usage line into the buffer.\n\n        :param\
+      \ prog: the program name.\n        :param args: whitespace separated list of arguments.\n      \
+      \  :param prefix: The prefix for the first line. Defaults to\n            ``\"Usage: \"``.\n   \
+      \     \"\"\"\n        if prefix is None:\n            prefix = \"{usage} \".format(usage=_(\"Usage:\"\
+      ))\n\n        usage_prefix = f\"{prefix:>{self.current_indent}}{prog} \"\n        text_width = self.width\
+      \ - self.current_indent\n\n        if not args:\n            # Without args, the prefix's trailing\
+      \ space and the wrap_text\n            # call that would normally place args on the line are both\n\
+      \            # unnecessary. Emit just the prefix line.\n            self.write(usage_prefix.rstrip(\"\
+      \ \"))\n            self.write(\"\\n\")\n            return\n\n        if text_width >= (term_len(usage_prefix)\
+      \ + 20):\n            # The arguments will fit to the right of the prefix.\n            indent =\
+      \ \" \" * term_len(usage_prefix)\n            self.write(\n                wrap_text(\n        \
+      \            args,\n                    text_width,\n                    initial_indent=usage_prefix,\n\
+      \                    subsequent_indent=indent,\n                )\n            )\n        else:\n\
+      \            # The prefix is too long, put the arguments on the next line.\n            self.write(usage_prefix)\n\
+      \            self.write(\"\\n\")\n            indent = \" \" * (max(self.current_indent, term_len(prefix))\
+      \ + 4)\n            self.write(\n                wrap_text(\n                    args, text_width,\
+      \ initial_indent=indent, subsequent_indent=indent\n                )\n            )\n\n        self.write(\"\
+      \\n\")\n\n    def write_heading(self, heading: str) -> None:\n        \"\"\"Writes a heading into\
+      \ the buffer.\"\"\"\n        self.write(f\"{'':>{self.current_indent}}{heading}:\\n\")\n\n    def\
+      \ write_paragraph(self) -> None:\n        \"\"\"Writes a paragraph into the buffer.\"\"\"\n    \
+      \    if self.buffer:\n            self.write(\"\\n\")\n\n    def write_text(self, text: str) ->\
+      \ None:\n        \"\"\"Writes re-indented text into the buffer.  This rewraps and\n        preserves\
+      \ paragraphs.\n        \"\"\"\n        indent = \" \" * self.current_indent\n        self.write(\n\
+      \            wrap_text(\n                text,\n                self.width,\n                initial_indent=indent,\n\
+      \                subsequent_indent=indent,\n                preserve_paragraphs=True,\n        \
+      \    )\n        )\n        self.write(\"\\n\")\n\n    def write_dl("
+  label: supported

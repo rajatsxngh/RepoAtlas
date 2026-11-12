@@ -1,0 +1,1734 @@
+{
+  "aggregates": {
+    "claim_partial": 0.10344827586206896,
+    "claim_supported": 0.8827586206896552,
+    "claim_unsupported": 0.013793103448275862,
+    "claims_checked": 145,
+    "cost_per_question_usd": 0.0234780125,
+    "dropped_claim_rate": 0.0,
+    "eval_cost_usd": 0.2758707,
+    "latency_p50_s": 4.853,
+    "latency_p95_s": 13.855349999999998,
+    "outcomes": {
+      "answered": 32,
+      "refused_evidence": 8
+    },
+    "outputs": 40,
+    "pooled_citation_validity": 0.9880952380952381,
+    "prefilter_citation_validity": 0.9880952380952381,
+    "total_cost_usd": 1.2149912
+  },
+  "by_type": [
+    {
+      "metrics": {},
+      "outcomes": {
+        "answered": 10
+      },
+      "primary": {
+        "high": 1.0,
+        "low": 1.0,
+        "mean": 1.0,
+        "n": 10
+      },
+      "primary_metric": "correct",
+      "questions": 10,
+      "run_means": [
+        1.0
+      ],
+      "type": "lookup"
+    },
+    {
+      "metrics": {
+        "precision": 0.7333333333333333,
+        "recall": 0.71
+      },
+      "outcomes": {
+        "answered": 9,
+        "refused_evidence": 1
+      },
+      "primary": {
+        "high": 0.8638095238095238,
+        "low": 0.5016666666666667,
+        "mean": 0.6988095238095238,
+        "n": 10
+      },
+      "primary_metric": "F1",
+      "questions": 10,
+      "run_means": [
+        0.6988095238095238
+      ],
+      "type": "callers"
+    },
+    {
+      "metrics": {
+        "precision": 0.1,
+        "recall": 0.1
+      },
+      "outcomes": {
+        "answered": 4,
+        "refused_evidence": 1
+      },
+      "primary": {
+        "high": 0.3,
+        "low": 0.0,
+        "mean": 0.1,
+        "n": 5
+      },
+      "primary_metric": "F1",
+      "questions": 5,
+      "run_means": [
+        0.1
+      ],
+      "type": "multihop"
+    },
+    {
+      "metrics": {
+        "real_f1": 0.0,
+        "real_precision": 0.0,
+        "real_recall": 0.0,
+        "real_recall_at_10": 0.0,
+        "static_precision": 0.4666666666666667,
+        "static_recall": 0.07378595452568142
+      },
+      "outcomes": {
+        "answered": 4,
+        "refused_evidence": 1
+      },
+      "primary": {
+        "high": 0.31304347826086953,
+        "low": 0.0007511737089201878,
+        "mean": 0.11379465196978975,
+        "n": 5
+      },
+      "primary_metric": "static F1",
+      "questions": 5,
+      "run_means": [
+        0.11379465196978975
+      ],
+      "type": "impact"
+    },
+    {
+      "metrics": {
+        "judge": 0.7
+      },
+      "outcomes": {
+        "answered": 5
+      },
+      "primary": {
+        "high": 0.795,
+        "low": 0.32999999999999996,
+        "mean": 0.5349999999999999,
+        "n": 5
+      },
+      "primary_metric": "must-cite recall",
+      "questions": 5,
+      "run_means": [
+        0.5349999999999999
+      ],
+      "type": "flow"
+    },
+    {
+      "metrics": {
+        "api_refusal": 0.0
+      },
+      "outcomes": {
+        "refused_evidence": 5
+      },
+      "primary": {
+        "high": 1.0,
+        "low": 1.0,
+        "mean": 1.0,
+        "n": 5
+      },
+      "primary_metric": "correct refusal",
+      "questions": 5,
+      "run_means": [
+        1.0
+      ],
+      "type": "unanswerable"
+    }
+  ],
+  "complete": true,
+  "config": {
+    "effort": "medium",
+    "evidence_tokens": 12000,
+    "kind": "retrieval",
+    "min_retrieval_score": 0.02,
+    "mode": "hybrid",
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "c24a051e6b860c59c4369c345981a372398093c874a4a159f9327d2dbbc7448d",
+    "schema_sha256": "b06be14dfad6a068f5a88917c9212304f530deccd3047d36dbd5bf949e06672a"
+  },
+  "config_fingerprint": "336d0e522fb752837ef2accd42bc67b42d7ad521ef466ddc82a75a5b68769301",
+  "cost_per_question_usd": 0.023478,
+  "created_at": "2026-11-12T09:22:41+00:00",
+  "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+  "environment": {
+    "cpu": "AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD",
+    "cpu_count": 16,
+    "machine": "AMD64",
+    "os": "Windows 11",
+    "python": "3.12.13",
+    "repoatlas_commit": "55ddd93cd370528083f5cfbb7c2fe9ffcc1ca438",
+    "repoatlas_dirty": false,
+    "repoatlas_version": "0.1.0"
+  },
+  "errored": [],
+  "evaluators": {
+    "judge": "9492ffecec3a21f1e1fc81ea0b10addee366fc1e4ba48541c1e9c2feb27dc4ce",
+    "support": "9c45521873d7343ca64e2a6b3a7268ef4ca06d7dca1f94d049ec6c6e6d67885f"
+  },
+  "items": [
+    {
+      "mean_primary": 0.6666666666666666,
+      "question_id": "click-callers-001",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/click/decorators.py:confirmation_option:function"
+          ],
+          "cached": true,
+          "cited": [
+            "tests/typing/typing_confirmation_option.py#L8-L11@920df25",
+            "src/click/decorators.py#L380-L401@0c7b6c4"
+          ],
+          "cost_usd": 0.0129535,
+          "error": null,
+          "eval_cost_usd": 0.0046765,
+          "judge": null,
+          "latency_s": 13.304,
+          "metrics": {
+            "precision": 1.0,
+            "recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.6666666666666666,
+          "run": 0,
+          "support": {
+            "supported": 2
+          }
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "click-callers-005",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/click/core.py:Parameter.handle_parse_result:method",
+            "py:src/click/core.py:Option.consume_value:method"
+          ],
+          "cached": true,
+          "cited": [
+            "src/click/core.py#L2763-L2849@e4b6b57",
+            "src/click/core.py#L3627-L3681@e4b6b57"
+          ],
+          "cost_usd": 0.0320955,
+          "error": null,
+          "eval_cost_usd": 0.0077925,
+          "judge": null,
+          "latency_s": 13.803,
+          "metrics": {
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "partial": 1,
+            "supported": 1
+          }
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.375,
+      "question_id": "click-flow-004",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/click/core.py:Command._main_shell_completion:method",
+            "py:src/click/shell_completion.py:shell_complete:function",
+            "py:src/click/shell_completion.py:ShellComplete.__init__:method",
+            "py:src/click/shell_completion.py:BashComplete:class",
+            "py:src/click/core.py:Group.shell_complete:method",
+            "py:src/click/shell_completion.py:BashComplete.format_completion:method"
+          ],
+          "cached": true,
+          "cited": [
+            "src/click/core.py#L1619-L1649@e4b6b57",
+            "src/click/shell_completion.py#L19-L55@9cf2314",
+            "src/click/shell_completion.py#L306-L316@9cf2314",
+            "src/click/shell_completion.py#L388-L444@9cf2314",
+            "src/click/core.py#L2114-L2131@e4b6b57",
+            "src/click/shell_completion.py#L443-L444@9cf2314",
+            "src/click/shell_completion.py#L1-L242@9cf2314"
+          ],
+          "cost_usd": 0.0255675,
+          "error": null,
+          "eval_cost_usd": 0.019193599999999998,
+          "judge": 0.6666666666666666,
+          "latency_s": 17.643,
+          "metrics": {
+            "judge": 0.6666666666666666
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.375,
+          "run": 0,
+          "support": {
+            "partial": 1,
+            "supported": 6
+          }
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "flow"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "click-impact-002",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0167475,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 14.85,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "click-lookup-002",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/click/parser.py:_unpack_args:function"
+          ],
+          "cached": true,
+          "cited": [
+            "src/click/parser.py#L51-L108@4fcbf7c",
+            "src/click/parser.py#L316-L325@4fcbf7c"
+          ],
+          "cost_usd": 0.0200083,
+          "error": null,
+          "eval_cost_usd": 0.0039501,
+          "judge": null,
+          "latency_s": 3.408,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "supported": 2
+          }
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "click-lookup-004",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/click/formatting.py:HelpFormatter.write_usage:method"
+          ],
+          "cached": true,
+          "cited": [
+            "src/click/formatting.py#L110-L299@c4aa2de",
+            "src/click/formatting.py#L158-L202@c4aa2de",
+            "src/click/core.py#L1159-L1165@e4b6b57"
+          ],
+          "cost_usd": 0.0106463,
+          "error": null,
+          "eval_cost_usd": 0.0068541,
+          "judge": null,
+          "latency_s": 3.414,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "supported": 3
+          }
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.5,
+      "question_id": "click-multihop-001",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:tests/test_termui.py:test_pipepager_less_detection_case_insensitive_on_windows:test",
+            "py:tests/test_termui.py:test_pipepager_less_detection_matches_stem:test"
+          ],
+          "cached": true,
+          "cited": [
+            "tests/test_termui.py#L805-L821@e4e0d6c",
+            "tests/test_termui.py#L776-L802@e4e0d6c"
+          ],
+          "cost_usd": 0.0166503,
+          "error": null,
+          "eval_cost_usd": 0.0040481,
+          "judge": null,
+          "latency_s": 5.324,
+          "metrics": {
+            "precision": 0.5,
+            "recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.5,
+          "run": 0,
+          "support": {
+            "partial": 1,
+            "supported": 1
+          }
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "multihop"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "click-unanswerable-002",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0096463,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.794,
+          "metrics": {
+            "api_refusal": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "unanswerable"
+    },
+    {
+      "mean_primary": 0.4,
+      "question_id": "httpx-callers-002",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:httpx/_multipart.py:DataField.render:method",
+            "py:httpx/_multipart.py:DataField.render_data:method",
+            "py:httpx/_multipart.py:FileField.render_data:method"
+          ],
+          "cached": true,
+          "cited": [
+            "httpx/_multipart.py#L110-L112@b4761af",
+            "httpx/_multipart.py#L99-L103@b4761af",
+            "httpx/_multipart.py#L219-L221@b4761af",
+            "httpx/_multipart.py#L203-L217@b4761af"
+          ],
+          "cost_usd": 0.0151483,
+          "error": null,
+          "eval_cost_usd": 0.0038261,
+          "judge": null,
+          "latency_s": 3.437,
+          "metrics": {
+            "precision": 0.3333333333333333,
+            "recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.4,
+          "run": 0,
+          "support": {
+            "partial": 2,
+            "supported": 1
+          }
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "httpx-callers-004",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:httpx/_content.py:encode_urlencoded_data:function",
+            "py:httpx/_urls.py:QueryParams.set:method",
+            "py:httpx/_urls.py:QueryParams.add:method"
+          ],
+          "cached": true,
+          "cited": [
+            "httpx/_content.py#L136-L149@6f479a0",
+            "httpx/_multipart.py#L75-L88@b4761af",
+            "httpx/_urls.py#L425-L461@301d087",
+            "httpx/_urls.py#L537-L550@301d087",
+            "httpx/_urls.py#L552-L565@301d087"
+          ],
+          "cost_usd": 0.015996299999999998,
+          "error": null,
+          "eval_cost_usd": 0.0067001000000000005,
+          "judge": null,
+          "latency_s": 3.953,
+          "metrics": {
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "supported": 5
+          }
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.5,
+      "question_id": "httpx-flow-004",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:httpx/_client.py:Client.send:method",
+            "py:httpx/_models.py:Response.read:method",
+            "py:httpx/_models.py:Response.iter_bytes:method",
+            "py:httpx/_decoders.py:GZipDecoder:class",
+            "py:httpx/_decoders.py:GZipDecoder.flush:method",
+            "py:httpx/_models.py:Response.content:method"
+          ],
+          "cached": true,
+          "cited": [
+            "httpx/_client.py#L879-L928@13cd933",
+            "httpx/_models.py#L876-L882@2cc8632",
+            "httpx/_models.py#L884-L905@2cc8632",
+            "httpx/_decoders.py#L85-L105@899dfad",
+            "httpx/_decoders.py#L101-L105@899dfad",
+            "httpx/_models.py#L635-L639@2cc8632"
+          ],
+          "cost_usd": 0.0235643,
+          "error": null,
+          "eval_cost_usd": 0.0120824,
+          "judge": 0.6666666666666666,
+          "latency_s": 6.256,
+          "metrics": {
+            "judge": 0.6666666666666666
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.5,
+          "run": 0,
+          "support": {
+            "supported": 6
+          }
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "flow"
+    },
+    {
+      "mean_primary": 0.06521739130434782,
+      "question_id": "httpx-impact-004",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:httpx/_client.py:BaseClient._build_auth:method"
+          ],
+          "cached": true,
+          "cited": [
+            "httpx/_client.py#L189-L221@13cd933",
+            "httpx/_client.py#L283-L285@13cd933",
+            "httpx/_client.py#L457-L473@13cd933",
+            "httpx/_client.py#L879-L928@13cd933",
+            "httpx/_client.py#L1594-L1643@13cd933",
+            "httpx/_client.py#L445-L455@13cd933",
+            "tests/client/test_auth.py#L760-L772@72674e6",
+            "tests/client/test_auth.py#L370-L381@72674e6",
+            "tests/client/test_auth.py#L504-L512@72674e6"
+          ],
+          "cost_usd": 0.0217783,
+          "error": null,
+          "eval_cost_usd": 0.009892100000000001,
+          "judge": null,
+          "latency_s": 7.14,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 1.0,
+            "static_recall": 0.033707865168539325
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.06521739130434782,
+          "run": 0,
+          "support": {
+            "partial": 1,
+            "supported": 5
+          }
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "httpx-lookup-002",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:httpx/_urlparse.py:validate_path:function"
+          ],
+          "cached": true,
+          "cited": [
+            "httpx/_urlparse.py#L422-L444@bf190fd",
+            "httpx/_urlparse.py#L303-L345@bf190fd"
+          ],
+          "cost_usd": 0.0254123,
+          "error": null,
+          "eval_cost_usd": 0.004330100000000001,
+          "judge": null,
+          "latency_s": 2.254,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "partial": 1,
+            "supported": 1
+          }
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "httpx-lookup-006",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:httpx/_main.py:handle_help:function"
+          ],
+          "cached": true,
+          "cited": [
+            "httpx/_main.py#L301-L310@cffa4bb",
+            "httpx/_main.py#L313-L451@cffa4bb"
+          ],
+          "cost_usd": 0.015192299999999999,
+          "error": null,
+          "eval_cost_usd": 0.004420100000000001,
+          "judge": null,
+          "latency_s": 3.211,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "supported": 1,
+            "unsupported": 1
+          }
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "httpx-multihop-003",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0133663,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 5.541,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "multihop"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "httpx-unanswerable-001",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0100063,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.998,
+          "metrics": {
+            "api_refusal": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "unanswerable"
+    },
+    {
+      "mean_primary": 0.8,
+      "question_id": "remeda-callers-001",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/remeda/src/internal/heap.ts:heapSiftDown:function",
+            "ts:packages/remeda/src/internal/quickSelect.ts:partition:function",
+            "ts:packages/remeda/src/swapIndices.ts:swapArray:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/remeda/src/internal/heap.ts#L67-L104@6d4e5ec",
+            "packages/remeda/src/internal/quickSelect.ts#L70-L94@5fd44e3",
+            "packages/remeda/src/swapIndices.ts#L161-L186@0581148"
+          ],
+          "cost_usd": 0.016062299999999998,
+          "error": null,
+          "eval_cost_usd": 0.0049981,
+          "judge": null,
+          "latency_s": 3.327,
+          "metrics": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.8,
+          "run": 0,
+          "support": {
+            "supported": 3
+          }
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.7499999999999999,
+      "question_id": "remeda-callers-004",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/remeda/src/concat.test.ts:data first > concat:test",
+            "ts:packages/remeda/src/concat.test.ts:data last > concat:test",
+            "ts:packages/remeda/src/concat.ts:concat:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/remeda/src/concat.test.ts#L8-L12@745dd44",
+            "packages/remeda/src/concat.test.ts#L14-L16@745dd44",
+            "packages/remeda/src/concat.test.ts#L18-L20@745dd44",
+            "packages/remeda/src/concat.test.ts#L22-L24@745dd44",
+            "packages/remeda/src/concat.test.ts#L26-L30@745dd44",
+            "packages/remeda/src/concat.test.ts#L32-L34@745dd44",
+            "packages/remeda/src/concat.test.ts#L45-L49@745dd44",
+            "packages/remeda/src/concat.test.ts#L55-L57@745dd44",
+            "packages/remeda/src/concat.test.ts#L59-L61@745dd44",
+            "packages/remeda/src/concat.ts#L45-L47@3b51192"
+          ],
+          "cost_usd": 0.0174203,
+          "error": null,
+          "eval_cost_usd": 0.0077421,
+          "judge": null,
+          "latency_s": 7.312,
+          "metrics": {
+            "precision": 1.0,
+            "recall": 0.6
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.7499999999999999,
+          "run": 0,
+          "support": {
+            "supported": 10
+          }
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "remeda-flow-004",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/remeda/src/debounce.ts:debounce:function",
+            "ts:packages/remeda/src/debounce.ts:debounce.handleDebouncedCall:function",
+            "ts:packages/remeda/src/debounce.ts:debounce.handleCoolDownEnd:function",
+            "ts:packages/remeda/src/debounce.ts:debounce.handleInvoke:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/remeda/src/debounce.ts#L113-L230@6d9de4c",
+            "packages/remeda/src/debounce.ts#L221-L289@6d9de4c"
+          ],
+          "cost_usd": 0.0340443,
+          "error": null,
+          "eval_cost_usd": 0.0395524,
+          "judge": 1.0,
+          "latency_s": 9.342,
+          "metrics": {
+            "judge": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "supported": 9
+          }
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "flow"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "remeda-impact-002",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/remeda/src/mapWithFeedback.ts:mapWithFeedback:function",
+            "ts:packages/remeda/src/internal/purryWithLazy.ts:purryWithLazy:function",
+            "ts:packages/remeda/src/mapWithFeedback.ts:mapWithFeedbackImplementation:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/remeda/src/mapWithFeedback.ts#L70-L77@dbcbb04",
+            "packages/remeda/src/internal/purryWithLazy.ts#L19-L39@12668c7",
+            "packages/remeda/src/mapWithFeedback.ts#L79-L98@dbcbb04",
+            "packages/remeda/src/mapWithFeedback.ts#L1-L68@dbcbb04",
+            "packages/remeda/src/mapWithFeedback.test-d.ts#L1-L79@eb1b6e3",
+            "packages/remeda/src/mapWithFeedback.test-d.ts#L6-L6@eb1b6e3",
+            "packages/remeda/src/mapWithFeedback.test-d.ts#L25-L29@eb1b6e3",
+            "packages/remeda/src/mapWithFeedback.test-d.ts#L37-L41@eb1b6e3",
+            "packages/remeda/src/mapWithFeedback.test-prop.ts#L1-L22@87fe517",
+            "packages/remeda/src/mapWithFeedback.test.ts#L9-L13@cab70b5",
+            "packages/remeda/src/mapWithFeedback.test.ts#L15-L32@cab70b5",
+            "packages/remeda/src/mapWithFeedback.test.ts#L34-L40@cab70b5",
+            "packages/remeda/src/mapWithFeedback.test.ts#L42-L60@cab70b5",
+            "packages/remeda/src/mapWithFeedback.test.ts#L64-L71@cab70b5",
+            "packages/remeda/src/mapWithFeedback.test.ts#L73-L83@cab70b5"
+          ],
+          "cost_usd": 0.0233243,
+          "error": null,
+          "eval_cost_usd": 0.0166181,
+          "judge": null,
+          "latency_s": 10.124,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {
+            "partial": 1,
+            "supported": 8
+          }
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "remeda-lookup-002",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/remeda/src/unique.ts:uniqueImplementation:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/remeda/src/unique.ts#L44-L61@fa626ab",
+            "packages/remeda/src/unique.ts#L40-L42@fa626ab"
+          ],
+          "cost_usd": 0.015178299999999999,
+          "error": null,
+          "eval_cost_usd": 0.0026321,
+          "judge": null,
+          "latency_s": 4.817,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "supported": 2
+          }
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "remeda-lookup-005",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/remeda/src/fromEntries.ts:fromEntriesImplementation:function",
+            "ts:packages/remeda/src/fromEntries.ts:fromEntries:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/remeda/src/fromEntries.ts#L145-L171@64c2218",
+            "packages/remeda/src/fromEntries.ts#L141-L143@64c2218"
+          ],
+          "cost_usd": 0.0210503,
+          "error": null,
+          "eval_cost_usd": 0.0026560999999999998,
+          "judge": null,
+          "latency_s": 2.636,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "supported": 2
+          }
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "remeda-multihop-001",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/remeda/src/purry.ts:purry:function",
+            "ts:packages/remeda/src/internal/lazyDataLastImplementation.ts:lazyDataLastImplementation:function",
+            "ts:packages/remeda/src/purry.test-d.ts:dataLastDeclaredLast:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/remeda/src/internal/dataLastImplementation.test.ts#L1-L11@288bbd7",
+            "packages/remeda/src/purry.ts#L56-L70@874c317",
+            "packages/remeda/src/internal/lazyDataLastImplementation.ts#L50-L68@9ace57a",
+            "packages/remeda/src/purry.test-d.ts#L137-L139@0791c61"
+          ],
+          "cost_usd": 0.0172943,
+          "error": null,
+          "eval_cost_usd": 0.0050601000000000005,
+          "judge": null,
+          "latency_s": 7.306,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {
+            "supported": 4
+          }
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "multihop"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "remeda-unanswerable-002",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.223,
+          "metrics": {
+            "api_refusal": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "unanswerable"
+    },
+    {
+      "mean_primary": 0.8,
+      "question_id": "requests-callers-002",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/utils.py:address_in_network:function",
+            "py:tests/test_utils.py:test_dotted_netmask:test"
+          ],
+          "cached": true,
+          "cited": [
+            "src/requests/utils.py#L726-L738@120336d",
+            "tests/test_utils.py#L515-L524@091a9fd",
+            "tests/test_utils.py#L1-L539@091a9fd",
+            "tests/test_utils.py#L313-L314@091a9fd",
+            "tests/test_utils.py#L316-L317@091a9fd"
+          ],
+          "cost_usd": 0.0259863,
+          "error": null,
+          "eval_cost_usd": 0.0077621,
+          "judge": null,
+          "latency_s": 4.057,
+          "metrics": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.8,
+          "run": 0,
+          "support": {
+            "supported": 4
+          }
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "requests-callers-006",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/structures.py:CaseInsensitiveDict.__eq__:method",
+            "py:tests/test_structures.py:TestCaseInsensitiveDict.test_lower_items:test",
+            "py:tests/test_requests.py:TestCaseInsensitiveDict.test_lower_items:test"
+          ],
+          "cached": true,
+          "cited": [
+            "src/requests/structures.py#L80-L86@7675eaf",
+            "tests/test_structures.py#L29-L32@3065057",
+            "tests/test_requests.py#L2406-L2415@571535f"
+          ],
+          "cost_usd": 0.0263803,
+          "error": null,
+          "eval_cost_usd": 0.0036601,
+          "judge": null,
+          "latency_s": 4.219,
+          "metrics": {
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "partial": 1,
+            "supported": 2
+          }
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.6,
+      "question_id": "requests-flow-004",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/models.py:PreparedRequest.prepare_body:method",
+            "py:src/requests/models.py:RequestEncodingMixin._encode_files:method",
+            "py:src/requests/models.py:PreparedRequest.prepare_content_length:method"
+          ],
+          "cached": true,
+          "cited": [
+            "src/requests/models.py#L574-L650@59b5615",
+            "src/requests/models.py#L183-L252@59b5615",
+            "src/requests/models.py#L652-L666@59b5615"
+          ],
+          "cost_usd": 0.0283403,
+          "error": null,
+          "eval_cost_usd": 0.0244184,
+          "judge": 0.8333333333333334,
+          "latency_s": 6.639,
+          "metrics": {
+            "judge": 0.8333333333333334
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.6,
+          "run": 0,
+          "support": {
+            "supported": 7
+          }
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "flow"
+    },
+    {
+      "mean_primary": 0.5,
+      "question_id": "requests-impact-002",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/cookies.py:RequestsCookieJar.__delitem__:method",
+            "py:src/requests/cookies.py:remove_cookie_by_name:function"
+          ],
+          "cached": true,
+          "cited": [
+            "src/requests/cookies.py#L376-L380@2e3fc21",
+            "src/requests/cookies.py#L164-L182@2e3fc21"
+          ],
+          "cost_usd": 0.0273343,
+          "error": null,
+          "eval_cost_usd": 0.0037561,
+          "judge": null,
+          "latency_s": 4.897,
+          "metrics": {
+            "static_precision": 1.0,
+            "static_recall": 0.3333333333333333
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.5,
+          "run": 0,
+          "support": {
+            "supported": 3
+          }
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "requests-lookup-001",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/adapters.py:HTTPAdapter:class",
+            "py:src/requests/adapters.py:HTTPAdapter.build_response:method",
+            "py:src/requests/adapters.py:HTTPAdapter.send:method"
+          ],
+          "cached": true,
+          "cited": [
+            "src/requests/adapters.py#L158-L748@40fe8a6",
+            "src/requests/adapters.py#L365-L401@40fe8a6",
+            "src/requests/adapters.py#L634-L748@40fe8a6"
+          ],
+          "cost_usd": 0.021734299999999998,
+          "error": null,
+          "eval_cost_usd": 0.0100401,
+          "judge": null,
+          "latency_s": 3.807,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "partial": 1,
+            "supported": 2
+          }
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "requests-lookup-005",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/cookies.py:RequestsCookieJar.list_paths:method",
+            "py:src/requests/cookies.py:RequestsCookieJar:class"
+          ],
+          "cached": true,
+          "cited": [
+            "src/requests/cookies.py#L310-L316@2e3fc21",
+            "src/requests/cookies.py#L191-L476@2e3fc21"
+          ],
+          "cost_usd": 0.0143463,
+          "error": null,
+          "eval_cost_usd": 0.0056441,
+          "judge": null,
+          "latency_s": 2.334,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "partial": 2
+          }
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "requests-multihop-002",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:tests/conftest.py:prepare_url:function",
+            "py:src/requests/models.py:Request.prepare:method",
+            "py:src/requests/sessions.py:Session.prepare_request:method",
+            "py:tests/test_requests.py:TestRequests.test_whitespaces_are_removed_from_url:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_preparing_bad_url:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_preparing_url:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_url_mutation:test",
+            "py:tests/test_adapters.py:test_request_url_handles_leading_path_separators:test",
+            "py:tests/test_requests.py:TestRequests.test_prepared_request_hook:test",
+            "py:tests/test_requests.py:TestRequests.test_prepare_request_with_bytestring_url:test"
+          ],
+          "cached": true,
+          "cited": [
+            "src/requests/models.py#L422-L449@59b5615",
+            "tests/conftest.py#L15-L22@bfb44b9",
+            "src/requests/models.py#L358-L373@59b5615",
+            "src/requests/sessions.py#L511-L555@feaf340",
+            "tests/test_requests.py#L190-L193@571535f",
+            "tests/test_requests.py#L2778-L2791@571535f",
+            "tests/test_requests.py#L2735-L2776@571535f",
+            "tests/test_requests.py#L2798-L2832@571535f",
+            "tests/test_adapters.py#L4-L8@303e4cc",
+            "tests/test_requests.py#L1199-L1211@571535f",
+            "tests/test_requests.py#L1230-L1234@571535f"
+          ],
+          "cost_usd": 0.047670300000000006,
+          "error": null,
+          "eval_cost_usd": 0.0135701,
+          "judge": null,
+          "latency_s": 13.185,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {
+            "partial": 1,
+            "supported": 10
+          }
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "multihop"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "requests-unanswerable-001",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.013582299999999999,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 3.491,
+          "metrics": {
+            "api_refusal": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "unanswerable"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "zod-callers-002",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.045240300000000004,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 4.677,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.5714285714285715,
+      "question_id": "zod-callers-003",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v3/types.ts:ZodBigInt.lte:method",
+            "ts:packages/zod/src/v3/types.ts:ZodBigInt.lt:method",
+            "ts:packages/zod/src/v3/types.ts:ZodBigInt.setLimit:method"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/zod/src/v3/types.ts#L1725-L1727@17bef73",
+            "packages/zod/src/v3/types.ts#L1730-L1732@17bef73",
+            "packages/zod/src/v3/types.ts#L1635-L1819@17bef73",
+            "packages/zod/src/v3/tests/bigint.test.ts#L1-L14@9692f57"
+          ],
+          "cost_usd": 0.0210763,
+          "error": null,
+          "eval_cost_usd": 0.007238100000000001,
+          "judge": null,
+          "latency_s": 4.889,
+          "metrics": {
+            "precision": 0.6666666666666666,
+            "recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.5714285714285715,
+          "run": 0,
+          "support": {
+            "supported": 3,
+            "unsupported": 1
+          }
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "callers"
+    },
+    {
+      "mean_primary": 0.2,
+      "question_id": "zod-flow-004",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v3/types.ts:ZodType.transform:method",
+            "ts:packages/zod/src/v4/classic/schemas.ts:transform:function",
+            "ts:packages/zod/src/v4/core/api.ts:_transform:function",
+            "ts:packages/zod/src/v4/core/parse.ts:_parse.fn:function",
+            "ts:packages/zod/src/v4/core/parse.ts:_parseAsync.fn:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/zod/src/v3/types.ts#L468-L477@17bef73",
+            "packages/zod/src/v4/classic/schemas.ts#L2238-L2245@90a05df",
+            "packages/zod/src/v4/core/api.ts#L1463-L1471@48c26d4",
+            "packages/zod/src/v4/core/parse.ts#L23-L35@8759071",
+            "packages/zod/src/v4/core/parse.ts#L49-L59@8759071"
+          ],
+          "cost_usd": 0.0299603,
+          "error": null,
+          "eval_cost_usd": 0.0105204,
+          "judge": 0.3333333333333333,
+          "latency_s": 6.756,
+          "metrics": {
+            "judge": 0.3333333333333333
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.2,
+          "run": 0,
+          "support": {
+            "partial": 1,
+            "supported": 4
+          }
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "flow"
+    },
+    {
+      "mean_primary": 0.003755868544600939,
+      "question_id": "zod-impact-004",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/core/api.ts:_e164:function",
+            "ts:packages/zod/src/v4/classic/schemas.ts:e164:function",
+            "ts:packages/zod/src/v4/mini/schemas.ts:e164:function",
+            "ts:packages/zod/src/v4/core/schemas.ts:$ZodE164:function",
+            "ts:packages/zod/src/v4/classic/schemas.ts:ZodE164:function",
+            "ts:packages/zod/src/v4/mini/schemas.ts:ZodMiniE164:function",
+            "ts:packages/zod/src/v4/core/util.ts:normalizeParams:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/zod/src/v4/core/api.ts#L471-L482@48c26d4",
+            "packages/zod/src/v4/classic/schemas.ts#L1003-L1005@90a05df",
+            "packages/zod/src/v4/mini/schemas.ts#L493-L495@d4ca9c8",
+            "packages/zod/src/v4/core/schemas.ts#L1092-L1095@893ff94",
+            "packages/zod/src/v4/classic/schemas.ts#L997-L1001@90a05df",
+            "packages/zod/src/v4/mini/schemas.ts#L484-L490@d4ca9c8",
+            "packages/zod/src/v4/core/util.ts#L556-L568@747494a",
+            "packages/zod/src/v4/mini/tests/string.test.ts#L314-L325@3f6e086"
+          ],
+          "cost_usd": 0.0531883,
+          "error": null,
+          "eval_cost_usd": 0.008874100000000001,
+          "judge": null,
+          "latency_s": 7.95,
+          "metrics": {
+            "static_precision": 0.3333333333333333,
+            "static_recall": 0.0018885741265344666
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.003755868544600939,
+          "run": 0,
+          "support": {
+            "partial": 1,
+            "supported": 7
+          }
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "zod-lookup-004",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v3/types.ts:ZodType.pipe:method",
+            "ts:packages/zod/src/v3/types.ts:ZodPipeline:class",
+            "ts:packages/zod/src/v4/classic/schemas.ts:pipe:function",
+            "ts:packages/zod/src/v4/mini/schemas.ts:pipe:function",
+            "ts:packages/zod/src/v4/core/api.ts:_pipe:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/zod/src/v3/types.ts#L522-L524@17bef73",
+            "packages/zod/src/v3/types.ts#L4777-L4837@17bef73",
+            "packages/zod/src/v4/classic/schemas.ts#L2506-L2513@90a05df",
+            "packages/zod/src/v4/mini/schemas.ts#L1694-L1703@d4ca9c8",
+            "packages/zod/src/v4/core/api.ts#L1562-L1575@48c26d4"
+          ],
+          "cost_usd": 0.043868300000000006,
+          "error": null,
+          "eval_cost_usd": 0.0061761,
+          "judge": null,
+          "latency_s": 5.428,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "supported": 5
+          }
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "zod-lookup-006",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/core/util.ts:attachSchema:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/zod/src/v4/core/util.ts#L894-L898@747494a"
+          ],
+          "cost_usd": 0.0426583,
+          "error": null,
+          "eval_cost_usd": 0.0022180999999999998,
+          "judge": null,
+          "latency_s": 2.34,
+          "metrics": {},
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {
+            "supported": 2
+          }
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "lookup"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "zod-multihop-004",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/classic/schemas.ts:never:function",
+            "ts:packages/zod/src/v4/mini/schemas.ts:never:function"
+          ],
+          "cached": true,
+          "cited": [
+            "packages/zod/src/v4/classic/schemas.ts#L1417-L1419@90a05df",
+            "packages/zod/src/v4/mini/schemas.ts#L810-L812@d4ca9c8",
+            "packages/zod/src/v4/classic/tests/index.test.ts#L206-L209@f4a1b82",
+            "packages/zod/src/v4/classic/tests/anyunknown.test.ts#L21-L26@0864995",
+            "packages/zod/src/v4/mini/tests/index.test.ts#L206-L209@87b31af",
+            "packages/zod/src/v4/core/tests/compile.test.ts#L141-L146@6abb9ee",
+            "packages/zod/src/v4/core/tests/compile-differential.test.ts#L195-L197@0c37de9"
+          ],
+          "cost_usd": 0.0194283,
+          "error": null,
+          "eval_cost_usd": 0.0049681000000000005,
+          "judge": null,
+          "latency_s": 8.184,
+          "metrics": {
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {
+            "supported": 7
+          }
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "multihop"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "zod-unanswerable-001",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": true,
+          "cited": [],
+          "cost_usd": 0.0491723,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 2.361,
+          "metrics": {
+            "api_refusal": 0.0
+          },
+          "notes": [],
+          "outcome": "refused_evidence",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "unanswerable"
+    }
+  ],
+  "kind": "answer",
+  "max_cost_usd": 3.0,
+  "models": {
+    "large": "claude-sonnet-5-5",
+    "small": "claude-haiku-5-5"
+  },
+  "notes": [
+    "The claim-support checker and the flow judge use the same model family as the answering systems (a known bias); the judge is blind to system names, sees answers truncated to a fixed length, and its agreement with human labels is reported separately."
+  ],
+  "overall": {
+    "high": 0.7648439290635114,
+    "low": 0.5186908807919984,
+    "mean": 0.6433017124486047,
+    "n": 40
+  },
+  "refusals": {
+    "answerable": 35,
+    "answerable_refused_api": 0,
+    "answerable_refused_budget": 0,
+    "answerable_refused_evidence": 3,
+    "unanswerable": 5,
+    "unanswerable_answered": 0,
+    "unanswerable_refused_api": 0,
+    "unanswerable_refused_evidence": 5
+  },
+  "run_overall": [
+    0.6433017124486047
+  ],
+  "runs": 1,
+  "schema_version": "1.0",
+  "skipped": [],
+  "snapshots": [
+    {
+      "commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "click",
+      "snapshot_id": 19
+    },
+    {
+      "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "httpx",
+      "snapshot_id": 21
+    },
+    {
+      "commit": "ec4d3f5dad1105c522c83ec4877e04937cb2405e",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "remeda",
+      "snapshot_id": 22
+    },
+    {
+      "commit": "6e83187b8feb273ed4c6cdab5efd8d54901dfab3",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "requests",
+      "snapshot_id": 20
+    },
+    {
+      "commit": "c7ec94d309ee8acb25113e3db738b3e03816a424",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "zod",
+      "snapshot_id": 23
+    }
+  ],
+  "spent_usd": 0.0,
+  "split": "dev",
+  "suite": "benchmark",
+  "suite_info": {
+    "benchmark_version": "1.0.0",
+    "questions_sha256": "c121bf8d5914228d4998dc96e9e5ea675ac1b356591a2bc18f2a34c4fc8a9577",
+    "test_frozen": true,
+    "test_sha256": "163c2957919f00015870f1697e9a140903077d0fb7273beabd2f57767dd4cd08"
+  },
+  "system": "hybrid_graphrag",
+  "total_cost_usd": 1.214991
+}

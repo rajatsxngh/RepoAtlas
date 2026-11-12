@@ -167,6 +167,18 @@ def test_claim_agreement_and_exploratory_status(tmp_path: Path) -> None:
     assert "exploratory" in render_agreement(result)
     unlabeled = agreement(LabelFile(kind="claim_support", instructions="", source={}, items=[]), {})
     assert unlabeled.kappa is None and unlabeled.exploratory
+    many = [
+        {"id": f"m{i}", "question_id": "q", "label": "supported" if i % 2 else "partial"}
+        for i in range(24)
+    ]
+    agree = {item["id"]: item["label"] for item in many}
+    measured = agreement(
+        LabelFile(kind="claim_support", instructions="", source={}, items=many), agree
+    )
+    assert measured.kappa == 1.0 and not measured.exploratory
+    delegated = LabelFile(kind="claim_support", instructions="", source={}, items=many, human=False)
+    assert agreement(delegated, agree).exploratory
+    assert "made by a model" in agreement(delegated, agree).note
 
 
 def test_flow_agreement_per_criterion() -> None:
