@@ -71,6 +71,7 @@ class ReportMeta(BaseModel):
     models: dict[str, str] = Field(default_factory=dict)
     embedding_model: str | None = None
     snapshots: list[SnapshotUsed] = Field(default_factory=list)
+    evaluators: dict[str, str] = Field(default_factory=dict)  # enricher name → fingerprint
     notes: list[str] = Field(default_factory=list)
 
 
@@ -142,6 +143,7 @@ class Report(BaseModel):
     models: dict[str, str]
     embedding_model: str | None
     snapshots: list[SnapshotUsed]
+    evaluators: dict[str, str]  # checker and judge fingerprints (cache keys for their results)
     environment: Environment
     runs: int
     complete: bool
@@ -279,6 +281,7 @@ def build_report(result: RunResult, meta: ReportMeta, *, created_at: str | None 
         models=meta.models,
         embedding_model=meta.embedding_model,
         snapshots=meta.snapshots,
+        evaluators=meta.evaluators,
         environment=environment(),
         runs=result.runs,
         complete=result.complete,

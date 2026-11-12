@@ -687,6 +687,13 @@
       "title": "Errored",
       "type": "array"
     },
+    "evaluators": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Evaluators",
+      "type": "object"
+    },
     "items": {
       "items": {
         "$ref": "#/$defs/ItemReport"
@@ -816,6 +823,7 @@
     "models",
     "embedding_model",
     "snapshots",
+    "evaluators",
     "environment",
     "runs",
     "complete",

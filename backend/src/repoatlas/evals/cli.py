@@ -153,3 +153,62 @@ def compare_command(
     typer.echo(text, nl=False)
     if out is not None:
         write_text_lf(out, text)
+
+
+labels_app = typer.Typer(help="Human labels for the checker and the judge.", no_args_is_help=True)
+eval_app.add_typer(labels_app, name="labels")
+
+
+def _labels_path(name: str) -> Path:
+    return eval_dir() / "labels" / name
+
+
+@labels_app.command("export-claims")
+def export_claims_command(
+    report: Annotated[Path, typer.Option("--report", help="A dev report (JSON).")],
+    n: Annotated[int, typer.Option("--n", min=1)] = 30,
+    seed: Annotated[int, typer.Option("--seed")] = 7,
+    out: Annotated[Path | None, typer.Option("--out")] = None,
+    cache_dir: Annotated[Path | None, typer.Option("--cache-dir")] = None,
+) -> None:
+    """Write a blind claim-support label file (and the checker's labels beside it)."""
+    from repoatlas.evals.labels import export_claims, write_label_file
+    from repoatlas.evals.report import read_report
+    from repoatlas.evals.runner import ResultCache
+    from repoatlas.evals.session import default_context
+    from repoatlas.evals.support import MAX_LINES_PER_REF
+
+    loaded = read_report(report)
+    if loaded.split != "dev":
+        typer.echo("Human labels come from dev runs only.", err=True)
+        raise typer.Exit(2)
+    store = default_context().store
+    assert store is not None
+
+    def read(snapshot_id: int, ref: Any) -> str:
+        end = min(ref.end_line, ref.start_line + MAX_LINES_PER_REF - 1)
+        return str(store.read_code(snapshot_id, ref.path, ref.start_line, end).text)
+
+    labels, machine = export_claims(
+        loaded, ResultCache(cache_dir or eval_dir() / "cache"), read, n=n, seed=seed
+    )
+    path, machine_path = write_label_file(
+        out or _labels_path("claim_support.yaml"), labels, machine
+    )
+    typer.echo(f"{len(labels.items)} claims to label: {path} (machine labels: {machine_path})")
+
+
+@labels_app.command("agreement")
+def agreement_command(
+    labels_file: Annotated[Path, typer.Argument(help="A filled-in label file.")],
+) -> None:
+    """Accuracy and Cohen's kappa between the person's labels and the machine's."""
+    from repoatlas.canonical import pretty_json, write_text_lf
+    from repoatlas.evals.labels import agreement, read_label_file, render_agreement
+
+    labels, machine = read_label_file(labels_file)
+    result = agreement(labels, machine)
+    text = render_agreement(result)
+    typer.echo(text, nl=False)
+    write_text_lf(labels_file.with_suffix(".agreement.json"), pretty_json(result))
+    write_text_lf(labels_file.with_suffix(".agreement.md"), text)

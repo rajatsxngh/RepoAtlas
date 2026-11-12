@@ -126,6 +126,8 @@ def prepare_run(
         {repo: used.config_fingerprint for repo, used in snapshots.items()},
         budget,
     )
+    import repoatlas.evals.support  # noqa: F401  (registers its enricher)
+
     enrichers = []
     if kind == "answer":
         for name, enabled in (("support", options.support), ("judge", options.judge)):
@@ -177,11 +179,11 @@ def report_meta(prepared: Prepared) -> ReportMeta:
     notes = []
     if prepared.enrichers:
         notes.append(JUDGE_BIAS_NOTE)
-        notes += [f"{e.name}: fingerprint {e.fingerprint[:16]}" for e in prepared.enrichers]
     return ReportMeta(
         suite_info=prepared.suite_info,
         models=models,
         embedding_model=ctx.settings.embedding_model,
         snapshots=sorted(prepared.snapshots.values(), key=lambda s: s.repo_id),
+        evaluators={e.name: e.fingerprint for e in prepared.enrichers},
         notes=notes,
     )
