@@ -1630,6 +1630,103 @@
         }
       }
     },
+    "/api/v1/snapshots/{snapshot_id}/impact": {
+      "post": {
+        "tags": [
+          "impact"
+        ],
+        "summary": "What breaks if this changes",
+        "description": "Tests, public APIs, and callers a change to a symbol (or the code a diff touches) may\nbreak, ranked by score, with paths, evidence, and the sites the graph could not resolve.",
+        "operationId": "analyze_impact",
+        "parameters": [
+          {
+            "name": "snapshot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "description": "Snapshot ID.",
+              "title": "Snapshot Id"
+            },
+            "description": "Snapshot ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImpactRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImpactResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (see Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -2114,6 +2211,38 @@
         "title": "Degree",
         "description": "Edges at a node by kind (only kinds with at least one edge)."
       },
+      "DiffTarget": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "diff",
+            "title": "Kind",
+            "default": "diff"
+          },
+          "diff": {
+            "type": "string",
+            "maxLength": 60000,
+            "minLength": 1,
+            "title": "Diff"
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "old",
+              "new"
+            ],
+            "title": "Side",
+            "default": "old"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "diff"
+        ],
+        "title": "DiffTarget",
+        "description": "A unified diff. ``side=\"old\"``: the snapshot is the code the diff applies to (the\ndefault); ``\"new\"``: the snapshot already contains the change."
+      },
       "Edge": {
         "properties": {
           "src": {
@@ -2403,6 +2532,315 @@
           "depth"
         ],
         "title": "Hop"
+      },
+      "ImpactItem": {
+        "properties": {
+          "symbol_key": {
+            "type": "string",
+            "title": "Symbol Key"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NodeKind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "group": {
+            "type": "string",
+            "enum": [
+              "test",
+              "public_api",
+              "caller"
+            ],
+            "title": "Group"
+          },
+          "score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "best_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Best Score"
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Depth"
+          },
+          "best_path": {
+            "items": {
+              "$ref": "#/components/schemas/PathStep"
+            },
+            "type": "array",
+            "title": "Best Path"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRef"
+            },
+            "type": "array",
+            "title": "Evidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "symbol_key",
+          "kind",
+          "name",
+          "path",
+          "group",
+          "score",
+          "best_score",
+          "depth",
+          "best_path",
+          "evidence"
+        ],
+        "title": "ImpactItem"
+      },
+      "ImpactParams": {
+        "properties": {
+          "max_depth": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Max Depth",
+            "default": 4
+          },
+          "decay": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Decay",
+            "default": 0.6
+          },
+          "min_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Min Score",
+            "default": 0.05
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 200
+          },
+          "edge_kinds": {
+            "items": {
+              "$ref": "#/components/schemas/EdgeKind"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Edge Kinds",
+            "default": [
+              "calls",
+              "inherits",
+              "imports",
+              "tested_by",
+              "routes_to"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ImpactParams",
+        "description": "Search settings. Defaults are the values chosen on the dev split (decision 0019)."
+      },
+      "ImpactRequest": {
+        "properties": {
+          "symbol_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbol Key",
+            "description": "The symbol that changes."
+          },
+          "diff": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60000,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diff",
+            "description": "A unified diff."
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "old",
+              "new"
+            ],
+            "title": "Side",
+            "description": "For a diff: `old` when the snapshot is the code the diff applies to, `new` when it already contains the change.",
+            "default": "old"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImpactParams"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Search settings."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ImpactRequest"
+      },
+      "ImpactResponse": {
+        "properties": {
+          "target": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SymbolTarget"
+              },
+              {
+                "$ref": "#/components/schemas/DiffTarget"
+              }
+            ],
+            "title": "Target",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "diff": "#/components/schemas/DiffTarget",
+                "symbol": "#/components/schemas/SymbolTarget"
+              }
+            }
+          },
+          "targets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Targets"
+          },
+          "params": {
+            "$ref": "#/components/schemas/ImpactParams"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ImpactItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "unknown": {
+            "items": {
+              "$ref": "#/components/schemas/UnknownSite"
+            },
+            "type": "array",
+            "title": "Unknown"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/ImpactStats"
+          },
+          "run_id": {
+            "type": "integer",
+            "title": "Run Id"
+          },
+          "trace_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Trace Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target",
+          "targets",
+          "params",
+          "items",
+          "unknown",
+          "stats",
+          "run_id",
+          "trace_id"
+        ],
+        "title": "ImpactResponse"
+      },
+      "ImpactStats": {
+        "properties": {
+          "targets": {
+            "type": "integer",
+            "title": "Targets"
+          },
+          "reached": {
+            "type": "integer",
+            "title": "Reached"
+          },
+          "expanded": {
+            "type": "integer",
+            "title": "Expanded"
+          },
+          "items": {
+            "type": "integer",
+            "title": "Items"
+          },
+          "returned": {
+            "type": "integer",
+            "title": "Returned"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "by_group": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Group"
+          },
+          "unknown": {
+            "type": "integer",
+            "title": "Unknown"
+          },
+          "elapsed_ms": {
+            "type": "number",
+            "title": "Elapsed Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "targets",
+          "reached",
+          "expanded",
+          "items",
+          "returned",
+          "truncated",
+          "by_group",
+          "unknown",
+          "elapsed_ms"
+        ],
+        "title": "ImpactStats"
       },
       "JobView": {
         "properties": {
@@ -2811,6 +3249,45 @@
         ],
         "title": "Owner",
         "description": "One author's share of a file's commits. The email is only ever stored hashed."
+      },
+      "PathStep": {
+        "properties": {
+          "src": {
+            "type": "string",
+            "title": "Src"
+          },
+          "dst": {
+            "type": "string",
+            "title": "Dst"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "calls",
+              "inherits",
+              "imports",
+              "tested_by",
+              "routes_to",
+              "overrides",
+              "contains"
+            ],
+            "title": "Kind"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "src",
+          "dst",
+          "kind",
+          "confidence"
+        ],
+        "title": "PathStep",
+        "description": "One step from a changed symbol towards an affected one (``src`` is nearer the change)."
       },
       "Provenance": {
         "type": "string",
@@ -3329,6 +3806,28 @@
         "title": "SymbolMatch",
         "description": "A search hit: ``exact`` (key, name, or qualified name, ignoring case), ``prefix``, or\n``fuzzy`` (trigram similarity); ``score`` is the best trigram similarity (0 to 1)."
       },
+      "SymbolTarget": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "symbol",
+            "title": "Kind",
+            "default": "symbol"
+          },
+          "symbol_key": {
+            "type": "string",
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Symbol Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "symbol_key"
+        ],
+        "title": "SymbolTarget"
+      },
       "TraceView": {
         "properties": {
           "id": {
@@ -3411,6 +3910,45 @@
           "spans"
         ],
         "title": "TraceView"
+      },
+      "UnknownSite": {
+        "properties": {
+          "site": {
+            "$ref": "#/components/schemas/EvidenceRef"
+          },
+          "callee_text": {
+            "type": "string",
+            "title": "Callee Text"
+          },
+          "candidates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Candidates",
+            "default": []
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "ambiguous",
+              "not_found",
+              "unbound_name",
+              "dynamic",
+              "string_literal"
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site",
+          "callee_text",
+          "reason"
+        ],
+        "title": "UnknownSite",
+        "description": "A place that may depend on the target but that the graph cannot confirm."
       },
       "Usage": {
         "properties": {

@@ -318,6 +318,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/snapshots/{snapshot_id}/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * What breaks if this changes
+         * @description Tests, public APIs, and callers a change to a symbol (or the code a diff touches) may
+         *     break, ranked by score, with paths, evidence, and the sites the graph could not resolve.
+         */
+        post: operations["analyze_impact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -549,6 +570,26 @@ export interface components {
             };
         };
         /**
+         * DiffTarget
+         * @description A unified diff. ``side="old"``: the snapshot is the code the diff applies to (the
+         *     default); ``"new"``: the snapshot already contains the change.
+         */
+        DiffTarget: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "diff";
+            /** Diff */
+            diff: string;
+            /**
+             * Side
+             * @default old
+             * @enum {string}
+             */
+            side: "old" | "new";
+        };
+        /**
          * Edge
          * @description A directed edge. ``site`` lies in the source node's file, except for ``tested_by``
          *     edges, whose evidence (an import or a call) lies in the test (destination) file.
@@ -670,6 +711,133 @@ export interface components {
             node: components["schemas"]["Node"];
             /** Depth */
             depth: number;
+        };
+        /** ImpactItem */
+        ImpactItem: {
+            /** Symbol Key */
+            symbol_key: string;
+            kind: components["schemas"]["NodeKind"];
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /**
+             * Group
+             * @enum {string}
+             */
+            group: "test" | "public_api" | "caller";
+            /** Score */
+            score: number;
+            /** Best Score */
+            best_score: number;
+            /** Depth */
+            depth: number;
+            /** Best Path */
+            best_path: components["schemas"]["PathStep"][];
+            /** Evidence */
+            evidence: components["schemas"]["EvidenceRef"][];
+        };
+        /**
+         * ImpactParams
+         * @description Search settings. Defaults are the values chosen on the dev split (decision 0019).
+         */
+        ImpactParams: {
+            /**
+             * Max Depth
+             * @default 4
+             */
+            max_depth: number;
+            /**
+             * Decay
+             * @default 0.6
+             */
+            decay: number;
+            /**
+             * Min Score
+             * @default 0.05
+             */
+            min_score: number;
+            /**
+             * Limit
+             * @default 200
+             */
+            limit: number;
+            /**
+             * Edge Kinds
+             * @default [
+             *       "calls",
+             *       "inherits",
+             *       "imports",
+             *       "tested_by",
+             *       "routes_to"
+             *     ]
+             */
+            edge_kinds: components["schemas"]["EdgeKind"][];
+        };
+        /** ImpactRequest */
+        ImpactRequest: {
+            /**
+             * Symbol Key
+             * @description The symbol that changes.
+             */
+            symbol_key?: string | null;
+            /**
+             * Diff
+             * @description A unified diff.
+             */
+            diff?: string | null;
+            /**
+             * Side
+             * @description For a diff: `old` when the snapshot is the code the diff applies to, `new` when it already contains the change.
+             * @default old
+             * @enum {string}
+             */
+            side: "old" | "new";
+            /** @description Search settings. */
+            params?: components["schemas"]["ImpactParams"] | null;
+        };
+        /** ImpactResponse */
+        ImpactResponse: {
+            /** Target */
+            target: components["schemas"]["SymbolTarget"] | components["schemas"]["DiffTarget"];
+            /** Targets */
+            targets: string[];
+            params: components["schemas"]["ImpactParams"];
+            /** Items */
+            items: components["schemas"]["ImpactItem"][];
+            /** Unknown */
+            unknown: components["schemas"]["UnknownSite"][];
+            stats: components["schemas"]["ImpactStats"];
+            /** Run Id */
+            run_id: number;
+            /**
+             * Trace Id
+             * Format: uuid
+             */
+            trace_id: string;
+        };
+        /** ImpactStats */
+        ImpactStats: {
+            /** Targets */
+            targets: number;
+            /** Reached */
+            reached: number;
+            /** Expanded */
+            expanded: number;
+            /** Items */
+            items: number;
+            /** Returned */
+            returned: number;
+            /** Truncated */
+            truncated: boolean;
+            /** By Group */
+            by_group: {
+                [key: string]: number;
+            };
+            /** Unknown */
+            unknown: number;
+            /** Elapsed Ms */
+            elapsed_ms: number;
         };
         /**
          * JobView
@@ -849,6 +1017,23 @@ export interface components {
             last_commit_at: string;
             /** Share */
             share: number;
+        };
+        /**
+         * PathStep
+         * @description One step from a changed symbol towards an affected one (``src`` is nearer the change).
+         */
+        PathStep: {
+            /** Src */
+            src: string;
+            /** Dst */
+            dst: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "calls" | "inherits" | "imports" | "tested_by" | "routes_to" | "overrides" | "contains";
+            /** Confidence */
+            confidence: number;
         };
         /**
          * Provenance
@@ -1050,6 +1235,16 @@ export interface components {
             /** Score */
             score: number;
         };
+        /** SymbolTarget */
+        SymbolTarget: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "symbol";
+            /** Symbol Key */
+            symbol_key: string;
+        };
         /** TraceView */
         TraceView: {
             /**
@@ -1081,6 +1276,25 @@ export interface components {
             cost_usd: number;
             /** Spans */
             spans: components["schemas"]["SpanView"][];
+        };
+        /**
+         * UnknownSite
+         * @description A place that may depend on the target but that the graph cannot confirm.
+         */
+        UnknownSite: {
+            site: components["schemas"]["EvidenceRef"];
+            /** Callee Text */
+            callee_text: string;
+            /**
+             * Candidates
+             * @default []
+             */
+            candidates: string[];
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "ambiguous" | "not_found" | "unbound_name" | "dynamic" | "string_literal";
         };
         /**
          * Usage
@@ -2162,6 +2376,78 @@ export interface operations {
                 };
             };
             /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see Retry-After) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    analyze_impact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Snapshot ID. */
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImpactRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpactResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;

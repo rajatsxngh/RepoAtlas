@@ -41,7 +41,7 @@ class ImpactParams(_Model):
 
 class SymbolTarget(_Model):
     kind: Literal["symbol"] = "symbol"
-    symbol_key: str = Field(min_length=1, max_length=2_000)
+    symbol_key: str = Field(min_length=1, max_length=4_096)
 
 
 class DiffTarget(_Model):

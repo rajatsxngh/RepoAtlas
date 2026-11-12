@@ -33,9 +33,11 @@ from repoatlas.api.middleware import (
     UnhandledErrorMiddleware,
 )
 from repoatlas.api.ratelimit import RateLimiter, RateLimitMiddleware
-from repoatlas.api.routes import health, jobs, qa, repos, snapshots
+from repoatlas.api.routes import health, impact, jobs, qa, repos, snapshots
 from repoatlas.config import Settings, get_settings
 from repoatlas.db.engine import create_db_engine
+from repoatlas.impact.engine import ImpactEngine
+from repoatlas.impact.store_data import StoreImpactData
 from repoatlas.logging import configure
 from repoatlas.store.graphstore import GraphStore
 
@@ -102,7 +104,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.ready_snapshots = set()  # IDs of snapshots seen ready (they never change)
     errors.install(app)
     app.state.answer_systems = {}  # answer systems by mode, built on first use
-    for router in (repos.router, jobs.router, snapshots.router, qa.router, health.router):
+    app.state.impact_engine = ImpactEngine(StoreImpactData(app.state.store))
+    for router in (
+        repos.router,
+        jobs.router,
+        snapshots.router,
+        qa.router,
+        impact.router,
+        health.router,
+    ):
         app.include_router(router, prefix=API_PREFIX)
     return app
 

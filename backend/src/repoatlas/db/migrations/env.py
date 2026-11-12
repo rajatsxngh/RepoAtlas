@@ -6,6 +6,7 @@ from alembic import context
 from sqlalchemy import Connection, create_engine, pool
 
 import repoatlas.answers.models
+import repoatlas.impact.models
 import repoatlas.jobs.models
 import repoatlas.retrieval.models
 import repoatlas.store.models

@@ -70,6 +70,7 @@ LOCATABLE_KINDS = ("class", "function", "method", "test")  # routes span only th
 MAX_DEPTH = 20
 MAX_SEARCH_LIMIT = 100
 MAX_LINKS = 200  # edges one edge-details request returns at most
+MAX_TEXT_FILES = 200  # files one text search returns at most
 CORE_MIN_CONFIDENCE = 0.6  # name-matched guesses below this don't count toward "most used"
 _MATCHES: tuple[MatchKind, ...] = ("exact", "exact", "prefix", "fuzzy")
 
@@ -424,6 +425,66 @@ class GraphStore:
                 for link in found.links
             ],
         )
+
+    def nodes_by_key(self, snapshot_id: int, keys: Iterable[str]) -> dict[str, Node]:
+        """The nodes with these keys (keys the snapshot lacks are left out)."""
+        wanted = sorted(set(keys))
+        if not wanted:
+            return {}
+        with self.engine.connect() as connection:
+            self._require_ready(snapshot_id, connection)
+            found = connection.execute(
+                text(
+                    f"SELECT {rows.NODE_SELECT} FROM {rows.NODE_FROM} "
+                    "WHERE n.snapshot_id = :s AND n.symbol_key = ANY(:keys)"
+                ),
+                {"s": snapshot_id, "keys": wanted},
+            )
+            nodes = [rows.node_from_row(row) for row in found]
+        return {node.key: node for node in nodes}
+
+    def edges_at(self, snapshot_id: int, positions: Iterable[int]) -> dict[int, Edge]:
+        """Edges (with sites and provenance) by their position in ``graph(snapshot_id)``."""
+        graph = self.graph(snapshot_id)
+        by_id = {graph.edge_ids[position]: position for position in set(positions)}
+        with self.engine.connect() as connection:
+            edges = _edges_by_id(connection, sorted(by_id))
+        return {by_id[edge_id]: edge for edge_id, edge in edges.items()}
+
+    def blob_oids(self, snapshot_id: int, paths: Iterable[str]) -> dict[str, str]:
+        """Each file's blob OID (paths the snapshot lacks are left out)."""
+        wanted = sorted(set(paths))
+        if not wanted:
+            return {}
+        with self.engine.connect() as connection:
+            self._require_ready(snapshot_id, connection)
+            found = connection.execute(
+                text(
+                    "SELECT path, blob_oid FROM files WHERE snapshot_id = :s AND path = ANY(:paths)"
+                ),
+                {"s": snapshot_id, "paths": wanted},
+            )
+            return {row.path: row.blob_oid for row in found}
+
+    def texts_containing(
+        self, snapshot_id: int, needle: str, limit: int = MAX_TEXT_FILES
+    ) -> list[tuple[str, str, str]]:
+        """(path, blob OID, text) of the snapshot's stored files whose text contains ``needle``
+        (a plain substring), by path, at most ``limit`` files."""
+        if not needle:
+            raise InvalidQuery("Search for at least one character.")
+        with self.engine.connect() as connection:
+            self._require_ready(snapshot_id, connection)
+            found = connection.execute(
+                text(
+                    "SELECT f.path, f.blob_oid, b.text FROM files f "
+                    "JOIN blobs b ON b.oid = f.blob_oid "
+                    "WHERE f.snapshot_id = :s AND f.skip_reason IS NULL AND b.text IS NOT NULL "
+                    "AND strpos(b.text, :needle) > 0 ORDER BY f.path LIMIT :limit"
+                ),
+                {"s": snapshot_id, "needle": needle, "limit": limit},
+            )
+            return [(row.path, row.blob_oid, row.text) for row in found]
 
     # --- positions and code ---------------------------------------------------------------
 
