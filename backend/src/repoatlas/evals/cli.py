@@ -129,3 +129,27 @@ def schema_command(
         return
     write_text_lf(path, text)
     typer.echo(f"Wrote {path}")
+
+
+@eval_app.command("compare")
+def compare_command(
+    report_a: Annotated[Path, typer.Argument(help="Baseline report (JSON).")],
+    report_b: Annotated[Path, typer.Argument(help="Report compared with it (JSON).")],
+    split: Annotated[
+        str | None, typer.Option("--split", help="Refuse reports of another split.")
+    ] = None,
+    out: Annotated[Path | None, typer.Option("--out", help="Also write markdown here.")] = None,
+) -> None:
+    """Per-type differences (B - A) with 95% paired bootstrap intervals."""
+    from repoatlas.canonical import write_text_lf
+    from repoatlas.evals.compare import compare_reports, render_comparison
+    from repoatlas.evals.report import read_report
+
+    a, b = read_report(report_a), read_report(report_b)
+    if split is not None and (a.split != split or b.split != split):
+        typer.echo(f"Both reports must be on the {split} split.", err=True)
+        raise typer.Exit(2)
+    text = render_comparison(compare_reports(a, b))
+    typer.echo(text, nl=False)
+    if out is not None:
+        write_text_lf(out, text)
