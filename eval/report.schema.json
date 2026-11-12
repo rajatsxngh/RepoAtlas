@@ -1,0 +1,838 @@
+{
+  "$defs": {
+    "Aggregates": {
+      "properties": {
+        "claim_partial": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Claim Partial"
+        },
+        "claim_supported": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Claim Supported"
+        },
+        "claim_unsupported": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Claim Unsupported"
+        },
+        "claims_checked": {
+          "title": "Claims Checked",
+          "type": "integer"
+        },
+        "cost_per_question_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cost Per Question Usd"
+        },
+        "dropped_claim_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dropped Claim Rate"
+        },
+        "eval_cost_usd": {
+          "title": "Eval Cost Usd",
+          "type": "number"
+        },
+        "latency_p50_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Latency P50 S"
+        },
+        "latency_p95_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Latency P95 S"
+        },
+        "outcomes": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Outcomes",
+          "type": "object"
+        },
+        "outputs": {
+          "title": "Outputs",
+          "type": "integer"
+        },
+        "pooled_citation_validity": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pooled Citation Validity"
+        },
+        "prefilter_citation_validity": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Prefilter Citation Validity"
+        },
+        "total_cost_usd": {
+          "title": "Total Cost Usd",
+          "type": "number"
+        }
+      },
+      "required": [
+        "outputs",
+        "outcomes",
+        "prefilter_citation_validity",
+        "pooled_citation_validity",
+        "dropped_claim_rate",
+        "claims_checked",
+        "claim_supported",
+        "claim_partial",
+        "claim_unsupported",
+        "cost_per_question_usd",
+        "eval_cost_usd",
+        "total_cost_usd",
+        "latency_p50_s",
+        "latency_p95_s"
+      ],
+      "title": "Aggregates",
+      "type": "object"
+    },
+    "Environment": {
+      "properties": {
+        "cpu": {
+          "title": "Cpu",
+          "type": "string"
+        },
+        "cpu_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cpu Count"
+        },
+        "machine": {
+          "title": "Machine",
+          "type": "string"
+        },
+        "os": {
+          "title": "Os",
+          "type": "string"
+        },
+        "python": {
+          "title": "Python",
+          "type": "string"
+        },
+        "repoatlas_commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Repoatlas Commit"
+        },
+        "repoatlas_dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Repoatlas Dirty"
+        },
+        "repoatlas_version": {
+          "title": "Repoatlas Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "os",
+        "machine",
+        "cpu",
+        "cpu_count",
+        "python",
+        "repoatlas_version",
+        "repoatlas_commit",
+        "repoatlas_dirty"
+      ],
+      "title": "Environment",
+      "type": "object"
+    },
+    "ErroredItem": {
+      "properties": {
+        "error": {
+          "title": "Error",
+          "type": "string"
+        },
+        "question_id": {
+          "title": "Question Id",
+          "type": "string"
+        },
+        "run": {
+          "title": "Run",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "question_id",
+        "run",
+        "error"
+      ],
+      "title": "ErroredItem",
+      "type": "object"
+    },
+    "Interval": {
+      "properties": {
+        "high": {
+          "title": "High",
+          "type": "number"
+        },
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "mean": {
+          "title": "Mean",
+          "type": "number"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mean",
+        "low",
+        "high",
+        "n"
+      ],
+      "title": "Interval",
+      "type": "object"
+    },
+    "ItemReport": {
+      "properties": {
+        "mean_primary": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Mean Primary"
+        },
+        "question_id": {
+          "title": "Question Id",
+          "type": "string"
+        },
+        "repo_id": {
+          "title": "Repo Id",
+          "type": "string"
+        },
+        "runs": {
+          "items": {
+            "$ref": "#/$defs/ItemRun"
+          },
+          "title": "Runs",
+          "type": "array"
+        },
+        "snapshot_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Snapshot Id"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question_id",
+        "type",
+        "repo_id",
+        "snapshot_id",
+        "mean_primary",
+        "runs"
+      ],
+      "title": "ItemReport",
+      "type": "object"
+    },
+    "ItemRun": {
+      "properties": {
+        "answer_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Answer Keys",
+          "type": "array"
+        },
+        "cached": {
+          "title": "Cached",
+          "type": "boolean"
+        },
+        "cited": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cited",
+          "type": "array"
+        },
+        "cost_usd": {
+          "title": "Cost Usd",
+          "type": "number"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error"
+        },
+        "eval_cost_usd": {
+          "title": "Eval Cost Usd",
+          "type": "number"
+        },
+        "judge": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Judge"
+        },
+        "latency_s": {
+          "title": "Latency S",
+          "type": "number"
+        },
+        "metrics": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Metrics",
+          "type": "object"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "outcome": {
+          "title": "Outcome",
+          "type": "string"
+        },
+        "primary": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Primary"
+        },
+        "run": {
+          "title": "Run",
+          "type": "integer"
+        },
+        "support": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Support",
+          "type": "object"
+        }
+      },
+      "required": [
+        "run",
+        "outcome",
+        "primary",
+        "metrics",
+        "cost_usd",
+        "eval_cost_usd",
+        "latency_s",
+        "answer_keys",
+        "cited",
+        "support",
+        "judge",
+        "cached",
+        "error",
+        "notes"
+      ],
+      "title": "ItemRun",
+      "type": "object"
+    },
+    "Refusals": {
+      "properties": {
+        "answerable": {
+          "title": "Answerable",
+          "type": "integer"
+        },
+        "answerable_refused_api": {
+          "title": "Answerable Refused Api",
+          "type": "integer"
+        },
+        "answerable_refused_budget": {
+          "title": "Answerable Refused Budget",
+          "type": "integer"
+        },
+        "answerable_refused_evidence": {
+          "title": "Answerable Refused Evidence",
+          "type": "integer"
+        },
+        "unanswerable": {
+          "title": "Unanswerable",
+          "type": "integer"
+        },
+        "unanswerable_answered": {
+          "title": "Unanswerable Answered",
+          "type": "integer"
+        },
+        "unanswerable_refused_api": {
+          "title": "Unanswerable Refused Api",
+          "type": "integer"
+        },
+        "unanswerable_refused_evidence": {
+          "title": "Unanswerable Refused Evidence",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "answerable",
+        "answerable_refused_evidence",
+        "answerable_refused_api",
+        "answerable_refused_budget",
+        "unanswerable",
+        "unanswerable_refused_evidence",
+        "unanswerable_refused_api",
+        "unanswerable_answered"
+      ],
+      "title": "Refusals",
+      "type": "object"
+    },
+    "Skipped": {
+      "properties": {
+        "question_id": {
+          "title": "Question Id",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "run": {
+          "title": "Run",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "question_id",
+        "run",
+        "reason"
+      ],
+      "title": "Skipped",
+      "type": "object"
+    },
+    "SnapshotUsed": {
+      "properties": {
+        "commit": {
+          "title": "Commit",
+          "type": "string"
+        },
+        "config_fingerprint": {
+          "title": "Config Fingerprint",
+          "type": "string"
+        },
+        "embedding_model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Embedding Model"
+        },
+        "repo_id": {
+          "title": "Repo Id",
+          "type": "string"
+        },
+        "snapshot_id": {
+          "title": "Snapshot Id",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "repo_id",
+        "snapshot_id",
+        "commit",
+        "config_fingerprint",
+        "embedding_model"
+      ],
+      "title": "SnapshotUsed",
+      "type": "object"
+    },
+    "TypeMetrics": {
+      "properties": {
+        "metrics": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Metrics",
+          "type": "object"
+        },
+        "outcomes": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Outcomes",
+          "type": "object"
+        },
+        "primary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "primary_metric": {
+          "title": "Primary Metric",
+          "type": "string"
+        },
+        "questions": {
+          "title": "Questions",
+          "type": "integer"
+        },
+        "run_means": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Run Means",
+          "type": "array"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "primary_metric",
+        "questions",
+        "primary",
+        "metrics",
+        "run_means",
+        "outcomes"
+      ],
+      "title": "TypeMetrics",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/rajatsxngh/RepoAtlas/eval/report.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "aggregates": {
+      "$ref": "#/$defs/Aggregates"
+    },
+    "by_type": {
+      "items": {
+        "$ref": "#/$defs/TypeMetrics"
+      },
+      "title": "By Type",
+      "type": "array"
+    },
+    "complete": {
+      "title": "Complete",
+      "type": "boolean"
+    },
+    "config": {
+      "additionalProperties": true,
+      "title": "Config",
+      "type": "object"
+    },
+    "config_fingerprint": {
+      "title": "Config Fingerprint",
+      "type": "string"
+    },
+    "cost_per_question_usd": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Cost Per Question Usd"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "embedding_model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Embedding Model"
+    },
+    "environment": {
+      "$ref": "#/$defs/Environment"
+    },
+    "errored": {
+      "items": {
+        "$ref": "#/$defs/ErroredItem"
+      },
+      "title": "Errored",
+      "type": "array"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/ItemReport"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "kind": {
+      "enum": [
+        "answer",
+        "impact"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "max_cost_usd": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Max Cost Usd"
+    },
+    "models": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Models",
+      "type": "object"
+    },
+    "notes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+    },
+    "overall": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Interval"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "refusals": {
+      "$ref": "#/$defs/Refusals"
+    },
+    "run_overall": {
+      "items": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "title": "Run Overall",
+      "type": "array"
+    },
+    "runs": {
+      "title": "Runs",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "skipped": {
+      "items": {
+        "$ref": "#/$defs/Skipped"
+      },
+      "title": "Skipped",
+      "type": "array"
+    },
+    "snapshots": {
+      "items": {
+        "$ref": "#/$defs/SnapshotUsed"
+      },
+      "title": "Snapshots",
+      "type": "array"
+    },
+    "spent_usd": {
+      "title": "Spent Usd",
+      "type": "number"
+    },
+    "split": {
+      "title": "Split",
+      "type": "string"
+    },
+    "suite": {
+      "title": "Suite",
+      "type": "string"
+    },
+    "suite_info": {
+      "additionalProperties": true,
+      "title": "Suite Info",
+      "type": "object"
+    },
+    "system": {
+      "title": "System",
+      "type": "string"
+    },
+    "total_cost_usd": {
+      "title": "Total Cost Usd",
+      "type": "number"
+    }
+  },
+  "required": [
+    "created_at",
+    "suite",
+    "suite_info",
+    "split",
+    "system",
+    "kind",
+    "config_fingerprint",
+    "config",
+    "models",
+    "embedding_model",
+    "snapshots",
+    "environment",
+    "runs",
+    "complete",
+    "max_cost_usd",
+    "spent_usd",
+    "total_cost_usd",
+    "cost_per_question_usd",
+    "overall",
+    "run_overall",
+    "by_type",
+    "aggregates",
+    "refusals",
+    "skipped",
+    "errored",
+    "items",
+    "notes"
+  ],
+  "title": "Report",
+  "type": "object"
+}

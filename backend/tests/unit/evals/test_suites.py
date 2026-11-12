@@ -22,7 +22,7 @@ def test_the_benchmark_suite_loads_the_frozen_splits() -> None:
 def test_every_benchmark_type_has_a_scorer() -> None:
     suite = get_suite("benchmark")
     for item in load_benchmark("all"):
-        assert suite.scorer_for(item.type)
+        assert callable(suite.scorer_for(item.type))
 
 
 def test_unknown_splits_are_refused() -> None:

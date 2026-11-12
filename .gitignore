@@ -49,3 +49,6 @@ Thumbs.db
 
 # Local Claude Code settings
 .claude/settings.local.json
+
+# Evaluation result cache (reports in eval/reports/ are committed)
+eval/cache/

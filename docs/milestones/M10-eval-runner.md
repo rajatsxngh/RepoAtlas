@@ -84,7 +84,7 @@ EVL-1, EVL-2, EVL-3, EVL-4, EVL-5, EVL-6, EVL-7, EVL-8, EVL-9, EVL-10, EVL-11
 - [x] **T1 — Registry and protocols.** Answer and impact registries, `ImpactPrediction`, suite registration.
 - [x] **T2 — Scorers.** Unit tests with synthetic predictions for each metric, including edge cases (empty answers, refusals, duplicate citations).
 - [x] **T3 — Runner.** Caching, cost cap, concurrency, resume; tests with fake systems.
-- [ ] **T4 — Reports.** JSON schema, writers for JSON/markdown/charts, schema validation tests.
+- [x] **T4 — Reports.** JSON schema, writers for JSON/markdown/charts, schema validation tests.
 - [ ] **T5 — Statistics and compare.** Paired bootstrap; `eval compare`; tests with known differences.
 - [ ] **T6 — Baseline systems.** `closed_book`, `bm25_only`, `vector_only`, `hybrid_graphrag` registered and tested with `FakeLLM`.
 - [ ] **T7 — Claim-support checker.** Prompt, labels, human-label set on dev, agreement report.

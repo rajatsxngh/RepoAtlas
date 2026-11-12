@@ -20,6 +20,7 @@ from repoatlas.canonical import pretty_json, write_text_lf
 from repoatlas.config import get_settings
 from repoatlas.db import migrate
 from repoatlas.db.engine import create_db_engine, redact_url
+from repoatlas.evals.cli import eval_app
 from repoatlas.ingest.errors import IngestError
 from repoatlas.jobs.worker import Worker
 from repoatlas.logging import configure
@@ -50,6 +51,7 @@ api_app = typer.Typer(help="The HTTP API.", no_args_is_help=True)
 app.add_typer(api_app, name="api")
 app.add_typer(sandbox_app, name="sandbox")
 app.add_typer(bench_app, name="bench")
+app.add_typer(eval_app, name="eval")
 
 
 def _show_version(value: bool) -> None:
