@@ -22,3 +22,7 @@ Embedding APIs add cost, a second API key, and a dependency for self-hosters. Ap
 ## Addendum
 
 _Embedding comparison result goes here._
+
+## Addendum — embedding comparison (2026-11-12)
+
+The default model was compared with BAAI/bge-small-en-v1.5 on the dev split and kept: see decision 0018.

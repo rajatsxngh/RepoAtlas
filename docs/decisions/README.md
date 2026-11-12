@@ -21,3 +21,4 @@ Short records of decisions that shape RepoAtlas. Each has a context, the decisio
 | [0015](0015-map-first-screen.md) | A map that explains itself: overview, edge links, readable layout | Accepted |
 | [0016](0016-ready-after-the-last-stage.md) | A snapshot is ready only after its last stage | Accepted |
 | [0017](0017-calibrated-edge-confidences.md) | Edge confidences refit on calibration repos | Accepted |
+| [0018](0018-keep-the-code-embedding-model.md) | Keep jina-embeddings-v2-base-code as the embedding model | Accepted |
