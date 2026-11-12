@@ -37,6 +37,7 @@ class PredictedClaim(BaseModel):
     symbol: str | None = None
     refs: list[EvidenceRef] = Field(default_factory=list)
     keys: list[str] = Field(default_factory=list)
+    ref_keys: list[str] = Field(default_factory=list)  # the symbol around each cited range
 
 
 class SupportLabel(BaseModel):

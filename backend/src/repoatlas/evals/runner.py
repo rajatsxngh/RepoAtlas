@@ -32,7 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from repoatlas.answers.schema import Budget
 from repoatlas.bench.schema import ImpactTruth
 from repoatlas.canonical import digest, pretty_json, write_text_lf
-from repoatlas.evals.mapping import SymbolIndex, answer_output
+from repoatlas.evals.mapping import SymbolIndex, answer_output, remap
 from repoatlas.evals.outputs import ItemScore, SystemOutput
 from repoatlas.evals.registry import EvalItem, ImpactSystem, ImpactTarget, Suite
 
@@ -283,6 +283,8 @@ async def run_eval(run: EvalRun) -> RunResult:
                 output = SystemOutput.model_validate(cached)
                 if output.outcome == "error" and run.resume:
                     output = None
+                elif snapshot_id is not None and output.kind == "answer":
+                    output = remap(output, run.index_for(snapshot_id))
             estimate = 0.0
             fresh = output is None
             if output is None or _needs_enrichment(run, item, output, index):

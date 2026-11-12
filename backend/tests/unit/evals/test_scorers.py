@@ -282,3 +282,29 @@ def test_mean_and_percentile_edge_cases() -> None:
     assert percentile([5.0], 95) == 5.0
     with pytest.raises(ValueError):
         percentile([1.0], 101)
+
+
+def test_a_claim_tagged_with_the_target_counts_the_symbols_it_cites() -> None:
+    q = item(
+        "callers",
+        AnswerSetTruth(answers=[CALLER_A]),
+        "Which functions call `f` (defined in `src/m.py`)?",
+    )
+    claim = PredictedClaim(
+        id="c1",
+        text="f is applied on a.",
+        symbol="f",
+        refs=[ref("src/a.py", 3, 5)],
+        keys=[],
+        ref_keys=[CALLER_A.symbol_key],
+    )
+    definition = PredictedClaim(
+        id="c2",
+        text="f is defined here.",
+        symbol="f",
+        refs=[ref("src/m.py", 10, 12)],
+        keys=[DEF.symbol_key],
+        ref_keys=[DEF.symbol_key],
+    )
+    score = score_benchmark(q, SystemOutput(claims=[claim, definition]))
+    assert score.primary == 1.0  # a counts; f itself (the target) never does

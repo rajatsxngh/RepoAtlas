@@ -143,15 +143,37 @@ def _is_target(key: str, target: tuple[str, str] | None) -> bool:
 
 
 def predicted_keys(item: EvalItem, output: SystemOutput) -> list[str]:
-    """The answer set, without the question's own target (it is never an answer)."""
-    if output.impact is not None:
-        keys = [entry.symbol_key for entry in output.impact]
-    else:
-        keys = list(output.answer_keys)
+    """The answer set, without the question's own target (it is never an answer).
+
+    A claim tagged with the target itself ("`f` is applied on `dropdb`", citing ``dropdb``)
+    names its answers through what it cites: for such a claim, the symbols around its cited
+    ranges count instead of the tag."""
     target = question_target(item.text)
     truth = item.truth
     target_key = truth.target.symbol_key if isinstance(truth, ImpactTruth) else None
-    return [key for key in dict.fromkeys(keys) if key != target_key and not _is_target(key, target)]
+
+    def is_target(key: str) -> bool:
+        return key == target_key or _is_target(key, target)
+
+    if output.impact is not None:
+        keys = [entry.symbol_key for entry in output.impact]
+    elif output.claims:
+        keys = []
+        for claim in output.claims:
+            names_target = any(is_target(k) for k in claim.keys) or (
+                target is not None
+                and claim.symbol is not None
+                and _tag(claim.symbol) == _tag(target[0])
+            )
+            keys.extend(claim.ref_keys if names_target and claim.refs else claim.keys)
+    else:
+        keys = list(output.answer_keys)
+    return [key for key in dict.fromkeys(keys) if not is_target(key)]
+
+
+def _tag(name: str) -> str:
+    names = re.findall(r"[A-Za-z_$][\w$]*", name)
+    return names[-1] if names else name
 
 
 def _zero_if_refused(output: SystemOutput, value: float | None) -> float | None:

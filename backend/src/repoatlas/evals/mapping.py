@@ -167,25 +167,18 @@ def answer_output(result: AnswerResult, index: SymbolIndex, latency_s: float) ->
             citations.append(citation.ref)
     claims = [
         PredictedClaim(
-            id=claim.id,
-            text=claim.text,
-            symbol=claim.symbol,
-            refs=refs_by_claim.get(claim.id, []),
-            keys=index.claim_keys(claim.symbol, refs_by_claim.get(claim.id, []), claim.text),
+            id=claim.id, text=claim.text, symbol=claim.symbol, refs=refs_by_claim.get(claim.id, [])
         )
         for claim in result.claims
     ]
-    cited = [key for ref in citations if (key := index.key_for_ref(ref)) is not None]
     metrics = result.metrics
-    return SystemOutput(
+    output = SystemOutput(
         kind="answer",
         outcome=_outcome(result),
         answer_markdown=result.answer_markdown,
         refusal_reason=result.refusal_reason,
         claims=claims,
         citations=citations,
-        cited_keys=list(dict.fromkeys(cited)),
-        answer_keys=list(dict.fromkeys(k for claim in claims for k in claim.keys)),
         prefilter_citation_validity=metrics.prefilter_citation_validity,
         dropped_claim_rate=metrics.dropped_claim_rate,
         citations_total=metrics.citations_total,
@@ -197,6 +190,33 @@ def answer_output(result: AnswerResult, index: SymbolIndex, latency_s: float) ->
         latency_s=round(latency_s, 3),
         input_tokens=result.usage.total_input_tokens,
         output_tokens=result.usage.output_tokens,
+    )
+    return remap(output, index)
+
+
+def remap(output: SystemOutput, index: SymbolIndex) -> SystemOutput:
+    """Recompute every symbol key from the output's claims and citations. Runs on cached
+    outputs too, so a change to the mapping never needs the answers again."""
+    if output.kind != "answer":
+        return output
+    claims = [
+        claim.model_copy(
+            update={
+                "keys": index.claim_keys(claim.symbol, claim.refs, claim.text),
+                "ref_keys": list(
+                    dict.fromkeys(k for r in claim.refs if (k := index.key_for_ref(r)) is not None)
+                ),
+            }
+        )
+        for claim in output.claims
+    ]
+    cited = [key for ref in output.citations if (key := index.key_for_ref(ref)) is not None]
+    return output.model_copy(
+        update={
+            "claims": claims,
+            "cited_keys": list(dict.fromkeys(cited)),
+            "answer_keys": list(dict.fromkeys(k for claim in claims for k in claim.keys)),
+        }
     )
 
 
