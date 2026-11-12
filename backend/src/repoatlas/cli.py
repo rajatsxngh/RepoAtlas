@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from sqlalchemy.exc import OperationalError
 
 from repoatlas import __version__
+from repoatlas.bench.cli import bench_app
 from repoatlas.canonical import pretty_json, write_text_lf
 from repoatlas.config import get_settings
 from repoatlas.db import migrate
@@ -48,6 +49,7 @@ app.add_typer(query_app, name="query")
 api_app = typer.Typer(help="The HTTP API.", no_args_is_help=True)
 app.add_typer(api_app, name="api")
 app.add_typer(sandbox_app, name="sandbox")
+app.add_typer(bench_app, name="bench")
 
 
 def _show_version(value: bool) -> None:
