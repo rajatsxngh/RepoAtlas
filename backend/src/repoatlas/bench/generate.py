@@ -14,6 +14,8 @@ import random
 from collections import Counter
 from collections.abc import Callable, Sequence
 
+from pydantic import BaseModel, ConfigDict
+
 from repoatlas.bench.facts import Definition, Facts
 from repoatlas.bench.ownership import Ownership
 from repoatlas.bench.schema import (
@@ -25,7 +27,9 @@ from repoatlas.bench.schema import (
     Provenance,
     Question,
     QuestionType,
+    RealFailingTest,
 )
+from repoatlas.sandbox.mutations import MutationRecord
 
 BENCHMARK_VERSION = "1.0.0"
 STRATA = 4
@@ -339,3 +343,56 @@ def gen_static_impact(
         notes = f"static: callers up to depth {IMPACT_DEPTH} ({len(static)})."
         out.append(question(facts, "impact", n, text, truth, "scip", notes))
     return out
+
+
+# --------------------------------------------------------------------------------------------
+# Real impact from the sandbox (BEN-7)
+# --------------------------------------------------------------------------------------------
+
+
+class RealImpactStats(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    joined: int  # impact questions given real failures
+    failing_tests: int  # confirmed failing tests across them
+    unmapped_tests: int  # of which the test ID did not map to a symbol key
+
+
+def confirmed_targets(records: Sequence[MutationRecord]) -> list[str]:
+    """Mutated functions with a confirmed, non-empty failure set."""
+    return sorted(r.symbol_key for r in records if r.has_failures)
+
+
+def import_real_impact(
+    questions: Sequence[Question], records: Sequence[MutationRecord]
+) -> tuple[list[Question], RealImpactStats]:
+    """Fill ``real_failing_tests`` of impact questions whose target was mutated with confirmed
+    failures. Unmapped test IDs are kept with ``symbol_key = None`` and counted."""
+    by_key = {r.symbol_key: r for r in records if r.has_failures}
+    out: list[Question] = []
+    joined = failing = unmapped = 0
+    for q in questions:
+        truth = q.ground_truth
+        record = by_key.get(truth.target.symbol_key) if isinstance(truth, ImpactTruth) else None
+        if record is None or not isinstance(truth, ImpactTruth):
+            out.append(q)
+            continue
+        tests = sorted(
+            (RealFailingTest(test_id=t.test_id, symbol_key=t.symbol_key) for t in record.failing),
+            key=lambda t: t.test_id,
+        )
+        missing = sum(t.symbol_key is None for t in tests)
+        joined += 1
+        failing += len(tests)
+        unmapped += missing
+        notes = (
+            f"{q.notes} real: {len(tests)} confirmed failing tests from the sandbox mutation "
+            f"({record.kind}, seed {record.seed}); {missing} unmapped."
+        ).strip()
+        new_truth = truth.model_copy(update={"real_failing_tests": tests})
+        out.append(
+            q.model_copy(
+                update={"ground_truth": new_truth, "provenance": "sandbox", "notes": notes}
+            )
+        )
+    return out, RealImpactStats(joined=joined, failing_tests=failing, unmapped_tests=unmapped)
