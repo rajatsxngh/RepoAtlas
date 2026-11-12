@@ -238,3 +238,39 @@ def export_flow_command(
     )
     path, machine_path = write_label_file(out or _labels_path("flow.yaml"), labels, machine)
     typer.echo(f"{len(labels.items)} answers to score: {path} (machine scores: {machine_path})")
+
+
+@eval_app.command("embeddings")
+def embeddings_command(
+    models: Annotated[str, typer.Option("--models", help="Comma-separated model names.")],
+    split: Annotated[str, typer.Option("--split")] = "dev",
+    threads: Annotated[int | None, typer.Option("--threads", min=1)] = None,
+    reports_dir: Annotated[Path | None, typer.Option("--reports-dir")] = None,
+) -> None:
+    """Compare embedding models: recall@k on dev lookup and callers questions, speed, memory."""
+    from datetime import UTC, datetime
+
+    from repoatlas.config import get_settings
+    from repoatlas.db.engine import get_engine
+    from repoatlas.evals.embeddings import compare_models, render_comparison, write_comparison
+    from repoatlas.evals.snapshots import resolve_snapshots
+    from repoatlas.evals.suites import load_benchmark
+    from repoatlas.pipeline.stages import config_fingerprint
+
+    if split != "dev":
+        typer.echo("Embedding models are compared on dev only (tuning hygiene).", err=True)
+        raise typer.Exit(2)
+    items = load_benchmark(split)
+    used = resolve_snapshots(
+        get_engine(),
+        {item.repo_id: item.commit for item in items},
+        fingerprint=config_fingerprint(get_settings()),
+    )
+    names = [m.strip() for m in models.split(",") if m.strip()]
+    comparison = compare_models(
+        names, split, {repo: u.snapshot_id for repo, u in used.items()}, threads=threads
+    )
+    typer.echo(render_comparison(comparison), nl=False)
+    date = datetime.now(UTC).date().isoformat()
+    path = write_comparison(comparison, reports_dir or eval_dir() / "reports", date)
+    typer.echo(f"Written: {path}")
