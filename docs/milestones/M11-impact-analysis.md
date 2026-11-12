@@ -1,6 +1,6 @@
 # M11 — Impact analysis
 
-**Type of work:** Graph algorithms and product feature · **Size:** L (10 tasks) · **Status:** Not started
+**Type of work:** Graph algorithms and product feature · **Size:** L (10 tasks) · **Status:** In progress
 
 ## Goal
 
@@ -67,7 +67,7 @@ IMP-1, IMP-2, IMP-3, IMP-4, IMP-5, IMP-6, IMP-7, IMP-8, IMP-9
 
 ## Tasks
 
-- [ ] **T1 — Traversal and scoring.** Best-first search, decay × confidence, noisy-or; tests on synthetic graphs (chain, diamond, cycle, depth cap).
+- [x] **T1 — Traversal and scoring.** Best-first search, decay × confidence, noisy-or; tests on synthetic graphs (chain, diamond, cycle, depth cap).
 - [ ] **T2 — Groups and ranking.** Tests, public APIs, callers; combined ranking.
 - [ ] **T3 — Unknown bucket.** Unresolved-call matching and string-literal references; tests.
 - [ ] **T4 — Diff targets.** Unified-diff parsing and symbol mapping; tests with edits, additions, deletions.
