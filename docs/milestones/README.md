@@ -61,7 +61,7 @@ The arrows show build order. The exact dependencies of each milestone are in the
 | M07 | [LLM client & cited answers](M07-llm-cited-answers.md) | AI application | L | M03, M04, M05, M06 | Done |
 | M08 | [Sandbox & benchmark environments](M08-sandbox-environments.md) | Test infrastructure | L | M00, M01 | Done |
 | M09 | [Benchmark & ground truth](M09-benchmark-ground-truth.md) | Measurement dataset | M | M01, M08 | Done |
-| M10 | [Eval runner & baselines](M10-eval-runner.md) | Measurement | L | M02, M03, M06, M07, M08, M09 | Not started |
+| M10 | [Eval runner & baselines](M10-eval-runner.md) | Measurement | L | M02, M03, M06, M07, M08, M09 | In progress |
 | M11 | [Impact analysis](M11-impact-analysis.md) | Graph algorithms and feature | L | M03, M04, M05, M07, M10 | Not started |
 | M12 | [Private deployment & limits](M12-private-deployment.md) | DevOps | M | M00–M11 | Not started |
 | M13 | [Observability panel & guardrails](M13-observability-guardrails.md) | Reliability and security | L | M04, M05, M07, M10, M11 | Not started |
