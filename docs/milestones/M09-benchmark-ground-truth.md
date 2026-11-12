@@ -1,6 +1,6 @@
 # M09 — Benchmark & ground truth
 
-**Type of work:** Measurement dataset · **Size:** M (8 tasks) · **Status:** Not started
+**Type of work:** Measurement dataset · **Size:** M (8 tasks) · **Status:** In progress
 
 ## Goal
 
@@ -84,7 +84,7 @@ BEN-1, BEN-2, BEN-3, BEN-4, BEN-5, BEN-6, BEN-7, BEN-8, BEN-9, BEN-10, BEN-11, B
 
 ## Tasks
 
-- [ ] **T1 — SCIP bindings and helpers.** Generate bindings from the pinned proto; `ScipIndex`; tests on a small committed SCIP fixture.
+- [x] **T1 — SCIP bindings and helpers.** Generate bindings from the pinned proto; `ScipIndex`; tests on a small committed SCIP fixture.
 - [ ] **T2 — Question schema and validator.** Pydantic model, per-type ground-truth models, `bench validate` (schema, references to existing paths and lines at the pinned commit).
 - [ ] **T3 — Lookup and callers generators.** Tests on the SCIP fixture.
 - [ ] **T4 — Multi-hop and static impact generators.**
