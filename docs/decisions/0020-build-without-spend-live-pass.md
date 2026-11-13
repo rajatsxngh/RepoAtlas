@@ -77,6 +77,22 @@ with the least setup, and the pre-deploy command fits the migration rule. Fly is
 choice if stopping every machine between sessions matters more than setup time. The owner
 decides at the live pass; the images, the workflow, and `docs/deploy.md` fit both.
 
+### Contract changes in earlier milestones
+
+M12's limits, gate, and rollback rule add to contracts that M04 and M07 provide. All are
+backward compatible; both milestone files list them under "Added later by decision 0020".
+
+- **Readiness and migrations (M04).** `/ready` required the database to be at exactly the
+  revision the code ships. After a rollback the previous release runs on a newer schema, so a
+  revision the code doesn't know now reads as `database: "ahead"` and is ready, and
+  `repoatlas db upgrade` on such a database does nothing and succeeds. A database behind the
+  code is still `not_migrated`.
+- **Errors and limits (M04).** New error code `unauthorized` (401). Per-client caps per UTC day
+  on builds (3) and questions (20) next to the hourly buckets; a cap on jobs running at once
+  (2). Development can turn the daily caps off with 0 (`scripts/dev.mjs` does).
+- **LLM client (M07).** An optional spending guard checked before every request; the offline
+  transport; keep-alive comments on the ask stream.
+
 ## Consequences
 
 - The M12 gate shows the stack works when self-hosted: images, migrations, caps, the gate, a

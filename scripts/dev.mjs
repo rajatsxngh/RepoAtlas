@@ -136,6 +136,9 @@ run("db", "uv", ["run", "repoatlas", "db", "upgrade"], backend);
 const apiPort = await firstFree(8000);
 const webPort = await firstFree(3000);
 env.REPOATLAS_WEB_ORIGINS = `http://localhost:${webPort},http://127.0.0.1:${webPort}`;
+// Local development rebuilds and asks freely: no per-day caps unless the shell sets them.
+env.REPOATLAS_BUILDS_PER_DAY ??= "0";
+env.REPOATLAS_ASKS_PER_DAY ??= "0";
 env.NEXT_PUBLIC_API_URL = `http://localhost:${apiPort}`;
 
 start("api", "uv", ["run", "uvicorn", "repoatlas.api.app:create_app", "--factory", "--port", String(apiPort)], backend);

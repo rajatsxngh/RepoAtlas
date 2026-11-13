@@ -28,6 +28,8 @@ Work only on the current milestone. Don't start the next one until every exit cr
 | Run the API (dev, reloads on change) | `cd backend && uv run uvicorn repoatlas.api.app:create_app --factory --reload` |
 | Run a worker (stop: Ctrl+C, or create `.repoatlas/worker.stop`) | `cd backend && uv run repoatlas worker` |
 | Run everything locally: Postgres, migrations, API, worker, web app (next free ports when 8000/3000 are taken; Ctrl+C stops all) | `node scripts/dev.mjs` |
+| Run the self-host stack (production images; copy `infra/selfhost.env.example` to `infra/selfhost.env` first) | `docker compose -f infra/compose.selfhost.yml --env-file infra/selfhost.env up -d --build` |
+| End-to-end check of a running stack (gate, build, ask, impact; `--only gate` for the quick part) | `python scripts/selfhost_check.py --env-file infra/selfhost.env` |
 | Regenerate the OpenAPI spec and TS types (commit both) | `scripts/gen_api_types.sh` (Windows: `scripts/gen_api_types.ps1`; `--check` / `-Check` only checks) |
 | Docs lint | `python scripts/check_milestones.py` |
 | Install git hooks (once per clone) | `cd backend && uv run pre-commit install` |

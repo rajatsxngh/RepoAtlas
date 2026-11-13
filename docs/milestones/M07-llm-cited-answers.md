@@ -15,6 +15,7 @@ Answer questions with claims that each cite exact code, refuse when evidence is 
 
 ## Provides
 
+- **Added later by decision 0020** (backward compatible): `LLMClient(…, guard=…)` and `LLMClient.from_settings(settings, transport=None, *, guard=None)` — a spending guard is asked before every request and raises `repoatlas.llm.types.SpendCapReached`, which answer systems turn into a `budget` refusal; `llm_transport = "offline"` selects `repoatlas.llm.offline.OfflineTransport`, a stand-in that calls no model (stack checks only; refused when an API key is set); `oneshot_from_settings` attaches the settings' `SpendGuard`; the ask stream sends a `: keep-alive` comment every 15 seconds of silence.
 - **`repoatlas.llm.client.LLMClient`**
   - `complete(role, messages, *, schema=None, tools=None, max_tokens, cache_static=True) -> LLMResult`
   - `LLMResult(content, parsed, tool_calls, usage: Usage, cost_usd, stop_reason, refused: bool, thinking_blocks, model, latency_ms)`
