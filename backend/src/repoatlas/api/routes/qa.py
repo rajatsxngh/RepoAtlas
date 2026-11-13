@@ -7,6 +7,9 @@
 - ``done`` — ``{"run_id", "trace_id"}`` once the run is stored;
 - ``error`` — ``{"error": {"code", "message", "details"}}`` if answering failed.
 
+While a step takes long, a comment line (``: keep-alive``) is sent every 15 seconds, which
+clients ignore and which keeps proxies from closing an idle stream.
+
 Raw model tokens are not streamed: the answer is shown only after its citations are checked.
 Errors found before the stream starts (unknown snapshot, not ready, invalid body, answers not
 configured) are ordinary error responses. Each run is stored in ``qa_runs``
@@ -43,6 +46,8 @@ from repoatlas.tracing.store import TraceView, load_trace
 log = structlog.get_logger(__name__)
 router = APIRouter(tags=["answers"])
 MAX_QUESTION_CHARS = 2_000
+KEEP_ALIVE_S = 15.0  # silence on the stream before a keep-alive comment
+KEEP_ALIVE = ": keep-alive\n\n"
 _build_lock = threading.Lock()
 
 Question = Annotated[
@@ -154,8 +159,15 @@ async def ask(
         async with anyio.create_task_group() as group:
             group.start_soon(run)
             async with receive:
-                async for chunk in receive:
-                    yield chunk
+                while True:
+                    # A comment line while nothing else is sent, so proxies with idle
+                    # timeouts keep the stream open during a long model call.
+                    with anyio.move_on_after(KEEP_ALIVE_S) as waiting:
+                        try:
+                            chunk = await receive.receive()
+                        except anyio.EndOfStream:
+                            break
+                    yield KEEP_ALIVE if waiting.cancelled_caught else chunk
 
     return StreamingResponse(
         events(),

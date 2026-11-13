@@ -6,6 +6,7 @@ import json
 import uuid
 from typing import Any
 
+import anyio
 import pytest
 from fastapi import FastAPI
 from sqlalchemy import Engine, text
@@ -15,6 +16,7 @@ from repoatlas.answers.schema import AnswerDraft, Claim
 from repoatlas.answers.system import OneShotAnswerSystem
 from repoatlas.answers.validate import CitationValidator, StoreBlobs
 from repoatlas.api.app import API_PREFIX
+from repoatlas.api.routes import qa
 from repoatlas.llm.fake import FakeCall, FakeLLM
 from repoatlas.llm.pricing import DEFAULT_PRICES, PriceTable
 from repoatlas.llm.types import TransientLLMError
@@ -175,3 +177,25 @@ async def test_missing_runs_and_traces_are_404(app: FastAPI) -> None:
     assert (run.status_code, error_of(run)["details"]["resource"]) == (404, "qa_run")
     assert (trace.status_code, error_of(trace)["details"]["resource"]) == (404, "trace")
     assert bad.status_code == 422
+
+
+class SlowLLM(FakeLLM):
+    """Answers after a pause, like a long model call."""
+
+    async def complete(self, *args: Any, **kwargs: Any) -> Any:
+        await anyio.sleep(0.4)
+        return await super().complete(*args, **kwargs)
+
+
+async def test_a_long_step_sends_keep_alive_comments(
+    app: FastAPI, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(qa, "KEEP_ALIVE_S", 0.05)
+    snapshot_id = store_fixture(app.state.engine, "py_small")
+    install(app, SlowLLM(lambda call: drafting(call)))
+    response = await ask(app, snapshot_id)
+    assert response.text.count(": keep-alive\n\n") >= 2
+    blocks = response.text.strip().split("\n\n")
+    stream = events("\n\n".join(block for block in blocks if not block.startswith(":")))
+    assert [name for name, _ in stream] == ["status", "status", "status", "answer", "done"]
+    assert stream[3][1]["refused"] is False
