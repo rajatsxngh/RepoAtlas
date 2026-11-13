@@ -12,13 +12,13 @@ ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
 
 
-def workflow() -> dict[str, Any]:
+def workflow() -> dict[Any, Any]:
     loaded = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     assert isinstance(loaded, dict)
     return loaded
 
 
-def triggers(loaded: dict[str, Any]) -> dict[str, Any]:
+def triggers(loaded: dict[Any, Any]) -> dict[str, Any]:
     # YAML 1.1 reads the key "on" as the boolean true.
     found = loaded.get("on", loaded.get(True))
     assert isinstance(found, dict)

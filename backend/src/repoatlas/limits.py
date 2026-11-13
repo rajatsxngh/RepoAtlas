@@ -17,6 +17,7 @@ Two limits of this design, both small next to the cap:
 
 from __future__ import annotations
 
+import contextlib
 import threading
 import time
 from collections.abc import Callable
@@ -99,12 +100,14 @@ class SpendGuard:
                 return
             if self._alerted != self._day:
                 self._alerted = self._day
-                get_logger(__name__).error(
-                    "daily spend cap reached",
-                    spent_usd=round(spent, 4),
-                    cap_usd=self.cap_usd,
-                    day=None if self._day is None else self._day.date().isoformat(),
-                )
+                # A log stream that can't be written (closed) must not let a call through.
+                with contextlib.suppress(ValueError, OSError):
+                    get_logger(__name__).error(
+                        "daily spend cap reached",
+                        spent_usd=round(spent, 4),
+                        cap_usd=self.cap_usd,
+                        day=None if self._day is None else self._day.date().isoformat(),
+                    )
         raise SpendCapReached(spent, self.cap_usd)
 
     def _spent(self) -> float:
