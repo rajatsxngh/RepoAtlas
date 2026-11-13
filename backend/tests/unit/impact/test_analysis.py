@@ -56,3 +56,19 @@ def test_failures_are_split_into_ranked_unknown_only_and_missed() -> None:
     assert report.questions_helped == 1
     assert q.file_recall == 1.0 and q.file_precision == 1.0
     assert "only 1" in unknown_markdown(report)
+
+
+def test_the_split_report_scores_static_and_real_with_intervals() -> None:
+    from repoatlas.impact.analysis import split_markdown, split_report
+
+    engine = ImpactEngine(MemoryImpactData(graph_of(FILES), FILES))
+    question = item([HELPER_TEST, DYNAMIC_TEST])
+    report = split_report(engine, [question, item(None)], lambda _i: 1, split="test")
+    assert len(report.questions) == 2
+    real = report.interval("real_recall")
+    assert real.questions == 1 and real.mean == 0.5  # helper's test ranked, the dynamic one not
+    assert report.interval("real_recall_at_5").mean == 0.5
+    static = report.interval("static_f1")
+    assert static.questions == 2 and static.low is not None and static.high is not None
+    text = split_markdown(report)
+    assert "recall@20" in text and "| Static (SCIP) | F1 | 2 |" in text

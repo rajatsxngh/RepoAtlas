@@ -1,0 +1,332 @@
+{
+  "intervals": [
+    {
+      "high": 0.8370556019678826,
+      "low": 0.385873015873016,
+      "mean": 0.6116587765710573,
+      "metric": "static_precision",
+      "questions": 15
+    },
+    {
+      "high": 0.7407407407407407,
+      "low": 0.32608695652173914,
+      "mean": 0.5334943639291466,
+      "metric": "static_recall",
+      "questions": 15
+    },
+    {
+      "high": 0.6822272347535505,
+      "low": 0.2887693592956751,
+      "mean": 0.4860124670650986,
+      "metric": "static_f1",
+      "questions": 15
+    },
+    {
+      "high": 0.6666666666666666,
+      "low": 0.0,
+      "mean": 0.3333333333333333,
+      "metric": "real_precision",
+      "questions": 9
+    },
+    {
+      "high": 0.3892100192678227,
+      "low": 0.0,
+      "mean": 0.16698779704560052,
+      "metric": "real_recall",
+      "questions": 9
+    },
+    {
+      "high": 0.4444444444444444,
+      "low": 0.0,
+      "mean": 0.18582559504749707,
+      "metric": "real_f1",
+      "questions": 9
+    },
+    {
+      "high": 0.1871501972658042,
+      "low": 0.0,
+      "mean": 0.07571795577575925,
+      "metric": "real_recall_at_5",
+      "questions": 9
+    },
+    {
+      "high": 0.23015873015873017,
+      "low": 0.0,
+      "mean": 0.09555922561702908,
+      "metric": "real_recall_at_10",
+      "questions": 9
+    },
+    {
+      "high": 0.3253968253968254,
+      "low": 0.0,
+      "mean": 0.13524176529956877,
+      "metric": "real_recall_at_20",
+      "questions": 9
+    }
+  ],
+  "params": {
+    "decay": 0.4,
+    "edge_kinds": [
+      "calls",
+      "inherits",
+      "imports",
+      "tested_by",
+      "routes_to"
+    ],
+    "limit": 200,
+    "max_depth": 4,
+    "min_score": 0.05
+  },
+  "questions": [
+    {
+      "failing": 35,
+      "metrics": {
+        "real_f1": 0.0,
+        "real_precision": 0.0,
+        "real_recall": 0.0,
+        "real_recall_at_10": 0.0,
+        "real_recall_at_20": 0.0,
+        "real_recall_at_5": 0.0,
+        "static_f1": 0.6666666666666666,
+        "static_precision": 1.0,
+        "static_recall": 0.5
+      },
+      "predicted": 1,
+      "predicted_tests": 0,
+      "question_id": "click-impact-001",
+      "repo_id": "click",
+      "static_truth": 2
+    },
+    {
+      "failing": 346,
+      "metrics": {
+        "real_f1": 0.005763688760806917,
+        "real_precision": 1.0,
+        "real_recall": 0.002890173410404624,
+        "real_recall_at_10": 0.002890173410404624,
+        "real_recall_at_20": 0.002890173410404624,
+        "real_recall_at_5": 0.002890173410404624,
+        "static_f1": 0.631578947368421,
+        "static_precision": 0.8571428571428571,
+        "static_recall": 0.5
+      },
+      "predicted": 7,
+      "predicted_tests": 1,
+      "question_id": "click-impact-003",
+      "repo_id": "click",
+      "static_truth": 12
+    },
+    {
+      "failing": 266,
+      "metrics": {
+        "real_f1": 0.0,
+        "real_precision": 0.0,
+        "real_recall": 0.0,
+        "real_recall_at_10": 0.0,
+        "real_recall_at_20": 0.0,
+        "real_recall_at_5": 0.0,
+        "static_f1": 0.0,
+        "static_precision": 0.0,
+        "static_recall": 0.0
+      },
+      "predicted": 0,
+      "predicted_tests": 0,
+      "question_id": "click-impact-004",
+      "repo_id": "click",
+      "static_truth": 35
+    },
+    {
+      "failing": 1,
+      "metrics": {
+        "real_f1": 0.0,
+        "real_precision": 0.0,
+        "real_recall": 0.0,
+        "real_recall_at_10": 0.0,
+        "real_recall_at_20": 0.0,
+        "real_recall_at_5": 0.0,
+        "static_f1": 0.6666666666666666,
+        "static_precision": 1.0,
+        "static_recall": 0.5
+      },
+      "predicted": 1,
+      "predicted_tests": 0,
+      "question_id": "httpx-impact-001",
+      "repo_id": "httpx",
+      "static_truth": 2
+    },
+    {
+      "failing": 2,
+      "metrics": {
+        "real_f1": 0.6666666666666666,
+        "real_precision": 1.0,
+        "real_recall": 0.5,
+        "real_recall_at_10": 0.5,
+        "real_recall_at_20": 0.5,
+        "real_recall_at_5": 0.5,
+        "static_f1": 1.0,
+        "static_precision": 1.0,
+        "static_recall": 1.0
+      },
+      "predicted": 5,
+      "predicted_tests": 1,
+      "question_id": "httpx-impact-002",
+      "repo_id": "httpx",
+      "static_truth": 5
+    },
+    {
+      "failing": 5,
+      "metrics": {
+        "real_f1": 0.0,
+        "real_precision": 0.0,
+        "real_recall": 0.0,
+        "real_recall_at_10": 0.0,
+        "real_recall_at_20": 0.0,
+        "real_recall_at_5": 0.0,
+        "static_f1": 0.0,
+        "static_precision": 0.0,
+        "static_recall": 0.0
+      },
+      "predicted": 0,
+      "predicted_tests": 0,
+      "question_id": "httpx-impact-003",
+      "repo_id": "httpx",
+      "static_truth": 7
+    },
+    {
+      "failing": 2,
+      "metrics": {
+        "real_f1": 0.0,
+        "real_precision": 0.0,
+        "real_recall": 0.0,
+        "real_recall_at_10": 0.0,
+        "real_recall_at_20": 0.0,
+        "real_recall_at_5": 0.0,
+        "static_f1": 0.0,
+        "static_precision": 0.0,
+        "static_recall": 0.0
+      },
+      "predicted": 0,
+      "predicted_tests": 0,
+      "question_id": "remeda-impact-001",
+      "repo_id": "remeda",
+      "static_truth": 3
+    },
+    {
+      "failing": 19,
+      "metrics": {
+        "real_f1": 0.0,
+        "real_precision": 0.0,
+        "real_recall": 0.0,
+        "real_recall_at_10": 0.0,
+        "real_recall_at_20": 0.0,
+        "real_recall_at_5": 0.0,
+        "static_f1": 0.0,
+        "static_precision": 0.0,
+        "static_recall": 0.0
+      },
+      "predicted": 0,
+      "predicted_tests": 0,
+      "question_id": "remeda-impact-003",
+      "repo_id": "remeda",
+      "static_truth": 17
+    },
+    {
+      "failing": 28,
+      "metrics": {
+        "real_f1": 1.0,
+        "real_precision": 1.0,
+        "real_recall": 1.0,
+        "real_recall_at_10": 0.35714285714285715,
+        "real_recall_at_20": 0.7142857142857143,
+        "real_recall_at_5": 0.17857142857142858,
+        "static_f1": 1.0,
+        "static_precision": 1.0,
+        "static_recall": 1.0
+      },
+      "predicted": 28,
+      "predicted_tests": 28,
+      "question_id": "remeda-impact-004",
+      "repo_id": "remeda",
+      "static_truth": 28
+    },
+    {
+      "failing": null,
+      "metrics": {
+        "static_f1": 0.07142857142857142,
+        "static_precision": 0.037037037037037035,
+        "static_recall": 1.0
+      },
+      "predicted": 27,
+      "predicted_tests": 24,
+      "question_id": "requests-impact-001",
+      "repo_id": "requests",
+      "static_truth": 1
+    },
+    {
+      "failing": null,
+      "metrics": {
+        "static_f1": 1.0,
+        "static_precision": 1.0,
+        "static_recall": 1.0
+      },
+      "predicted": 19,
+      "predicted_tests": 13,
+      "question_id": "requests-impact-003",
+      "repo_id": "requests",
+      "static_truth": 19
+    },
+    {
+      "failing": null,
+      "metrics": {
+        "static_f1": 0.5538461538461538,
+        "static_precision": 0.9473684210526315,
+        "static_recall": 0.391304347826087
+      },
+      "predicted": 19,
+      "predicted_tests": 3,
+      "question_id": "requests-impact-004",
+      "repo_id": "requests",
+      "static_truth": 46
+    },
+    {
+      "failing": null,
+      "metrics": {
+        "static_f1": 0.5,
+        "static_precision": 0.3333333333333333,
+        "static_recall": 1.0
+      },
+      "predicted": 3,
+      "predicted_tests": 0,
+      "question_id": "zod-impact-001",
+      "repo_id": "zod",
+      "static_truth": 1
+    },
+    {
+      "failing": null,
+      "metrics": {
+        "static_f1": 1.0,
+        "static_precision": 1.0,
+        "static_recall": 1.0
+      },
+      "predicted": 4,
+      "predicted_tests": 0,
+      "question_id": "zod-impact-002",
+      "repo_id": "zod",
+      "static_truth": 4
+    },
+    {
+      "failing": null,
+      "metrics": {
+        "static_f1": 0.19999999999999998,
+        "static_precision": 1.0,
+        "static_recall": 0.1111111111111111
+      },
+      "predicted": 2,
+      "predicted_tests": 2,
+      "question_id": "zod-impact-003",
+      "repo_id": "zod",
+      "static_truth": 18
+    }
+  ],
+  "split": "test"
+}

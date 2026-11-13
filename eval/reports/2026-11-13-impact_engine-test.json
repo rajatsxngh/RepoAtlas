@@ -1,0 +1,1640 @@
+{
+  "aggregates": {
+    "claim_partial": null,
+    "claim_supported": null,
+    "claim_unsupported": null,
+    "claims_checked": 0,
+    "cost_per_question_usd": 0.0,
+    "dropped_claim_rate": null,
+    "eval_cost_usd": 0.0,
+    "latency_p50_s": 0.086,
+    "latency_p95_s": 0.24839999999999998,
+    "outcomes": {
+      "answered": 45
+    },
+    "outputs": 45,
+    "pooled_citation_validity": null,
+    "prefilter_citation_validity": null,
+    "total_cost_usd": 0.0
+  },
+  "by_type": [
+    {
+      "metrics": {
+        "real_f1": 0.18582559504749707,
+        "real_precision": 0.3333333333333333,
+        "real_recall": 0.16698779704560052,
+        "real_recall_at_10": 0.09555922561702908,
+        "static_precision": 0.6116587765710573,
+        "static_recall": 0.5334943639291466
+      },
+      "outcomes": {
+        "answered": 45
+      },
+      "primary": {
+        "high": 0.6822272347535505,
+        "low": 0.2887693592956751,
+        "mean": 0.4860124670650986,
+        "n": 15
+      },
+      "primary_metric": "static F1",
+      "questions": 15,
+      "run_means": [
+        0.4860124670650986,
+        0.4860124670650986,
+        0.4860124670650986
+      ],
+      "type": "impact"
+    }
+  ],
+  "complete": true,
+  "config": {
+    "include_unknown": false,
+    "params": {
+      "decay": 0.4,
+      "edge_kinds": [
+        "calls",
+        "inherits",
+        "imports",
+        "tested_by",
+        "routes_to"
+      ],
+      "limit": 200,
+      "max_depth": 4,
+      "min_score": 0.05
+    },
+    "version": 1
+  },
+  "config_fingerprint": "c5c579aa528183435e677fad2769cead448adde35525041c424f1286219f1e03",
+  "cost_per_question_usd": 0.0,
+  "created_at": "2026-11-13T00:29:30+00:00",
+  "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+  "environment": {
+    "cpu": "AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD",
+    "cpu_count": 16,
+    "machine": "AMD64",
+    "os": "Windows 11",
+    "python": "3.12.13",
+    "repoatlas_commit": "ffddaab272626cc4df2eb12391f696b1b89177bb",
+    "repoatlas_dirty": false,
+    "repoatlas_version": "0.1.0"
+  },
+  "errored": [],
+  "evaluators": {},
+  "items": [
+    {
+      "mean_primary": 0.6666666666666666,
+      "question_id": "click-impact-001",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/click/types.py:_NumberRangeBase.convert:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.214,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 1.0,
+            "static_recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.6666666666666666,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:src/click/types.py:_NumberRangeBase.convert:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.167,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 1.0,
+            "static_recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.6666666666666666,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:src/click/types.py:_NumberRangeBase.convert:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.245,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 1.0,
+            "static_recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.6666666666666666,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.631578947368421,
+      "question_id": "click-impact-003",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:tests/test_commands.py:test_iter_params_for_processing:test",
+            "py:src/click/core.py:Command.parse_args:method",
+            "py:src/click/core.py:Command.make_context:method",
+            "py:tests/test_commands.py:test_custom_parser.OptParseCommand.parse_args:method",
+            "py:src/click/core.py:Group.parse_args:method",
+            "py:src/click/core.py:Command.main:method~3",
+            "py:src/click/core.py:Group.resolve_command:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.111,
+          "metrics": {
+            "real_f1": 0.005763688760806917,
+            "real_precision": 1.0,
+            "real_recall": 0.002890173410404624,
+            "real_recall_at_10": 0.002890173410404624,
+            "static_precision": 0.8571428571428571,
+            "static_recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.631578947368421,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:tests/test_commands.py:test_iter_params_for_processing:test",
+            "py:src/click/core.py:Command.parse_args:method",
+            "py:src/click/core.py:Command.make_context:method",
+            "py:tests/test_commands.py:test_custom_parser.OptParseCommand.parse_args:method",
+            "py:src/click/core.py:Group.parse_args:method",
+            "py:src/click/core.py:Command.main:method~3",
+            "py:src/click/core.py:Group.resolve_command:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.076,
+          "metrics": {
+            "real_f1": 0.005763688760806917,
+            "real_precision": 1.0,
+            "real_recall": 0.002890173410404624,
+            "real_recall_at_10": 0.002890173410404624,
+            "static_precision": 0.8571428571428571,
+            "static_recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.631578947368421,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:tests/test_commands.py:test_iter_params_for_processing:test",
+            "py:src/click/core.py:Command.parse_args:method",
+            "py:src/click/core.py:Command.make_context:method",
+            "py:tests/test_commands.py:test_custom_parser.OptParseCommand.parse_args:method",
+            "py:src/click/core.py:Group.parse_args:method",
+            "py:src/click/core.py:Command.main:method~3",
+            "py:src/click/core.py:Group.resolve_command:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.085,
+          "metrics": {
+            "real_f1": 0.005763688760806917,
+            "real_precision": 1.0,
+            "real_recall": 0.002890173410404624,
+            "real_recall_at_10": 0.002890173410404624,
+            "static_precision": 0.8571428571428571,
+            "static_recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.631578947368421,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "click-impact-004",
+      "repo_id": "click",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.249,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.139,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.234,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 19,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.6666666666666666,
+      "question_id": "httpx-impact-001",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:httpx/_models.py:Response.is_client_error:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.251,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 1.0,
+            "static_recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.6666666666666666,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:httpx/_models.py:Response.is_client_error:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.057,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 1.0,
+            "static_recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.6666666666666666,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:httpx/_models.py:Response.is_client_error:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.142,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 1.0,
+            "static_recall": 0.5
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.6666666666666666,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "httpx-impact-002",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:httpx/_utils.py:get_environment_proxies:function",
+            "py:httpx/_client.py:BaseClient._get_proxy_map:method",
+            "py:tests/test_utils.py:test_get_environment_proxies:test",
+            "py:httpx/_client.py:AsyncClient.__init__:method",
+            "py:httpx/_client.py:Client.__init__:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.246,
+          "metrics": {
+            "real_f1": 0.6666666666666666,
+            "real_precision": 1.0,
+            "real_recall": 0.5,
+            "real_recall_at_10": 0.5,
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:httpx/_utils.py:get_environment_proxies:function",
+            "py:httpx/_client.py:BaseClient._get_proxy_map:method",
+            "py:tests/test_utils.py:test_get_environment_proxies:test",
+            "py:httpx/_client.py:AsyncClient.__init__:method",
+            "py:httpx/_client.py:Client.__init__:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.084,
+          "metrics": {
+            "real_f1": 0.6666666666666666,
+            "real_precision": 1.0,
+            "real_recall": 0.5,
+            "real_recall_at_10": 0.5,
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:httpx/_utils.py:get_environment_proxies:function",
+            "py:httpx/_client.py:BaseClient._get_proxy_map:method",
+            "py:tests/test_utils.py:test_get_environment_proxies:test",
+            "py:httpx/_client.py:AsyncClient.__init__:method",
+            "py:httpx/_client.py:Client.__init__:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.17,
+          "metrics": {
+            "real_f1": 0.6666666666666666,
+            "real_precision": 1.0,
+            "real_recall": 0.5,
+            "real_recall_at_10": 0.5,
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "httpx-impact-003",
+      "repo_id": "httpx",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.081,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.067,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.111,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 21,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "remeda-impact-001",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.17,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.04,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.066,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.0,
+      "question_id": "remeda-impact-003",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.173,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.046,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.062,
+          "metrics": {
+            "real_f1": 0.0,
+            "real_precision": 0.0,
+            "real_recall": 0.0,
+            "real_recall_at_10": 0.0,
+            "static_precision": 0.0,
+            "static_recall": 0.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.0,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "remeda-impact-004",
+      "repo_id": "remeda",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/remeda/src/toTitleCase.test.ts:basic words:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:camelCase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:data-last:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > complex mixed case:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > double prefixed:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > leading and trailing separators:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > repeated separators:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > vendor prefixed css property:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > with numbers:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:empty string:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:kebab-case:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:lodash spec > lodash example%3A '--foo-bar--':test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:lodash spec > lodash example%3A '__FOO_BAR__':test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:lodash spec > lodash example%3A 'fooBar':test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:mixed separators:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:pascalCase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > complex examples:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > data-last:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > defaults to true:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > false:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > mixed case examples:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:sCREAMING-KEBAB-CASE:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:sCREAMING_SNAKE_CASE:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:single word lowercase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:single word uppercase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:snake_case:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:unicode > handles non-Latin scripts:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:unicode > maintains diacritics:test"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.438,
+          "metrics": {
+            "real_f1": 1.0,
+            "real_precision": 1.0,
+            "real_recall": 1.0,
+            "real_recall_at_10": 0.35714285714285715,
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "ts:packages/remeda/src/toTitleCase.test.ts:basic words:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:camelCase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:data-last:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > complex mixed case:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > double prefixed:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > leading and trailing separators:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > repeated separators:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > vendor prefixed css property:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > with numbers:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:empty string:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:kebab-case:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:lodash spec > lodash example%3A '--foo-bar--':test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:lodash spec > lodash example%3A '__FOO_BAR__':test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:lodash spec > lodash example%3A 'fooBar':test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:mixed separators:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:pascalCase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > complex examples:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > data-last:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > defaults to true:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > false:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > mixed case examples:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:sCREAMING-KEBAB-CASE:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:sCREAMING_SNAKE_CASE:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:single word lowercase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:single word uppercase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:snake_case:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:unicode > handles non-Latin scripts:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:unicode > maintains diacritics:test"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.213,
+          "metrics": {
+            "real_f1": 1.0,
+            "real_precision": 1.0,
+            "real_recall": 1.0,
+            "real_recall_at_10": 0.35714285714285715,
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "ts:packages/remeda/src/toTitleCase.test.ts:basic words:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:camelCase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:data-last:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > complex mixed case:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > double prefixed:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > leading and trailing separators:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > repeated separators:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > vendor prefixed css property:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:edge cases > with numbers:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:empty string:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:kebab-case:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:lodash spec > lodash example%3A '--foo-bar--':test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:lodash spec > lodash example%3A '__FOO_BAR__':test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:lodash spec > lodash example%3A 'fooBar':test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:mixed separators:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:pascalCase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > complex examples:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > data-last:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > defaults to true:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > false:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:preserveConsecutiveUppercase option > mixed case examples:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:sCREAMING-KEBAB-CASE:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:sCREAMING_SNAKE_CASE:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:single word lowercase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:single word uppercase:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:snake_case:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:unicode > handles non-Latin scripts:test",
+            "ts:packages/remeda/src/toTitleCase.test.ts:unicode > maintains diacritics:test"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.243,
+          "metrics": {
+            "real_f1": 1.0,
+            "real_precision": 1.0,
+            "real_recall": 1.0,
+            "real_recall_at_10": 0.35714285714285715,
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 22,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.07142857142857142,
+      "question_id": "requests-impact-001",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/cookies.py:RequestsCookieJar.__setitem__:method",
+            "py:tests/test_lowlevel.py:test_chunked_encoding_error:test",
+            "py:tests/test_lowlevel.py:test_chunked_upload:test",
+            "py:tests/test_lowlevel.py:test_chunked_upload_doesnt_skip_host_header:test",
+            "py:tests/test_lowlevel.py:test_chunked_upload_uses_only_specified_host_header:test",
+            "py:tests/test_lowlevel.py:test_conflicting_content_lengths:test",
+            "py:tests/test_lowlevel.py:test_digestauth_401_count_reset_on_redirect:test",
+            "py:tests/test_lowlevel.py:test_digestauth_401_only_sent_once:test",
+            "py:tests/test_lowlevel.py:test_digestauth_only_on_4xx:test",
+            "py:tests/test_lowlevel.py:test_fragment_not_sent_with_request:test",
+            "py:tests/test_lowlevel.py:test_fragment_update_on_redirect:test",
+            "py:tests/test_lowlevel.py:test_redirect_rfc1808_to_non_ascii_location:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_mtls_settings:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_tls_settings_verify_True:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_tls_settings_verify_bundle_expired_cert:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_tls_settings_verify_bundle_unexpired_cert:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_items:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_keeps_items:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_keeps_len:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_keys:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_values:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_duplicate_names_different_domains:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_duplicate_names_raises_cookie_conflict_error:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_parameters:test",
+            "py:tests/test_testserver.py:TestTestServer.test_basic_waiting_server:test",
+            "py:tests/testserver/server.py:Server.__exit__:method",
+            "py:tests/testserver/server.py:Server.run:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.152,
+          "metrics": {
+            "static_precision": 0.037037037037037035,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.07142857142857142,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:src/requests/cookies.py:RequestsCookieJar.__setitem__:method",
+            "py:tests/test_lowlevel.py:test_chunked_encoding_error:test",
+            "py:tests/test_lowlevel.py:test_chunked_upload:test",
+            "py:tests/test_lowlevel.py:test_chunked_upload_doesnt_skip_host_header:test",
+            "py:tests/test_lowlevel.py:test_chunked_upload_uses_only_specified_host_header:test",
+            "py:tests/test_lowlevel.py:test_conflicting_content_lengths:test",
+            "py:tests/test_lowlevel.py:test_digestauth_401_count_reset_on_redirect:test",
+            "py:tests/test_lowlevel.py:test_digestauth_401_only_sent_once:test",
+            "py:tests/test_lowlevel.py:test_digestauth_only_on_4xx:test",
+            "py:tests/test_lowlevel.py:test_fragment_not_sent_with_request:test",
+            "py:tests/test_lowlevel.py:test_fragment_update_on_redirect:test",
+            "py:tests/test_lowlevel.py:test_redirect_rfc1808_to_non_ascii_location:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_mtls_settings:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_tls_settings_verify_True:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_tls_settings_verify_bundle_expired_cert:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_tls_settings_verify_bundle_unexpired_cert:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_items:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_keeps_items:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_keeps_len:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_keys:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_values:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_duplicate_names_different_domains:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_duplicate_names_raises_cookie_conflict_error:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_parameters:test",
+            "py:tests/test_testserver.py:TestTestServer.test_basic_waiting_server:test",
+            "py:tests/testserver/server.py:Server.__exit__:method",
+            "py:tests/testserver/server.py:Server.run:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.045,
+          "metrics": {
+            "static_precision": 0.037037037037037035,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.07142857142857142,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:src/requests/cookies.py:RequestsCookieJar.__setitem__:method",
+            "py:tests/test_lowlevel.py:test_chunked_encoding_error:test",
+            "py:tests/test_lowlevel.py:test_chunked_upload:test",
+            "py:tests/test_lowlevel.py:test_chunked_upload_doesnt_skip_host_header:test",
+            "py:tests/test_lowlevel.py:test_chunked_upload_uses_only_specified_host_header:test",
+            "py:tests/test_lowlevel.py:test_conflicting_content_lengths:test",
+            "py:tests/test_lowlevel.py:test_digestauth_401_count_reset_on_redirect:test",
+            "py:tests/test_lowlevel.py:test_digestauth_401_only_sent_once:test",
+            "py:tests/test_lowlevel.py:test_digestauth_only_on_4xx:test",
+            "py:tests/test_lowlevel.py:test_fragment_not_sent_with_request:test",
+            "py:tests/test_lowlevel.py:test_fragment_update_on_redirect:test",
+            "py:tests/test_lowlevel.py:test_redirect_rfc1808_to_non_ascii_location:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_mtls_settings:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_tls_settings_verify_True:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_tls_settings_verify_bundle_expired_cert:test",
+            "py:tests/test_requests.py:TestPreparingURLs.test_different_connection_pool_for_tls_settings_verify_bundle_unexpired_cert:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_items:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_keeps_items:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_keeps_len:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_keys:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_as_dict_values:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_duplicate_names_different_domains:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_duplicate_names_raises_cookie_conflict_error:test",
+            "py:tests/test_requests.py:TestRequests.test_cookie_parameters:test",
+            "py:tests/test_testserver.py:TestTestServer.test_basic_waiting_server:test",
+            "py:tests/testserver/server.py:Server.__exit__:method",
+            "py:tests/testserver/server.py:Server.run:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.072,
+          "metrics": {
+            "static_precision": 0.037037037037037035,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.07142857142857142,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "requests-impact-003",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/utils.py:should_bypass_proxies:function",
+            "py:tests/test_utils.py:test_set_environ:test",
+            "py:tests/test_utils.py:test_set_environ_raises_exception:test",
+            "py:src/requests/utils.py:resolve_proxies:function",
+            "py:src/requests/utils.py:get_environ_proxies:function",
+            "py:tests/test_utils.py:test_should_bypass_proxies:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_no_proxy:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_no_proxy_domain_boundary:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_pass_only_hostname:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_win_registry:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_win_registry_ProxyOverride_value:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_win_registry_bad_values:test",
+            "py:src/requests/sessions.py:Session.merge_environment_settings:method",
+            "py:src/requests/sessions.py:Session.send:method",
+            "py:src/requests/sessions.py:SessionRedirectMixin.rebuild_proxies:method",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_bypass:test",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_bypass_no_proxy_keyword:test",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_not_bypass:test",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_not_bypass_no_proxy_keyword:test"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.138,
+          "metrics": {
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:src/requests/utils.py:should_bypass_proxies:function",
+            "py:tests/test_utils.py:test_set_environ:test",
+            "py:tests/test_utils.py:test_set_environ_raises_exception:test",
+            "py:src/requests/utils.py:resolve_proxies:function",
+            "py:src/requests/utils.py:get_environ_proxies:function",
+            "py:tests/test_utils.py:test_should_bypass_proxies:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_no_proxy:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_no_proxy_domain_boundary:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_pass_only_hostname:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_win_registry:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_win_registry_ProxyOverride_value:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_win_registry_bad_values:test",
+            "py:src/requests/sessions.py:Session.merge_environment_settings:method",
+            "py:src/requests/sessions.py:Session.send:method",
+            "py:src/requests/sessions.py:SessionRedirectMixin.rebuild_proxies:method",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_bypass:test",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_bypass_no_proxy_keyword:test",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_not_bypass:test",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_not_bypass_no_proxy_keyword:test"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.05,
+          "metrics": {
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:src/requests/utils.py:should_bypass_proxies:function",
+            "py:tests/test_utils.py:test_set_environ:test",
+            "py:tests/test_utils.py:test_set_environ_raises_exception:test",
+            "py:src/requests/utils.py:resolve_proxies:function",
+            "py:src/requests/utils.py:get_environ_proxies:function",
+            "py:tests/test_utils.py:test_should_bypass_proxies:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_no_proxy:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_no_proxy_domain_boundary:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_pass_only_hostname:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_win_registry:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_win_registry_ProxyOverride_value:test",
+            "py:tests/test_utils.py:test_should_bypass_proxies_win_registry_bad_values:test",
+            "py:src/requests/sessions.py:Session.merge_environment_settings:method",
+            "py:src/requests/sessions.py:Session.send:method",
+            "py:src/requests/sessions.py:SessionRedirectMixin.rebuild_proxies:method",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_bypass:test",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_bypass_no_proxy_keyword:test",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_not_bypass:test",
+            "py:tests/test_utils.py:TestGetEnvironProxies.test_not_bypass_no_proxy_keyword:test"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.061,
+          "metrics": {
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.5538461538461538,
+      "question_id": "requests-impact-004",
+      "repo_id": "requests",
+      "runs": [
+        {
+          "answer_keys": [
+            "py:src/requests/sessions.py:SessionRedirectMixin.resolve_redirects:method",
+            "py:src/requests/models.py:PreparedRequest.prepare:method",
+            "py:src/requests/auth.py:_basic_auth_str:function",
+            "py:src/requests/cookies.py:MockRequest.get_full_url:method",
+            "py:src/requests/models.py:PreparedRequest.prepare_headers:method",
+            "py:src/requests/models.py:PreparedRequest.prepare_method:method",
+            "py:src/requests/models.py:PreparedRequest.prepare_url:method",
+            "py:src/requests/sessions.py:SessionRedirectMixin.get_redirect_target:method",
+            "py:tests/test_utils.py:test_to_native_string:test",
+            "py:src/requests/auth.py:HTTPProxyAuth.__call__:method",
+            "py:src/requests/sessions.py:Session.send:method",
+            "py:tests/test_requests.py:TestRequests.test_set_basicauth:test",
+            "py:src/requests/adapters.py:HTTPAdapter.proxy_headers:method",
+            "py:src/requests/auth.py:HTTPBasicAuth.__call__:method",
+            "py:src/requests/sessions.py:SessionRedirectMixin.rebuild_proxies:method",
+            "py:tests/test_requests.py:TestRequests.test_basic_auth_str_is_always_native:test",
+            "py:tests/test_requests.py:TestRequests.test_custom_redirect_mixin.CustomRedirectSession.get_redirect_target:method",
+            "py:src/requests/sessions.py:Session.request:method",
+            "py:src/requests/adapters.py:HTTPAdapter.proxy_manager_for:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.141,
+          "metrics": {
+            "static_precision": 0.9473684210526315,
+            "static_recall": 0.391304347826087
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.5538461538461538,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:src/requests/sessions.py:SessionRedirectMixin.resolve_redirects:method",
+            "py:src/requests/models.py:PreparedRequest.prepare:method",
+            "py:src/requests/auth.py:_basic_auth_str:function",
+            "py:src/requests/cookies.py:MockRequest.get_full_url:method",
+            "py:src/requests/models.py:PreparedRequest.prepare_headers:method",
+            "py:src/requests/models.py:PreparedRequest.prepare_method:method",
+            "py:src/requests/models.py:PreparedRequest.prepare_url:method",
+            "py:src/requests/sessions.py:SessionRedirectMixin.get_redirect_target:method",
+            "py:tests/test_utils.py:test_to_native_string:test",
+            "py:src/requests/auth.py:HTTPProxyAuth.__call__:method",
+            "py:src/requests/sessions.py:Session.send:method",
+            "py:tests/test_requests.py:TestRequests.test_set_basicauth:test",
+            "py:src/requests/adapters.py:HTTPAdapter.proxy_headers:method",
+            "py:src/requests/auth.py:HTTPBasicAuth.__call__:method",
+            "py:src/requests/sessions.py:SessionRedirectMixin.rebuild_proxies:method",
+            "py:tests/test_requests.py:TestRequests.test_basic_auth_str_is_always_native:test",
+            "py:tests/test_requests.py:TestRequests.test_custom_redirect_mixin.CustomRedirectSession.get_redirect_target:method",
+            "py:src/requests/sessions.py:Session.request:method",
+            "py:src/requests/adapters.py:HTTPAdapter.proxy_manager_for:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.053,
+          "metrics": {
+            "static_precision": 0.9473684210526315,
+            "static_recall": 0.391304347826087
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.5538461538461538,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "py:src/requests/sessions.py:SessionRedirectMixin.resolve_redirects:method",
+            "py:src/requests/models.py:PreparedRequest.prepare:method",
+            "py:src/requests/auth.py:_basic_auth_str:function",
+            "py:src/requests/cookies.py:MockRequest.get_full_url:method",
+            "py:src/requests/models.py:PreparedRequest.prepare_headers:method",
+            "py:src/requests/models.py:PreparedRequest.prepare_method:method",
+            "py:src/requests/models.py:PreparedRequest.prepare_url:method",
+            "py:src/requests/sessions.py:SessionRedirectMixin.get_redirect_target:method",
+            "py:tests/test_utils.py:test_to_native_string:test",
+            "py:src/requests/auth.py:HTTPProxyAuth.__call__:method",
+            "py:src/requests/sessions.py:Session.send:method",
+            "py:tests/test_requests.py:TestRequests.test_set_basicauth:test",
+            "py:src/requests/adapters.py:HTTPAdapter.proxy_headers:method",
+            "py:src/requests/auth.py:HTTPBasicAuth.__call__:method",
+            "py:src/requests/sessions.py:SessionRedirectMixin.rebuild_proxies:method",
+            "py:tests/test_requests.py:TestRequests.test_basic_auth_str_is_always_native:test",
+            "py:tests/test_requests.py:TestRequests.test_custom_redirect_mixin.CustomRedirectSession.get_redirect_target:method",
+            "py:src/requests/sessions.py:Session.request:method",
+            "py:src/requests/adapters.py:HTTPAdapter.proxy_manager_for:method"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.067,
+          "metrics": {
+            "static_precision": 0.9473684210526315,
+            "static_recall": 0.391304347826087
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.5538461538461538,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 20,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.5,
+      "question_id": "zod-impact-001",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/core/to-json-schema.ts:extractDefs.makeURI:function",
+            "ts:packages/zod/src/v4/core/to-json-schema.ts:extractDefs.extractToDef:function",
+            "ts:packages/zod/src/v4/core/to-json-schema.ts:extractDefs:function"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.198,
+          "metrics": {
+            "static_precision": 0.3333333333333333,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.5,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/core/to-json-schema.ts:extractDefs.makeURI:function",
+            "ts:packages/zod/src/v4/core/to-json-schema.ts:extractDefs.extractToDef:function",
+            "ts:packages/zod/src/v4/core/to-json-schema.ts:extractDefs:function"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.07,
+          "metrics": {
+            "static_precision": 0.3333333333333333,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.5,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/core/to-json-schema.ts:extractDefs.makeURI:function",
+            "ts:packages/zod/src/v4/core/to-json-schema.ts:extractDefs.extractToDef:function",
+            "ts:packages/zod/src/v4/core/to-json-schema.ts:extractDefs:function"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.07,
+          "metrics": {
+            "static_precision": 0.3333333333333333,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.5,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 1.0,
+      "question_id": "zod-impact-002",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/core/parse.ts:_decode.fn:function",
+            "ts:packages/zod/src/v4/core/parse.ts:_decodeAsync.fn:function",
+            "ts:packages/zod/src/v4/core/parse.ts:_encode.fn:function",
+            "ts:packages/zod/src/v4/core/parse.ts:_encodeAsync.fn:function"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.06,
+          "metrics": {
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/core/parse.ts:_decode.fn:function",
+            "ts:packages/zod/src/v4/core/parse.ts:_decodeAsync.fn:function",
+            "ts:packages/zod/src/v4/core/parse.ts:_encode.fn:function",
+            "ts:packages/zod/src/v4/core/parse.ts:_encodeAsync.fn:function"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.065,
+          "metrics": {
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/core/parse.ts:_decode.fn:function",
+            "ts:packages/zod/src/v4/core/parse.ts:_decodeAsync.fn:function",
+            "ts:packages/zod/src/v4/core/parse.ts:_encode.fn:function",
+            "ts:packages/zod/src/v4/core/parse.ts:_encodeAsync.fn:function"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.067,
+          "metrics": {
+            "static_precision": 1.0,
+            "static_recall": 1.0
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 1.0,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "impact"
+    },
+    {
+      "mean_primary": 0.19999999999999998,
+      "question_id": "zod-impact-003",
+      "repo_id": "zod",
+      "runs": [
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/core/tests/compile-differential.test.ts:loose record with an enumerated key set:test",
+            "ts:packages/zod/src/v4/core/tests/compile.test.ts:record key schemas compile%3A formats, checks, numbers, transforms:test"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.086,
+          "metrics": {
+            "static_precision": 1.0,
+            "static_recall": 0.1111111111111111
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.19999999999999998,
+          "run": 0,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/core/tests/compile-differential.test.ts:loose record with an enumerated key set:test",
+            "ts:packages/zod/src/v4/core/tests/compile.test.ts:record key schemas compile%3A formats, checks, numbers, transforms:test"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.086,
+          "metrics": {
+            "static_precision": 1.0,
+            "static_recall": 0.1111111111111111
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.19999999999999998,
+          "run": 1,
+          "support": {}
+        },
+        {
+          "answer_keys": [
+            "ts:packages/zod/src/v4/core/tests/compile-differential.test.ts:loose record with an enumerated key set:test",
+            "ts:packages/zod/src/v4/core/tests/compile.test.ts:record key schemas compile%3A formats, checks, numbers, transforms:test"
+          ],
+          "cached": false,
+          "cited": [],
+          "cost_usd": 0.0,
+          "error": null,
+          "eval_cost_usd": 0.0,
+          "judge": null,
+          "latency_s": 0.093,
+          "metrics": {
+            "static_precision": 1.0,
+            "static_recall": 0.1111111111111111
+          },
+          "notes": [],
+          "outcome": "answered",
+          "primary": 0.19999999999999998,
+          "run": 2,
+          "support": {}
+        }
+      ],
+      "snapshot_id": 23,
+      "type": "impact"
+    }
+  ],
+  "kind": "impact",
+  "max_cost_usd": 1.0,
+  "models": {},
+  "notes": [],
+  "overall": {
+    "high": 0.6822272347535505,
+    "low": 0.2887693592956751,
+    "mean": 0.4860124670650986,
+    "n": 15
+  },
+  "refusals": {
+    "answerable": 45,
+    "answerable_refused_api": 0,
+    "answerable_refused_budget": 0,
+    "answerable_refused_evidence": 0,
+    "unanswerable": 0,
+    "unanswerable_answered": 0,
+    "unanswerable_refused_api": 0,
+    "unanswerable_refused_evidence": 0
+  },
+  "run_overall": [
+    0.4860124670650986,
+    0.4860124670650986,
+    0.4860124670650986
+  ],
+  "runs": 3,
+  "schema_version": "1.0",
+  "skipped": [],
+  "snapshots": [
+    {
+      "commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "click",
+      "snapshot_id": 19
+    },
+    {
+      "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "httpx",
+      "snapshot_id": 21
+    },
+    {
+      "commit": "ec4d3f5dad1105c522c83ec4877e04937cb2405e",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "remeda",
+      "snapshot_id": 22
+    },
+    {
+      "commit": "6e83187b8feb273ed4c6cdab5efd8d54901dfab3",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "requests",
+      "snapshot_id": 20
+    },
+    {
+      "commit": "c7ec94d309ee8acb25113e3db738b3e03816a424",
+      "config_fingerprint": "5eccb9fec9726bc9fa847ed5ad9c6c353c5e5a0756db8d48bca581c679ef2090",
+      "embedding_model": "jinaai/jina-embeddings-v2-base-code",
+      "repo_id": "zod",
+      "snapshot_id": 23
+    }
+  ],
+  "spent_usd": 0.0,
+  "split": "test",
+  "suite": "benchmark",
+  "suite_info": {
+    "benchmark_version": "1.0.0",
+    "questions_sha256": "c121bf8d5914228d4998dc96e9e5ea675ac1b356591a2bc18f2a34c4fc8a9577",
+    "test_frozen": true,
+    "test_sha256": "163c2957919f00015870f1697e9a140903077d0fb7273beabd2f57767dd4cd08"
+  },
+  "system": "impact_engine",
+  "total_cost_usd": 0.0
+}

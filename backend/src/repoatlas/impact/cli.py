@@ -138,3 +138,37 @@ def unknown_command(
         f"{report.failing} failing tests: {report.ranked} ranked, {report.unknown_only} only "
         f"in the unknown bucket, {report.missed} missed. Report: {stem.with_suffix('.md')}"
     )
+
+
+@impact_app.command("report")
+def report_command(
+    split: Annotated[str, typer.Option("--split", help="dev or test.")] = "test",
+    snapshots: Annotated[
+        list[str] | None, typer.Option("--snapshot", help="repo=ID; repeatable.")
+    ] = None,
+    out: Annotated[Path | None, typer.Option("--out", help="Report path stem.")] = None,
+) -> None:
+    """Static and real precision, recall, and recall@k with 95% intervals."""
+    from repoatlas.canonical import pretty_json, write_text_lf
+    from repoatlas.config import get_settings
+    from repoatlas.evals.cli import eval_dir
+    from repoatlas.evals.registry import get_suite
+    from repoatlas.evals.snapshots import parse_overrides, resolve_snapshots
+    from repoatlas.impact.analysis import split_markdown, split_report
+    from repoatlas.pipeline.stages import config_fingerprint
+
+    items = [item for item in get_suite("benchmark").load(split) if item.type == "impact"]
+    engine, db = _engine()
+    used = resolve_snapshots(
+        db,
+        {item.repo_id: item.commit for item in items},
+        fingerprint=config_fingerprint(get_settings()),
+        overrides=parse_overrides(snapshots or []),
+    )
+    report = split_report(engine, items, lambda item: used[item.repo_id].snapshot_id, split=split)
+    stem = out or eval_dir() / "reports" / (
+        f"{dt.date.today().isoformat()}-impact_engine-intervals-{split}"
+    )
+    write_text_lf(stem.with_suffix(".json"), pretty_json(report))
+    write_text_lf(stem.with_suffix(".md"), split_markdown(report))
+    typer.echo(f"Report: {stem.with_suffix('.md')}")

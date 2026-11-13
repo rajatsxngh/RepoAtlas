@@ -1,0 +1,135 @@
+{
+  "failing": 704,
+  "file_f1": 0.1005050505050505,
+  "file_precision": 0.06344551505841828,
+  "file_recall": 0.3333333333333333,
+  "missed": 673,
+  "params": {
+    "decay": 0.4,
+    "edge_kinds": [
+      "calls",
+      "inherits",
+      "imports",
+      "tested_by",
+      "routes_to"
+    ],
+    "limit": 200,
+    "max_depth": 4,
+    "min_score": 0.05
+  },
+  "questions": [
+    {
+      "failing": 35,
+      "file_f1": 0.0,
+      "file_precision": 0.0,
+      "file_recall": 0.0,
+      "missed": 35,
+      "question_id": "click-impact-001",
+      "ranked": 0,
+      "repo_id": "click",
+      "unknown_only": 0,
+      "unknown_sites": 20
+    },
+    {
+      "failing": 346,
+      "file_f1": 0.5333333333333333,
+      "file_precision": 0.36363636363636365,
+      "file_recall": 1.0,
+      "missed": 345,
+      "question_id": "click-impact-003",
+      "ranked": 1,
+      "repo_id": "click",
+      "unknown_only": 0,
+      "unknown_sites": 0
+    },
+    {
+      "failing": 266,
+      "file_f1": 0.0,
+      "file_precision": 0.0,
+      "file_recall": 0.0,
+      "missed": 265,
+      "question_id": "click-impact-004",
+      "ranked": 0,
+      "repo_id": "click",
+      "unknown_only": 1,
+      "unknown_sites": 9
+    },
+    {
+      "failing": 1,
+      "file_f1": 0.0,
+      "file_precision": 0.0,
+      "file_recall": 0.0,
+      "missed": 1,
+      "question_id": "httpx-impact-001",
+      "ranked": 0,
+      "repo_id": "httpx",
+      "unknown_only": 0,
+      "unknown_sites": 0
+    },
+    {
+      "failing": 2,
+      "file_f1": 0.12121212121212122,
+      "file_precision": 0.06451612903225806,
+      "file_recall": 1.0,
+      "missed": 1,
+      "question_id": "httpx-impact-002",
+      "ranked": 1,
+      "repo_id": "httpx",
+      "unknown_only": 0,
+      "unknown_sites": 0
+    },
+    {
+      "failing": 5,
+      "file_f1": 0.0,
+      "file_precision": 0.0,
+      "file_recall": 0.0,
+      "missed": 5,
+      "question_id": "httpx-impact-003",
+      "ranked": 0,
+      "repo_id": "httpx",
+      "unknown_only": 0,
+      "unknown_sites": 65
+    },
+    {
+      "failing": 2,
+      "file_f1": 0.0,
+      "file_precision": 0.0,
+      "file_recall": 0.0,
+      "missed": 2,
+      "question_id": "remeda-impact-001",
+      "ranked": 0,
+      "repo_id": "remeda",
+      "unknown_only": 0,
+      "unknown_sites": 0
+    },
+    {
+      "failing": 19,
+      "file_f1": 0.0,
+      "file_precision": 0.0,
+      "file_recall": 0.0,
+      "missed": 19,
+      "question_id": "remeda-impact-003",
+      "ranked": 0,
+      "repo_id": "remeda",
+      "unknown_only": 0,
+      "unknown_sites": 0
+    },
+    {
+      "failing": 28,
+      "file_f1": 0.25,
+      "file_precision": 0.14285714285714285,
+      "file_recall": 1.0,
+      "missed": 0,
+      "question_id": "remeda-impact-004",
+      "ranked": 28,
+      "repo_id": "remeda",
+      "unknown_only": 0,
+      "unknown_sites": 14
+    }
+  ],
+  "questions_helped": 1,
+  "ranked": 30,
+  "split": "test",
+  "unknown_hit_rate": 0.0014204545454545455,
+  "unknown_only": 1
+}

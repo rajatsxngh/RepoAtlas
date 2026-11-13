@@ -156,3 +156,174 @@ def unknown_markdown(report: UnknownReport) -> str:
             f"{q.unknown_sites} | {_fmt(q.file_precision)} | {_fmt(q.file_recall)} |"
         )
     return "\n".join(lines) + "\n"
+
+
+# ---------------------------------------------------------------------------------------------
+# Split report: precision, recall, and recall@k with 95% intervals
+# ---------------------------------------------------------------------------------------------
+
+REAL_KS = (5, 10, 20)
+STATIC_METRICS = ("static_precision", "static_recall", "static_f1")
+REAL_METRICS = (
+    "real_precision",
+    "real_recall",
+    "real_f1",
+    *(f"real_recall_at_{k}" for k in REAL_KS),
+)
+METRIC_NAMES = {
+    "static_precision": ("Static (SCIP)", "precision"),
+    "static_recall": ("Static (SCIP)", "recall"),
+    "static_f1": ("Static (SCIP)", "F1"),
+    "real_precision": ("Real (sandbox failures), test level", "precision"),
+    "real_recall": ("Real (sandbox failures), test level", "recall"),
+    "real_f1": ("Real (sandbox failures), test level", "F1"),
+    **{
+        f"real_recall_at_{k}": ("Real (sandbox failures), test level", f"recall@{k}")
+        for k in REAL_KS
+    },
+}
+
+
+class SplitQuestion(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    question_id: str
+    repo_id: str
+    predicted: int
+    predicted_tests: int
+    static_truth: int
+    failing: int | None
+    metrics: dict[str, float | None]
+
+
+class MetricInterval(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    metric: str
+    questions: int
+    mean: float | None
+    low: float | None
+    high: float | None
+
+
+class SplitReport(BaseModel):
+    split: str
+    params: ImpactParams
+    questions: list[SplitQuestion]
+    intervals: list[MetricInterval]
+
+    def interval(self, metric: str) -> MetricInterval:
+        return next(i for i in self.intervals if i.metric == metric)
+
+
+def split_report(
+    engine: ImpactEngine,
+    items: Sequence[EvalItem],
+    snapshot_for: Callable[[EvalItem], int],
+    *,
+    split: str,
+    params: ImpactParams | None = None,
+) -> SplitReport:
+    """Scores every impact question of ``split`` the way the runner does (static and real
+    precision, recall, F1), plus real recall@5/@10/@20, with 95% bootstrap intervals over
+    questions. The engine is deterministic, so one run stands for every run."""
+    from repoatlas.evals.outputs import SystemOutput
+    from repoatlas.evals.registry import ImpactTarget
+    from repoatlas.evals.scorers import recall_at_k, score_benchmark
+    from repoatlas.evals.stats import bootstrap_ci
+    from repoatlas.impact.system import to_prediction
+
+    params = params or engine.params
+    questions = []
+    for item in items:
+        truth = item.truth
+        if not isinstance(truth, ImpactTruth):
+            continue
+        target = ImpactTarget(symbol_key=truth.target.symbol_key)
+        report = engine.analyze(
+            snapshot_for(item),
+            SymbolTarget(symbol_key=truth.target.symbol_key),
+            params,
+            unknown=False,
+        )
+        prediction = to_prediction(report, target)
+        ranked = prediction.ranked()
+        score = score_benchmark(item, SystemOutput(kind="impact", impact=ranked))
+        metrics: dict[str, float | None] = {
+            "static_precision": score.metrics.get("static_precision"),
+            "static_recall": score.metrics.get("static_recall"),
+            "static_f1": score.primary,
+        }
+        tests = [i.symbol_key for i in ranked if i.group == "test"]
+        failing: set[str] | None = None
+        if truth.real_failing_tests is not None:
+            failing = {t.symbol_key for t in truth.real_failing_tests if t.symbol_key}
+            for name in ("real_precision", "real_recall", "real_f1"):
+                metrics[name] = score.metrics.get(name)
+            for k in REAL_KS:
+                metrics[f"real_recall_at_{k}"] = recall_at_k(tests, failing, k)
+        questions.append(
+            SplitQuestion(
+                question_id=item.id,
+                repo_id=item.repo_id,
+                predicted=len(ranked),
+                predicted_tests=len(tests),
+                static_truth=len(truth.static),
+                failing=None if failing is None else len(failing),
+                metrics=metrics,
+            )
+        )
+    intervals = []
+    for metric in (*STATIC_METRICS, *REAL_METRICS):
+        values = [v for q in questions if (v := q.metrics.get(metric)) is not None]
+        ci = bootstrap_ci(values)
+        intervals.append(
+            MetricInterval(
+                metric=metric,
+                questions=len(values),
+                mean=None if ci is None else ci.mean,
+                low=None if ci is None else ci.low,
+                high=None if ci is None else ci.high,
+            )
+        )
+    return SplitReport(split=split, params=params, questions=questions, intervals=intervals)
+
+
+def _ci(interval: MetricInterval) -> str:
+    if interval.mean is None:
+        return "-"
+    return f"{interval.mean:.3f} [{_fmt(interval.low)}, {_fmt(interval.high)}]"
+
+
+def split_markdown(report: SplitReport) -> str:
+    params = report.params
+    lines = [
+        f"# impact_engine: static and real impact ({report.split})",
+        "",
+        f"Parameters (decision 0019): max_depth {params.max_depth}, decay {params.decay}, "
+        f"min_score {params.min_score}, limit {params.limit}. Means over questions with 95% "
+        "bootstrap intervals (10,000 resamples). The engine is deterministic, so its three "
+        "runner runs are identical.",
+        "",
+        "| Ground truth | Metric | Questions | Mean [95% CI] |",
+        "|---|---|---|---|",
+    ]
+    for interval in report.intervals:
+        source, metric = METRIC_NAMES[interval.metric]
+        lines.append(f"| {source} | {metric} | {interval.questions} | {_ci(interval)} |")
+    lines += [
+        "",
+        "| Question | predicted | tests | static truth | failing | static P | static R "
+        "| real P | real R | R@10 |",
+        "|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for q in report.questions:
+        m = q.metrics
+        failing = "-" if q.failing is None else str(q.failing)
+        lines.append(
+            f"| `{q.question_id}` | {q.predicted} | {q.predicted_tests} | {q.static_truth} | "
+            f"{failing} | {_fmt(m.get('static_precision'))} | {_fmt(m.get('static_recall'))} | "
+            f"{_fmt(m.get('real_precision'))} | {_fmt(m.get('real_recall'))} | "
+            f"{_fmt(m.get('real_recall_at_10'))} |"
+        )
+    return "\n".join(lines) + "\n"

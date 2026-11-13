@@ -76,7 +76,7 @@ IMP-1, IMP-2, IMP-3, IMP-4, IMP-5, IMP-6, IMP-7, IMP-8, IMP-9
 - [x] **T7 — Explanation.** `explain_impact` with validated citations; tests with `FakeLLM`.
 - [x] **T8 — Registration.** Adapter to `ImpactPrediction`; registered `impact_engine`.
 - [x] **T9 — Tuning on dev.** Parameter sweep; decision record with chosen values.
-- [ ] **T10 — Test-split evaluation.** Report with intervals for static and real ground truth; summary in Results.
+- [x] **T10 — Test-split evaluation.** Report with intervals for static and real ground truth; summary in Results.
 
 ## Exit criteria
 
