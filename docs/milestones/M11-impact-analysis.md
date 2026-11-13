@@ -18,7 +18,7 @@ Answer "What breaks if I change X?" with a ranked, explained list of affected te
 
 - **`repoatlas.impact.engine.ImpactEngine`**
   - `analyze(snapshot_id, target: SymbolTarget | DiffTarget, params: ImpactParams = defaults) -> ImpactReport`
-  - `ImpactParams(max_depth=4, decay=0.6, min_score=0.05, limit=200, edge_kinds=(calls, inherits, imports, tested_by, routes_to))`
+  - `ImpactParams(max_depth=4, decay=0.4, min_score=0.05, limit=200, edge_kinds=(calls, inherits, imports, tested_by, routes_to))` — defaults tuned on dev (decision 0019; the starting decay was 0.6)
   - `ImpactReport(target, items: [ImpactItem(symbol_key, kind, group, score, depth, best_path: [PathStep(src, dst, kind, confidence)], evidence: [EvidenceRef])], unknown: [UnknownSite(site: EvidenceRef, callee_text, candidates, reason)], stats)`
 - **`repoatlas.impact.diff.changed_symbols(snapshot_id, unified_diff) -> list[SymbolKey]`**.
 - **API:** migration for `impact_runs`; `POST /api/v1/snapshots/{id}/impact` with `{ "symbol_key": … }` or `{ "diff": … }` → `ImpactReport`; regenerated OpenAPI and TypeScript types.
@@ -75,7 +75,7 @@ IMP-1, IMP-2, IMP-3, IMP-4, IMP-5, IMP-6, IMP-7, IMP-8, IMP-9
 - [x] **T6 — UI.** "What breaks?" action, `ImpactPanel`, scored highlight layer, evidence navigation; Playwright test.
 - [x] **T7 — Explanation.** `explain_impact` with validated citations; tests with `FakeLLM`.
 - [x] **T8 — Registration.** Adapter to `ImpactPrediction`; registered `impact_engine`.
-- [ ] **T9 — Tuning on dev.** Parameter sweep; decision record with chosen values.
+- [x] **T9 — Tuning on dev.** Parameter sweep; decision record with chosen values.
 - [ ] **T10 — Test-split evaluation.** Report with intervals for static and real ground truth; summary in Results.
 
 ## Exit criteria

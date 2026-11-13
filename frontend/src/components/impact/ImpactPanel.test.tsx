@@ -6,8 +6,8 @@ import type { ImpactResponse } from "@/lib/api/types";
 import { renderWithApi } from "@/test/render";
 import { ImpactPanel, evidenceLabel, impactLayers, symbolLabel } from "./ImpactPanel";
 
-const ROUND_MONEY = "py:src/shop/utils/helpers.py:round_money:function";
 const ADD = "py:src/shop/cart.py:Cart.add:method";
+const GIFT_ADD = "py:src/shop/cart.py:GiftCart.add:method";
 
 const HOSTILE: ImpactResponse = {
   target: { kind: "symbol", symbol_key: "py:a.py:f:function" },
@@ -62,16 +62,16 @@ describe("ImpactPanel", () => {
     const onReport = vi.fn();
     const user = userEvent.setup();
     renderWithApi(
-      <ImpactPanel snapshotId={1} symbolKey={ROUND_MONEY} onOpen={onOpen} onReport={onReport} />,
+      <ImpactPanel snapshotId={1} symbolKey={ADD} onOpen={onOpen} onReport={onReport} />,
     );
     const panel = screen.getByRole("complementary", { name: "What breaks" });
-    expect(panel).toHaveTextContent("What breaks if round_money changes?");
+    expect(panel).toHaveTextContent("What breaks if Cart.add changes?");
     const callers = await within(panel).findByRole("region", { name: "Callers" });
     const tests = within(panel).getByRole("region", { name: "Tests" });
     expect(within(tests).getAllByRole("button").length).toBeGreaterThan(0);
-    const add = within(callers).getByTitle(ADD);
+    const add = within(callers).getByTitle(GIFT_ADD);
     expect(add).toHaveTextContent("src/shop/cart.py · direct");
-    expect(add).toHaveTextContent("round_money called by Cart.add");
+    expect(add).toHaveTextContent("Cart.add called by GiftCart.add");
     await waitFor(() => expect(onReport).toHaveBeenLastCalledWith(expect.objectContaining({})));
     const report = onReport.mock.lastCall![0] as ImpactResponse;
     const scores = report.items.map((item) => item.score);
@@ -79,9 +79,9 @@ describe("ImpactPanel", () => {
 
     await user.click(add);
     expect(add).toHaveAttribute("aria-pressed", "true");
-    expect(onOpen).toHaveBeenCalledWith(ADD);
+    expect(onOpen).toHaveBeenCalledWith(GIFT_ADD);
     const viewer = await within(panel).findByRole("figure");
-    expect(viewer).toHaveTextContent("round_money");
+    expect(viewer).toHaveTextContent("add");
     expect(viewer.querySelectorAll(".ra-code-mark").length).toBeGreaterThan(0);
     expect(within(panel).getByRole("region", { name: "Unknown" })).toHaveTextContent(
       "No unresolved calls or string literals",

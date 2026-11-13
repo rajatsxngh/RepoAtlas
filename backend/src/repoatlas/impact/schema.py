@@ -33,7 +33,7 @@ class ImpactParams(_Model):
     """Search settings. Defaults are the values chosen on the dev split (decision 0019)."""
 
     max_depth: int = Field(default=4, ge=0, le=10)
-    decay: float = Field(default=0.6, gt=0, le=1)
+    decay: float = Field(default=0.4, gt=0, le=1)
     min_score: float = Field(default=0.05, ge=0, le=1)
     limit: int = Field(default=200, ge=1, le=1000)
     edge_kinds: tuple[EdgeKind, ...] = Field(default=TRAVERSABLE_KINDS, min_length=1)

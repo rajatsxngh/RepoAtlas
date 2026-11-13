@@ -57,7 +57,10 @@ class ImpactEngine:
         snapshot_id: int,
         target: SymbolTarget | DiffTarget,
         params: ImpactParams | None = None,
+        *,
+        unknown: bool = True,
     ) -> ImpactReport:
+        """``unknown=False`` skips the unknown bucket (tuning scores only the ranked items)."""
         params = params or self.params
         started = self.clock()
         graph = self.data.graph(snapshot_id)
@@ -90,7 +93,7 @@ class ImpactEngine:
         )
         kept = above[: params.limit]
         items = self._items(snapshot_id, graph, propagation, kept, entered_by)
-        unknown = self._unknown(snapshot_id, graph, keys, target_nodes)
+        unknown_list = self._unknown(snapshot_id, graph, keys, target_nodes) if unknown else []
         stats = ImpactStats(
             targets=len(keys),
             reached=len(reached),
@@ -99,7 +102,7 @@ class ImpactEngine:
             returned=len(items),
             truncated=len(above) > len(kept),
             by_group=count_by_group(item.group for item in items),
-            unknown=len(unknown),
+            unknown=len(unknown_list),
             elapsed_ms=round((self.clock() - started) * 1000, 3),
         )
         return ImpactReport(
@@ -107,7 +110,7 @@ class ImpactEngine:
             targets=keys,
             params=params,
             items=items,
-            unknown=unknown,
+            unknown=unknown_list,
             stats=stats,
         )
 

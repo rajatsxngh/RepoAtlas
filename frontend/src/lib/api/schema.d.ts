@@ -749,7 +749,7 @@ export interface components {
             max_depth: number;
             /**
              * Decay
-             * @default 0.6
+             * @default 0.4
              */
             decay: number;
             /**

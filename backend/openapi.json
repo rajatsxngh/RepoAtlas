@@ -2621,7 +2621,7 @@
             "maximum": 1.0,
             "exclusiveMinimum": 0.0,
             "title": "Decay",
-            "default": 0.6
+            "default": 0.4
           },
           "min_score": {
             "type": "number",

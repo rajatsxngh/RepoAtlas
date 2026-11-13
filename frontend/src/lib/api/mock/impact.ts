@@ -23,7 +23,7 @@ import { MockApiError } from "./graph";
 
 export const DEFAULT_IMPACT_PARAMS: ImpactParams = {
   max_depth: 4,
-  decay: 0.6,
+  decay: 0.4,
   min_score: 0.05,
   limit: 200,
   edge_kinds: ["calls", "inherits", "imports", "tested_by", "routes_to"],

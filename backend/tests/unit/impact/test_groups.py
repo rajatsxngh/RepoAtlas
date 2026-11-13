@@ -80,7 +80,7 @@ def test_a_report_groups_and_ranks_what_a_change_reaches() -> None:
     assert [i.symbol_key for i in report.group("caller")] == [MAIN]
     assert report.stats.by_group == {"test": 1, "public_api": 1, "caller": 1}
     parse = report.items[0]
-    assert parse.depth == 1 and parse.score == pytest.approx(0.6 * 0.94)
+    assert parse.depth == 1 and parse.score == pytest.approx(0.4 * 0.94)
     assert [(s.src, s.dst, s.kind) for s in parse.best_path] == [(TOKENIZE, PARSE, "calls")]
     # the evidence is the call site in the caller: `return _tokenize(text)`
     (ref,) = parse.evidence
@@ -120,7 +120,7 @@ def test_limit_truncates_and_min_score_filters() -> None:
     report = analyze(PARSE, limit=1)
     assert len(report.items) == 1 and report.stats.truncated
     assert report.stats.items > 1
-    high = analyze(TOKENIZE, min_score=0.5)
+    high = analyze(TOKENIZE, min_score=0.3)
     assert [i.symbol_key for i in high.items] == [PARSE]
 
 
