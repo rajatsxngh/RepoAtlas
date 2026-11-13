@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { mapNode, waitForMap } from "../helpers";
 
+// Named to sort after map.spec.ts: that test needs the first build of the shop repository (it
+// follows the progress screen), and this one reuses the snapshot when it already exists.
+
 const ADD = "py:src/shop/cart.py:Cart.add:method";
 const GIFT_ADD = "py:src/shop/cart.py:GiftCart.add:method";
 
