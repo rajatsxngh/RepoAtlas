@@ -101,7 +101,8 @@ def prepare_run(
     if ctx.engine is None:
         raise ValueError("An evaluation run needs the database.")
     kind = system_kind(options.system)
-    _llm(ctx)
+    if kind == "answer":  # impact systems need no model (and no API key)
+        _llm(ctx)
     factory = (
         get_answer_system(options.system) if kind == "answer" else get_impact_system(options.system)
     )

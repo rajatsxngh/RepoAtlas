@@ -257,7 +257,11 @@ def _load_builtins() -> None:
     _builtins_loaded = True
     import importlib
 
-    for module in ("repoatlas.evals.suites", "repoatlas.evals.baselines"):
+    for module in (
+        "repoatlas.evals.suites",
+        "repoatlas.evals.baselines",
+        "repoatlas.impact.system",
+    ):
         try:
             importlib.import_module(module)
         except ModuleNotFoundError as exc:
