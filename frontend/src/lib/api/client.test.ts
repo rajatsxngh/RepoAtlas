@@ -177,6 +177,7 @@ describe("error helpers", () => {
 
   it("describes errors for people", () => {
     expect(describeError(new ApiError(403, "repo_private", "x")).title).toContain("private");
+    expect(describeError(new ApiError(401, "unauthorized", "x")).detail).toContain("access token");
     expect(
       describeError(new ApiError(429, "rate_limited", "x", { group: "build" }, 42)).detail,
     ).toContain("42 seconds");

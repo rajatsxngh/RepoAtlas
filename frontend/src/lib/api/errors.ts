@@ -146,6 +146,11 @@ export function describeError(error: unknown): ErrorDescription {
       return { title: "No answer this time", detail: error.message };
     case "snapshot_not_ready":
       return { title: "The map is still being built", detail: error.message };
+    case "unauthorized":
+      return {
+        title: "This deployment is private",
+        detail: "Your access has expired. Reload the page and enter the access token again.",
+      };
     case "network":
       return { title: "Can't reach RepoAtlas", detail: error.message };
     case "invalid_request":

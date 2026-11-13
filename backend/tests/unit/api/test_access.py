@@ -141,6 +141,8 @@ def test_the_cookie_value_is_a_digest_and_an_empty_token_is_refused() -> None:
     value = cookie_value(TOKEN)
     assert TOKEN not in value and len(value) == 64 and value == cookie_value(TOKEN)
     assert value != cookie_value(TOKEN + "x")
+    # The web app computes the same value (frontend/src/lib/access.test.ts has this case).
+    assert cookie_value("abc") == "2d23b51f143f219a1ce8f7824c551b180de4fa2916aecf6e4af0898bae6e8c89"
     with pytest.raises(ValueError, match="empty"):
         AccessGateMiddleware(lambda *_: None, token=SecretStr(""), prefix=API_PREFIX)  # type: ignore[arg-type]
 

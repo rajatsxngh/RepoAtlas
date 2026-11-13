@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   // End-to-end runs build the app twice (mock mode and the real API) side by side.
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  // The web image builds a self-contained server (infra/docker/web.Dockerfile).
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
