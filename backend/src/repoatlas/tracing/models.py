@@ -25,6 +25,7 @@ from sqlalchemy import (
     Integer,
     Text,
     Uuid,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -65,6 +66,8 @@ class SpanRow(Base):
     __table_args__ = (
         CheckConstraint(f"status IN ({_in(TRACE_STATUSES)})", name="status"),
         Index("ix_spans_trace_id", "trace_id"),
+        # The daily spend total (repoatlas.limits.SpendGuard) sums LLM spans since midnight.
+        Index("ix_spans_llm_started_at", "started_at", postgresql_where=text("kind = 'llm'")),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)

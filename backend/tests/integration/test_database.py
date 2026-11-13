@@ -17,12 +17,14 @@ def test_baseline_enables_the_extensions(pg_engine: Engine) -> None:
 
 
 def test_database_is_at_the_latest_revision(pg_url: str) -> None:
-    assert migrate.current_revision(pg_url) == migrate.head_revision() == "0007_impact_runs"
+    assert (
+        migrate.current_revision(pg_url) == migrate.head_revision() == "0008_spans_llm_started_at"
+    )
 
 
 def test_upgrade_is_idempotent(pg_url: str) -> None:
     migrate.upgrade(pg_url)
-    assert migrate.current_revision(pg_url) == "0007_impact_runs"
+    assert migrate.current_revision(pg_url) == "0008_spans_llm_started_at"
 
 
 def test_vector_nearest_neighbor_query(db_session: Session) -> None:
@@ -59,4 +61,4 @@ def test_cli_reports_the_revision(
     finally:
         get_settings.cache_clear()
     assert result.exit_code == 0, result.output
-    assert "0007_impact_runs" in result.output
+    assert "0008_spans_llm_started_at" in result.output
