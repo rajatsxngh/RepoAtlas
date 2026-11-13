@@ -1,0 +1,127 @@
+# RepoAtlas, self-hosted: Postgres (pgvector), migrations, the API, a worker, and the web app.
+# The guide is docs/self-hosting.md; operations are in docs/runbook.md.
+#
+#   cp infra/selfhost.env.example infra/selfhost.env      (then set the token and the password)
+#   docker compose -f infra/compose.selfhost.yml --env-file infra/selfhost.env up -d --build
+#   open http://localhost:8080
+#
+# Only the web app is published. It serves the API under its own origin (/api/v1/*), so the
+# API and the database are reachable only inside the compose network.
+#
+# Starting the stack runs the migrations first (the one-shot "migrate" service); the API and
+# the worker start only after it succeeded.
+name: repoatlas-selfhost
+
+x-backend-env: &backend-env
+  REPOATLAS_DATABASE_URL: postgresql+psycopg://repoatlas:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in infra/selfhost.env}@db:5432/repoatlas
+  REPOATLAS_LOG_LEVEL: ${REPOATLAS_LOG_LEVEL:-INFO}
+  REPOATLAS_GITHUB_TOKEN: ${REPOATLAS_GITHUB_TOKEN:-}
+  # Answers: an Anthropic API key, or the offline stand-in (no model, no cost, no real answers).
+  REPOATLAS_ANTHROPIC_API_KEY: ${REPOATLAS_ANTHROPIC_API_KEY:-}
+  REPOATLAS_LLM_TRANSPORT: ${REPOATLAS_LLM_TRANSPORT:-anthropic}
+  # Limits (DEP-5). Defaults are the product's; infra/production.env.example has tighter ones.
+  REPOATLAS_DAILY_SPEND_CAP_USD: ${REPOATLAS_DAILY_SPEND_CAP_USD:-5}
+  REPOATLAS_ASKS_PER_DAY: ${REPOATLAS_ASKS_PER_DAY:-20}
+  REPOATLAS_BUILDS_PER_DAY: ${REPOATLAS_BUILDS_PER_DAY:-3}
+  REPOATLAS_JOB_MAX_RUNNING: ${REPOATLAS_JOB_MAX_RUNNING:-2}
+  REPOATLAS_MAX_REPO_SIZE_KB: ${REPOATLAS_MAX_REPO_SIZE_KB:-500000}
+  REPOATLAS_MAX_SOURCE_FILES: ${REPOATLAS_MAX_SOURCE_FILES:-5000}
+  REPOATLAS_MAX_FILE_BYTES: ${REPOATLAS_MAX_FILE_BYTES:-1000000}
+
+x-backend-build-args: &backend-build-args
+  EMBEDDING_MODEL: ${REPOATLAS_EMBEDDING_MODEL:-jinaai/jina-embeddings-v2-base-code}
+
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  restart: unless-stopped
+
+services:
+  db:
+    image: pgvector/pgvector:pg16@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f
+    environment:
+      POSTGRES_USER: repoatlas
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in infra/selfhost.env}
+      POSTGRES_DB: repoatlas
+    volumes:
+      - repoatlas-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U repoatlas -d repoatlas"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  migrate:
+    image: ${REPOATLAS_IMAGE_PREFIX:-repoatlas}-api:${REPOATLAS_VERSION:-local}
+    build:
+      context: ..
+      dockerfile: infra/docker/api.Dockerfile
+      args: *backend-build-args
+    command: ["repoatlas", "db", "upgrade"]
+    environment: *backend-env
+    depends_on:
+      db:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: "no"
+
+  api:
+    image: ${REPOATLAS_IMAGE_PREFIX:-repoatlas}-api:${REPOATLAS_VERSION:-local}
+    build:
+      context: ..
+      dockerfile: infra/docker/api.Dockerfile
+      args: *backend-build-args
+    environment:
+      <<: *backend-env
+      REPOATLAS_ACCESS_TOKEN: ${REPOATLAS_ACCESS_TOKEN:?set REPOATLAS_ACCESS_TOKEN in infra/selfhost.env}
+      # Every request comes through the web app, which reports the visitor's address.
+      REPOATLAS_TRUST_PROXY_HEADERS: "true"
+      REPOATLAS_RATE_LIMIT_SALT: ${REPOATLAS_RATE_LIMIT_SALT:-}
+      REPOATLAS_WEB_ORIGINS: ${REPOATLAS_PUBLIC_ORIGIN:-http://localhost:8080}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    <<: *hardening
+
+  worker:
+    image: ${REPOATLAS_IMAGE_PREFIX:-repoatlas}-worker:${REPOATLAS_VERSION:-local}
+    build:
+      context: ..
+      dockerfile: infra/docker/worker.Dockerfile
+      args: *backend-build-args
+    environment: *backend-env
+    volumes:
+      - repoatlas-data:/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # A build stops at its next stage boundary and goes back to the queue.
+    stop_grace_period: 60s
+    <<: *hardening
+
+  web:
+    image: ${REPOATLAS_IMAGE_PREFIX:-repoatlas}-web:${REPOATLAS_VERSION:-local}
+    build:
+      context: ..
+      dockerfile: infra/docker/web.Dockerfile
+    environment:
+      REPOATLAS_API_ORIGIN: http://api:8000
+      REPOATLAS_ACCESS_TOKEN: ${REPOATLAS_ACCESS_TOKEN:?set REPOATLAS_ACCESS_TOKEN in infra/selfhost.env}
+    ports:
+      # Bound to this machine only. To serve other machines, put a TLS reverse proxy in front
+      # (docs/self-hosting.md) instead of changing this to 0.0.0.0.
+      - "${REPOATLAS_WEB_BIND:-127.0.0.1}:${REPOATLAS_WEB_PORT:-8080}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    <<: *hardening
+
+volumes:
+  repoatlas-pg:
+  repoatlas-data:

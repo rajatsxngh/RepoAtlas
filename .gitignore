@@ -30,6 +30,7 @@ frontend/.schema.d.ts.check
 .env
 .env.*
 !.env.example
+infra/*.env
 
 # Local data and scratch output
 .repoatlas/
