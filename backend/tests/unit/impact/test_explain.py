@@ -13,6 +13,7 @@ from repoatlas.impact.schema import ImpactReport, SymbolTarget
 from repoatlas.ingest.source import blob_oid
 from repoatlas.llm.fake import FakeLLM, refusal
 from repoatlas.llm.pricing import DEFAULT_PRICES, PriceTable
+from repoatlas.llm.types import SpendCapReached
 from repoatlas.tracing.core import Trace
 from tests.unit.impact.helpers import MAIN, PARSE, PROJECT, TEST_PARSE, TOKENIZE, project_data
 
@@ -102,6 +103,9 @@ async def test_model_refusals_and_budgets() -> None:
     expensive = await explainer.explain(1, report, Budget(max_cost_usd=1e-9))
     assert expensive.refused and expensive.refusal_kind == "budget"
     assert len(llm.calls) == 1
+    capped = await setup(FakeLLM([SpendCapReached(5.0, 5.0)]))[1].explain(1, report)
+    assert capped.refused and capped.refusal_kind == "budget"
+    assert capped.refusal_reason is not None and "daily cap" in capped.refusal_reason
 
 
 async def test_an_answer_with_no_valid_claim_is_an_evidence_refusal() -> None:

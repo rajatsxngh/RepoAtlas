@@ -11,6 +11,9 @@ With a ``schema``, the response is parsed and validated with Pydantic. A respons
 validation gets one repair attempt: the model's reply and a user turn naming the errors are
 appended (earlier turns are never edited), and the second reply is validated again. A refusal
 is returned as ``refused`` without parsing.
+
+A client may carry a spending guard (``repoatlas.limits.SpendGuard``): it is asked before every
+request, repair calls included, and stops the call by raising (``SpendCapReached``).
 """
 
 from __future__ import annotations
@@ -24,6 +27,7 @@ from pydantic import BaseModel, ValidationError
 
 from repoatlas.config import Settings
 from repoatlas.llm.compat import Effort, build_request, parse_response
+from repoatlas.llm.offline import OfflineTransport
 from repoatlas.llm.pricing import PriceTable
 from repoatlas.llm.transport import LiteLLMTransport, Transport
 from repoatlas.llm.types import (
@@ -60,6 +64,15 @@ class LLM(Protocol):
     ) -> LLMResult: ...
 
 
+class SpendCheck(Protocol):
+    """What the client needs from a spending guard: ``check`` raises when no call may be made;
+    ``record`` hears what each call cost."""
+
+    def check(self) -> None: ...
+
+    def record(self, cost_usd: float) -> None: ...
+
+
 class LLMNotConfigured(LLMError):
     """No API key is set."""
 
@@ -77,8 +90,10 @@ class LLMClient:
         retry_base_s: float = 1.0,
         retry_max_s: float = 30.0,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+        guard: SpendCheck | None = None,
     ) -> None:
         self.transport = transport
+        self.guard = guard
         self.models = dict(models)
         self.efforts = dict(efforts or {})
         self.prices = prices
@@ -89,8 +104,23 @@ class LLMClient:
         self._sleep = sleep
 
     @classmethod
-    def from_settings(cls, settings: Settings, transport: Transport | None = None) -> LLMClient:
-        """A client for the settings; the LiteLLM transport needs the Anthropic API key."""
+    def from_settings(
+        cls,
+        settings: Settings,
+        transport: Transport | None = None,
+        *,
+        guard: SpendCheck | None = None,
+    ) -> LLMClient:
+        """A client for the settings. The LiteLLM transport needs the Anthropic API key; the
+        offline stand-in (``llm_transport = "offline"``, decision 0020) needs none and is
+        refused when a key is set, so a deployment with a key never answers without a model."""
+        if transport is None and settings.llm_transport == "offline":
+            if settings.anthropic_api_key is not None:
+                raise LLMNotConfigured(
+                    "REPOATLAS_LLM_TRANSPORT=offline can't be combined with an API key: "
+                    "unset one of them."
+                )
+            transport = OfflineTransport()
         if transport is None:
             if settings.anthropic_api_key is None:
                 raise LLMNotConfigured(
@@ -106,6 +136,7 @@ class LLMClient:
             max_retries=settings.llm_max_retries,
             retry_base_s=settings.llm_retry_base_s,
             retry_max_s=settings.llm_retry_max_s,
+            guard=guard,
         )
 
     def model_for(self, role: Role) -> str:
@@ -162,10 +193,14 @@ class LLMClient:
     ) -> LLMResult:
         """Send one built request with retries; usage, cost, and latency in the result and on
         an ``llm`` span of the current trace."""
+        if self.guard is not None:
+            await asyncio.to_thread(self.guard.check)
         with trace_span("llm.call", "llm", role=role, requested_model=model) as span:
             result = await self._send(model, request)
             span.record_llm(result)
-            return result
+        if self.guard is not None:
+            self.guard.record(result.cost_usd)
+        return result
 
     async def _send(self, model: str, request: dict[str, Any]) -> LLMResult:
         attempt = 0

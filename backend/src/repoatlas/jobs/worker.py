@@ -229,6 +229,7 @@ class Worker:
         self.poll_s = settings.worker_poll_s if poll_s is None else poll_s
         self.timeout_s = settings.job_timeout_s if timeout_s is None else timeout_s
         self.backoff_s = tuple(settings.job_retry_backoff_s if backoff_s is None else backoff_s)
+        self.max_running = settings.job_max_running or None  # 0: no cap
         if not 0 < self.heartbeat_s < self.lease_s:
             raise ValueError("Heartbeats must be more frequent than the lease is long.")
         if self.timeout_s <= 0 or self.poll_s < 0:
@@ -285,7 +286,13 @@ class Worker:
         self.recover()
         if self.stopping:
             return False
-        job = claim(self.id, kinds=self.kinds, lease_s=self.lease_s, engine=self.engine)
+        job = claim(
+            self.id,
+            kinds=self.kinds,
+            lease_s=self.lease_s,
+            max_running=self.max_running,
+            engine=self.engine,
+        )
         if job is None:
             return False
         self.process(job)

@@ -73,6 +73,9 @@ class Settings(BaseSettings):
     # A fastembed model, or hash-<dim> for the deterministic test embedder (no download).
     embedding_model: str = "jinaai/jina-embeddings-v2-base-code"
     embedding_threads: int | None = None  # CPU threads for embedding; fastembed's default if unset
+    # Where the embedding model's files live (default: data_dir/models). The production images
+    # set it to the directory the model was downloaded into when the image was built.
+    model_cache_dir: Path | None = None
 
     # LLM (decision 0010): roles map to models; prices in dollars per million tokens.
     llm_small_model: str = "claude-haiku-5-5"
@@ -84,6 +87,10 @@ class Settings(BaseSettings):
     llm_retry_base_s: float = 1.0  # backoff doubles from here
     llm_retry_max_s: float = 30.0
     llm_prices: dict[str, ModelPrice] = Field(default_factory=lambda: dict(DEFAULT_PRICES))
+    # "offline" answers without calling a model (stack checks only; decision 0020).
+    llm_transport: Literal["anthropic", "offline"] = "anthropic"
+    # Dollars all LLM calls may cost per UTC day (repoatlas.limits.SpendGuard); unset: no cap.
+    daily_spend_cap_usd: float | None = Field(default=5.0, ge=0)
 
     # Answers (decision 0011). The score threshold was checked on the smoke run (see policy.py).
     refusal_min_retrieval_score: float = 0.02
@@ -99,6 +106,11 @@ class Settings(BaseSettings):
     builds_per_hour: int = 5  # build requests per client
     asks_per_hour: int = 20  # questions per client (each one calls the LLM)
     reads_per_minute: int = 120  # other API requests per client
+    builds_per_day: int = Field(default=3, ge=0)  # per client and UTC day; 0: no daily cap
+    asks_per_day: int = Field(default=20, ge=0)  # per client and UTC day; 0: no daily cap
+    # Private access gate (DEP-6): when set, every API request must carry it.
+    access_token: SecretStr | None = None
+    trust_proxy_headers: bool = False  # take the client address from X-Forwarded-For
     rate_limit_salt: SecretStr | None = None  # hashes client addresses; random per process if unset
 
     # Background jobs and the worker
@@ -108,6 +120,7 @@ class Settings(BaseSettings):
     job_retry_backoff_s: tuple[float, ...] = (10.0, 60.0, 300.0)  # wait after attempt 1, 2, 3+
     job_timeout_s: float = 3600.0  # one attempt may run at most this long
     worker_poll_s: float = 2.0  # how often an idle worker looks for due jobs
+    job_max_running: int = Field(default=2, ge=0)  # jobs running at once, all workers; 0: no cap
 
     @property
     def cors_origins(self) -> list[str]:

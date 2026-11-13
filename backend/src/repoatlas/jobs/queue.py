@@ -32,6 +32,7 @@ DEFAULT_LEASE_S = 60.0
 DEFAULT_MAX_ATTEMPTS = 3
 DEFAULT_BACKOFF_S: tuple[float, ...] = (10.0, 60.0, 300.0)  # before the 2nd, 3rd, later attempts
 MAX_ERROR_CHARS = 2_000
+CLAIM_LOCK = 0x7265706F61746C  # advisory lock key for capped claims ("repoatl" in ASCII)
 _FENCE = "id = :id AND status = 'running' AND worker_id = :worker AND attempts = :attempt"
 
 
@@ -156,11 +157,19 @@ def claim(
     *,
     kinds: Sequence[str] | None = None,
     lease_s: float = DEFAULT_LEASE_S,
+    max_running: int | None = None,
     engine: Engine | None = None,
 ) -> Job | None:
-    """Start the next attempt of the oldest due job (of ``kinds``), or return ``None``."""
+    """Start the next attempt of the oldest due job (of ``kinds``), or return ``None``.
+
+    With ``max_running``, nothing is claimed while that many jobs (of ``kinds``) are running,
+    whichever workers run them (DEP-5). Claims that share a cap take turns (a transaction-level
+    advisory lock), so two workers can't both take the last free place.
+    """
     if kinds is not None and not kinds:
         return None
+    if max_running is not None and max_running < 1:
+        raise ValueError("max_running must be at least 1 (or None for no cap).")
     kind_filter = "AND kind = ANY(:kinds)" if kinds is not None else ""
     statement = text(
         "WITH next AS (SELECT id FROM jobs WHERE status = 'queued' AND run_after <= now() "
@@ -175,6 +184,13 @@ def claim(
     if kinds is not None:
         params["kinds"] = list(kinds)
     with (engine or get_engine()).begin() as connection:
+        if max_running is not None:
+            connection.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": CLAIM_LOCK})
+            running = connection.execute(
+                text(f"SELECT count(*) FROM jobs WHERE status = 'running' {kind_filter}"), params
+            ).scalar_one()
+            if running >= max_running:
+                return None
         row = connection.execute(statement, params).first()
     return None if row is None else _job(row)
 

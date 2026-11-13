@@ -167,3 +167,114 @@ async def test_limits_can_be_turned_off() -> None:
     finally:
         app.state.engine.dispose()
     assert statuses == {200} and app.state.rate_limiter is None
+
+
+class Wall:
+    """A wall clock: seconds since the epoch."""
+
+    def __init__(self, now: float) -> None:
+        self.now = now
+
+    def __call__(self) -> float:
+        return self.now
+
+
+DAY = 86_400.0
+MORNING = 20_000 * DAY + 6 * 3600  # 06:00 UTC on some day
+
+
+def test_a_daily_cap_counts_per_client_and_starts_again_at_midnight_utc() -> None:
+    clock, wall = Clock(), Wall(MORNING)
+    limiter = RateLimiter(
+        {"ask": Limit(100, 3600.0), "read": Limit(100, 60.0)},
+        salt=b"s",
+        clock=clock,
+        daily={"ask": 3},
+        wall=wall,
+    )
+    alice, bob = limiter.client_key("10.0.0.1"), limiter.client_key("10.0.0.2")
+    assert [limiter.check("ask", alice) for _ in range(3)] == [0.0, 0.0, 0.0]
+    wait, limit = limiter.decide("ask", alice)
+    assert wait == pytest.approx(18 * 3600) and limit == Limit(3, DAY)  # until midnight
+    assert limiter.check("ask", bob) == 0.0  # per client
+    assert all(limiter.check("read", alice) == 0.0 for _ in range(10))  # no daily cap on reads
+    wall.now += 18 * 3600 - 1
+    assert limiter.check("ask", alice) == pytest.approx(1.0)
+    wall.now += 1
+    assert limiter.check("ask", alice) == 0.0
+
+
+def test_a_request_the_bucket_refuses_does_not_count_against_the_day() -> None:
+    clock, wall = Clock(), Wall(MORNING)
+    limiter = RateLimiter(
+        {"build": Limit(1, 3600.0)}, salt=b"s", clock=clock, daily={"build": 2}, wall=wall
+    )
+    client = limiter.client_key("10.0.0.1")
+    assert limiter.check("build", client) == 0.0
+    wait, limit = limiter.decide("build", client)
+    assert wait == pytest.approx(3600.0) and limit == Limit(1, 3600.0)  # the hourly bucket
+    clock.now += 3600
+    assert limiter.check("build", client) == 0.0  # the second of the day
+    clock.now += 3600
+    assert limiter.decide("build", client)[1] == Limit(2, DAY)
+    clock.now += 3600  # the refused request above took no token either
+    wall.now += DAY
+    assert limiter.check("build", client) == 0.0
+
+
+def test_zero_turns_a_daily_cap_off() -> None:
+    limiter = RateLimiter({"ask": Limit(50, 3600.0)}, daily={"ask": 0, "build": 0})
+    assert limiter.daily == {}
+    assert all(limiter.check("ask", "c") == 0.0 for _ in range(50))
+
+
+def test_settings_carry_the_daily_caps() -> None:
+    limiter = RateLimiter.from_settings(api_settings())
+    assert limiter.daily == {"build": 3, "ask": 20}
+    assert RateLimiter.from_settings(api_settings(builds_per_day=0, asks_per_day=7)).daily == {
+        "ask": 7
+    }
+
+
+@pytest.mark.anyio
+async def test_the_daily_cap_answers_429_until_midnight() -> None:
+    settings = api_settings(rate_limit_enabled=True, builds_per_hour=50, builds_per_day=2)
+    app = create_app(settings)
+    try:
+        async with client_for(app) as client:
+            for _ in range(2):  # the body is invalid, but the request still counts
+                assert (await client.post(f"{API_PREFIX}/repos", json={})).status_code == 422
+            refused = await client.post(f"{API_PREFIX}/repos", json={})
+        async with client_for(app, address="198.51.100.7") as other:
+            assert (await other.post(f"{API_PREFIX}/repos", json={})).status_code == 422
+    finally:
+        app.state.engine.dispose()
+    assert refused.status_code == 429
+    error = error_of(refused)
+    assert error["code"] == "rate_limited" and "2 per day" in error["message"]
+    assert error["details"]["period_s"] == DAY and error["details"]["limit"] == 2
+    assert 1 <= int(refused.headers["Retry-After"]) <= DAY
+
+
+@pytest.mark.anyio
+async def test_behind_a_trusted_proxy_the_client_is_the_forwarded_address() -> None:
+    def build(trust: bool) -> FastAPI:
+        return create_app(
+            api_settings(rate_limit_enabled=True, reads_per_minute=1, trust_proxy_headers=trust)
+        )
+
+    async def statuses(app: FastAPI) -> list[int]:
+        found = []
+        try:
+            async with client_for(app) as client:  # every request comes from the proxy
+                for caller in ("203.0.113.1", "203.0.113.2", "203.0.113.2"):
+                    response = await client.get(
+                        f"{API_PREFIX}/jobs/1", headers={"X-Forwarded-For": f"10.9.9.9, {caller}"}
+                    )
+                    found.append(response.status_code)
+        finally:
+            app.state.engine.dispose()
+        return found
+
+    assert [code == 429 for code in await statuses(build(True))] == [False, False, True]
+    assert [code == 429 for code in await statuses(build(False))] == [False, True, True]

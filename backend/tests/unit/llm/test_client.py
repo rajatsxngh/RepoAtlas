@@ -14,11 +14,13 @@ from repoatlas.config import Settings
 from repoatlas.llm.cassette import CassetteTransport
 from repoatlas.llm.client import LLMClient, LLMNotConfigured
 from repoatlas.llm.fake import FakeLLM, refusal
+from repoatlas.llm.offline import OfflineTransport
 from repoatlas.llm.pricing import DEFAULT_PRICES, ModelPrice, PriceTable, UnknownModelPrice, cost
 from repoatlas.llm.transport import LiteLLMTransport, error_response
 from repoatlas.llm.types import (
     LLMRequestError,
     OutputValidationError,
+    SpendCapReached,
     TransientLLMError,
     Usage,
 )
@@ -288,3 +290,47 @@ async def test_fake_llm_scripts_and_records() -> None:
     assert [call.role for call in fake.calls] == ["large", "small", "large", "large"]
     with pytest.raises(AssertionError, match="no scripted result"):
         await fake.complete("large", USER, max_tokens=5)
+
+
+class Guard:
+    """A spending guard that lets ``allowed`` calls through."""
+
+    def __init__(self, allowed: int) -> None:
+        self.allowed = allowed
+        self.recorded: list[float] = []
+
+    def check(self) -> None:
+        if len(self.recorded) >= self.allowed:
+            raise SpendCapReached(1.0, 1.0)
+
+    def record(self, cost_usd: float) -> None:
+        self.recorded.append(cost_usd)
+
+
+async def test_the_spend_guard_is_asked_before_every_request_and_hears_the_cost() -> None:
+    transport = Scripted(message("one"), message("two"))
+    guard = Guard(allowed=1)
+    llm, _ = client(transport, guard=guard)
+    result = await llm.complete("small", USER, max_tokens=64)
+    assert guard.recorded == [result.cost_usd] and result.cost_usd > 0
+    with pytest.raises(SpendCapReached, match="daily cap"):
+        await llm.complete("small", USER, max_tokens=64)
+    assert len(transport.requests) == 1  # the second call was never sent
+
+
+async def test_the_spend_guard_also_stops_a_repair_call() -> None:
+    transport = Scripted(message("not json"), message('{"capital": "Paris"}'))
+    llm, _ = client(transport, guard=Guard(allowed=1))
+    with pytest.raises(SpendCapReached):
+        await llm.complete("small", USER, schema=Capital, max_tokens=64)
+    assert len(transport.requests) == 1
+
+
+def test_the_offline_transport_needs_no_key_and_refuses_one() -> None:
+    offline = Settings(_env_file=None, llm_transport="offline")
+    assert isinstance(LLMClient.from_settings(offline).transport, OfflineTransport)
+    both = Settings(_env_file=None, llm_transport="offline", anthropic_api_key=SecretStr("k"))
+    with pytest.raises(LLMNotConfigured, match="offline"):
+        LLMClient.from_settings(both)
+    guard = Guard(allowed=0)
+    assert LLMClient.from_settings(offline, guard=guard).guard is guard

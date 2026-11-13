@@ -62,7 +62,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     limits = (
         []
         if limiter is None
-        else [Middleware(RateLimitMiddleware, limiter=limiter, prefix=API_PREFIX)]
+        else [
+            Middleware(
+                RateLimitMiddleware,
+                limiter=limiter,
+                prefix=API_PREFIX,
+                trust_proxy=settings.trust_proxy_headers,
+            )
+        ]
     )
 
     @asynccontextmanager

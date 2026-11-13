@@ -88,6 +88,19 @@ class LLMRequestError(LLMError):
         self.status = status
 
 
+class SpendCapReached(LLMError):
+    """The day's LLM spending has reached the deployment's cap; the call was not made
+    (``repoatlas.limits.SpendGuard``)."""
+
+    def __init__(self, spent_usd: float, cap_usd: float) -> None:
+        super().__init__(
+            f"Today's LLM spending (${spent_usd:.2f}) has reached the daily cap "
+            f"(${cap_usd:.2f}); it resets at midnight UTC."
+        )
+        self.spent_usd = spent_usd
+        self.cap_usd = cap_usd
+
+
 class TransientLLMError(LLMError):
     """Rate limits, overload, server errors, timeouts, and connection failures: retryable."""
 

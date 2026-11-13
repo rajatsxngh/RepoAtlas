@@ -10,6 +10,7 @@ from repoatlas.answers.policy import RefusalPolicy
 from repoatlas.answers.prompting import SYSTEM_PROMPT
 from repoatlas.answers.schema import AnswerDraft, Budget, Claim
 from repoatlas.answers.system import (
+    DAILY_CAP_TEXT,
     NO_EVIDENCE_TEXT,
     UNVERIFIED_TEXT,
     OneShotAnswerSystem,
@@ -18,6 +19,7 @@ from repoatlas.answers.system import (
 from repoatlas.answers.validate import CitationValidator
 from repoatlas.llm.fake import FakeLLM, refusal
 from repoatlas.llm.pricing import DEFAULT_PRICES, PriceTable
+from repoatlas.llm.types import SpendCapReached
 from repoatlas.retrieval.retriever import EvidenceItem, RetrievalDebug, RetrievalResult
 from repoatlas.tracing.core import Trace
 from tests.unit.answers.helpers import EVIDENCE, FakeBlobs
@@ -148,6 +150,18 @@ async def test_a_call_over_budget_is_not_made() -> None:
     result = await system(llm).answer(1, QUESTION, Budget(max_cost_usd=0.001))
     assert (result.refused, result.refusal_kind) == (True, "budget")
     assert llm.calls == []
+
+
+async def test_a_call_the_daily_spend_cap_stops_is_a_budget_refusal() -> None:
+    sink = Sink()
+    result = await system(FakeLLM([SpendCapReached(5.0, 5.0)]), sink=sink).answer(
+        1, QUESTION, Budget()
+    )
+    assert result.refused and result.refusal_kind == "budget"
+    assert result.answer_markdown == DAILY_CAP_TEXT
+    assert result.refusal_reason is not None and "$5.00" in result.refusal_reason
+    assert result.cost_usd == 0 and result.claims == []
+    assert sink.traces[0].status == "ok"  # a refusal, not an error
 
 
 async def test_a_model_refusal_is_an_api_refusal() -> None:

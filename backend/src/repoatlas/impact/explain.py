@@ -23,13 +23,14 @@ from repoatlas.answers.schema import (
     Budget,
     number_evidence,
 )
+from repoatlas.answers.system import DAILY_CAP_TEXT, daily_cap_decision
 from repoatlas.answers.validate import BlobSource, CitationValidator
 from repoatlas.graph.model import Node
 from repoatlas.impact.data import ImpactData
 from repoatlas.impact.schema import GROUPS, ImpactItem, ImpactReport
 from repoatlas.llm.client import LLM
 from repoatlas.llm.pricing import PriceTable
-from repoatlas.llm.types import LLMResult, Usage
+from repoatlas.llm.types import LLMResult, SpendCapReached, Usage
 from repoatlas.retrieval.evidence import EvidenceRef
 from repoatlas.retrieval.retriever import EvidenceItem
 from repoatlas.store.blobs import split_lines
@@ -144,9 +145,12 @@ class ImpactExplainer:
         if decision.refuse:
             return _refused(decision, BUDGET_TEXT, metrics)
 
-        llm = await self.llm.complete(
-            "large", messages, schema=AnswerDraft, max_tokens=budget.max_output_tokens
-        )
+        try:
+            llm = await self.llm.complete(
+                "large", messages, schema=AnswerDraft, max_tokens=budget.max_output_tokens
+            )
+        except SpendCapReached as exc:
+            return _refused(daily_cap_decision(exc), DAILY_CAP_TEXT, metrics)
         decision = self.policy.api_check(llm)
         if decision.refuse:
             return _refused(decision, API_REFUSAL_TEXT, metrics, llm=llm)

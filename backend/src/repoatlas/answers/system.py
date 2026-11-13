@@ -6,7 +6,8 @@
    is an ``evidence`` refusal with no LLM call;
 2. **answering** — the evidence is numbered ``E1``…``En`` and the ``large`` model fills an
    ``AnswerDraft`` (structured output). A call whose worst-case cost (the call and its one
-   repair attempt) could exceed the budget is a ``budget`` refusal; a refusal stop reason is an
+   repair attempt) could exceed the budget is a ``budget`` refusal, and so is a call the
+   deployment's daily spend cap stops (``SpendCapReached``); a refusal stop reason is an
    ``api`` refusal;
 3. **validating** — citations are checked against the stored blobs; claims without a valid
    citation are dropped, and an answer with none left (or that the model itself declined for
@@ -35,7 +36,7 @@ from repoatlas.answers.schema import (
 from repoatlas.answers.validate import CitationValidator
 from repoatlas.llm.client import LLM
 from repoatlas.llm.pricing import PriceTable
-from repoatlas.llm.types import LLMResult, Usage
+from repoatlas.llm.types import LLMResult, SpendCapReached, Usage
 from repoatlas.retrieval.retriever import Mode, RetrievalResult
 from repoatlas.tracing import TraceSink, start_trace, trace_span
 
@@ -50,6 +51,10 @@ UNVERIFIED_TEXT = (
 )
 API_REFUSAL_TEXT = "The model declined to answer this question."
 BUDGET_TEXT = "Answering this question could exceed the answer's cost budget."
+DAILY_CAP_TEXT = (
+    "This server has reached its daily limit for answers. Questions can be asked again "
+    "after midnight UTC."
+)
 
 
 class EvidenceRetriever(Protocol):
@@ -154,9 +159,12 @@ class OneShotAnswerSystem:
             return _refused(decision, BUDGET_TEXT, metrics)
 
         await status("answering")
-        llm = await self.llm.complete(
-            "large", messages, schema=AnswerDraft, max_tokens=budget.max_output_tokens
-        )
+        try:
+            llm = await self.llm.complete(
+                "large", messages, schema=AnswerDraft, max_tokens=budget.max_output_tokens
+            )
+        except SpendCapReached as exc:
+            return _refused(daily_cap_decision(exc), DAILY_CAP_TEXT, metrics)
         decision = self.policy.api_check(llm)
         if decision.refuse:
             return _refused(decision, API_REFUSAL_TEXT, metrics, llm=llm)
@@ -193,6 +201,11 @@ class OneShotAnswerSystem:
             metrics=metrics,
             draft=draft,
         )
+
+
+def daily_cap_decision(exc: SpendCapReached) -> RefusalDecision:
+    """The ``budget`` refusal for a call the daily spend cap stopped."""
+    return RefusalDecision(refuse=True, kind="budget", reason=str(exc))
 
 
 def _refused(

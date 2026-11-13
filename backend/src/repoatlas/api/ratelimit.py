@@ -7,8 +7,15 @@ buckets: by default 5 builds and 20 questions per hour, and 120 reads per minute
 holds up to its limit and refills continuously; when it is empty the request
 gets 429 ``rate_limited`` with ``Retry-After``, the seconds until a token is back.
 
-Behind a reverse proxy, run uvicorn with ``--proxy-headers`` and ``--forwarded-allow-ips`` so
-the client address is the caller's, not the proxy's.
+Builds and questions also have a cap per client and UTC day (DEP-5; 3 builds and 20 questions
+by default): a plain count that starts again at midnight UTC. Over it, the request gets the
+same 429, with ``Retry-After`` the seconds until midnight. A request refused by either limit
+uses up neither.
+
+Behind a reverse proxy the client address is the proxy's. Either run uvicorn with
+``--proxy-headers`` and ``--forwarded-allow-ips``, or set ``trust_proxy_headers``: the client
+is then the last address in ``X-Forwarded-For``, the one the nearest proxy saw. Set it only
+when the API is reachable through that proxy alone, since a direct caller could forge the header.
 """
 
 from __future__ import annotations
@@ -23,6 +30,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Literal
 
+from starlette.datastructures import Headers
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from repoatlas.api.errors import ErrorCode, error_response
@@ -30,6 +38,7 @@ from repoatlas.config import Settings
 
 Group = Literal["build", "ask", "read"]
 MAX_CLIENTS = 10_000  # buckets kept per group; the least recently seen are dropped first
+DAY_S = 86_400.0
 
 
 @dataclass(frozen=True)
@@ -74,8 +83,14 @@ class RateLimiter:
         salt: bytes | None = None,
         clock: Callable[[], float] = time.monotonic,
         max_clients: int = MAX_CLIENTS,
+        daily: Mapping[Group, int] | None = None,
+        wall: Callable[[], float] = time.time,
     ) -> None:
         self.limits = dict(limits)
+        self.daily = {group: cap for group, cap in (daily or {}).items() if cap > 0}
+        self._wall = wall
+        self._day = -1  # days since the epoch (UTC) that ``_counts`` belongs to
+        self._counts: OrderedDict[tuple[Group, str], int] = OrderedDict()
         self._salt = salt if salt is not None else secrets.token_bytes(16)
         self._clock = clock
         self._max = max(1, max_clients) * max(1, len(self.limits))
@@ -92,6 +107,7 @@ class RateLimiter:
                 "read": Limit(settings.reads_per_minute, 60.0),
             },
             salt=salt.get_secret_value().encode("utf-8") if salt is not None else None,
+            daily={"build": settings.builds_per_day, "ask": settings.asks_per_day},
         )
 
     def client_key(self, address: str) -> str:
@@ -100,19 +116,43 @@ class RateLimiter:
 
     def check(self, group: Group, client: str) -> float:
         """Spend one request of ``client`` in ``group``: 0 when allowed, else seconds to wait."""
+        return self.decide(group, client)[0]
+
+    def decide(self, group: Group, client: str) -> tuple[float, Limit]:
+        """Like ``check``, with the limit that applied: the daily cap when it refused the
+        request, else the group's bucket."""
         limit = self.limits[group]
+        key = (group, client)
         with self._lock:
-            now = self._clock()
-            key = (group, client)
-            bucket = self._buckets.get(key)
-            if bucket is None:
-                bucket = TokenBucket(limit.requests, limit.rate, float(limit.requests), now)
-                self._buckets[key] = bucket
-                while len(self._buckets) > self._max:
-                    self._buckets.popitem(last=False)
-            else:
-                self._buckets.move_to_end(key)
-            return bucket.take(now)
+            cap = self.daily.get(group)
+            if cap is not None:
+                wall = self._wall()
+                day = int(wall // DAY_S)
+                if day != self._day:
+                    self._day = day
+                    self._counts.clear()
+                if self._counts.get(key, 0) >= cap:
+                    return (day + 1) * DAY_S - wall, Limit(cap, DAY_S)
+            wait = self._take(key, limit)
+            if wait <= 0 and cap is not None:
+                self._counts[key] = self._counts.get(key, 0) + 1
+                self._counts.move_to_end(key)
+                while len(self._counts) > self._max:
+                    self._counts.popitem(last=False)
+            return wait, limit
+
+    def _take(self, key: tuple[Group, str], limit: Limit) -> float:
+        """Take a token from the key's bucket (the caller holds the lock)."""
+        now = self._clock()
+        bucket = self._buckets.get(key)
+        if bucket is None:
+            bucket = TokenBucket(limit.requests, limit.rate, float(limit.requests), now)
+            self._buckets[key] = bucket
+            while len(self._buckets) > self._max:
+                self._buckets.popitem(last=False)
+        else:
+            self._buckets.move_to_end(key)
+        return bucket.take(now)
 
     def __len__(self) -> int:
         return len(self._buckets)
@@ -121,10 +161,13 @@ class RateLimiter:
 class RateLimitMiddleware:
     """Answer 429 with ``Retry-After`` once a client has used up its requests of a group."""
 
-    def __init__(self, app: ASGIApp, *, limiter: RateLimiter, prefix: str) -> None:
+    def __init__(
+        self, app: ASGIApp, *, limiter: RateLimiter, prefix: str, trust_proxy: bool = False
+    ) -> None:
         self.app = app
         self.limiter = limiter
         self.prefix = prefix
+        self.trust_proxy = trust_proxy
         self._exempt = {f"{prefix}/{name}" for name in ("health", "ready", "openapi.json")}
 
     def group(self, method: str, path: str) -> Group | None:
@@ -139,6 +182,16 @@ class RateLimitMiddleware:
             return "ask"
         return "read"
 
+    def address(self, scope: Scope) -> str:
+        """The client's address: the connection's, or behind a trusted proxy the last entry of
+        ``X-Forwarded-For`` (what that proxy saw; earlier entries are the caller's to forge)."""
+        if self.trust_proxy:
+            forwarded = Headers(scope=scope).get("x-forwarded-for", "").split(",")[-1].strip()
+            if forwarded:
+                return forwarded[:64]
+        client = scope.get("client")
+        return str(client[0]) if client else "unknown"
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
@@ -147,14 +200,11 @@ class RateLimitMiddleware:
         if group is None:
             await self.app(scope, receive, send)
             return
-        client = scope.get("client")
-        address = str(client[0]) if client else "unknown"
-        wait = self.limiter.check(group, self.limiter.client_key(address))
+        wait, limit = self.limiter.decide(group, self.limiter.client_key(self.address(scope)))
         if wait <= 0:
             await self.app(scope, receive, send)
             return
         retry_after = max(1, math.ceil(wait))
-        limit = self.limiter.limits[group]
         noun = "build requests" if group == "build" else "requests"
         response = error_response(
             429,
