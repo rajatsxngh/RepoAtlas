@@ -1,0 +1,31 @@
+# Build contexts are the repository root (see infra/docker/). Keep them small and free of
+# secrets: nothing below is needed to build an image.
+.git
+.github
+.claude
+.env
+.env.*
+.tmp
+.repoatlas
+.playwright-mcp
+**/__pycache__
+**/*.pyc
+**/.venv
+**/.mypy_cache
+**/.ruff_cache
+**/.pytest_cache
+**/node_modules
+**/.next
+**/.next-*
+**/test-results
+**/playwright-report
+**/*.tsbuildinfo
+backend/tests
+backend/.repoatlas
+backend/.repoatlas-test
+frontend/e2e
+docs
+eval
+sandbox
+scripts
+infra

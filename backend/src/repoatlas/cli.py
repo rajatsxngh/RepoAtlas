@@ -50,6 +50,8 @@ query_app = typer.Typer(
 app.add_typer(query_app, name="query")
 api_app = typer.Typer(help="The HTTP API.", no_args_is_help=True)
 app.add_typer(api_app, name="api")
+models_app = typer.Typer(help="The embedding model.", no_args_is_help=True)
+app.add_typer(models_app, name="models")
 app.add_typer(sandbox_app, name="sandbox")
 app.add_typer(bench_app, name="bench")
 app.add_typer(eval_app, name="eval")
@@ -98,6 +100,22 @@ def _connection_failed(database_url: str, error: OperationalError) -> NoReturn:
         typer.echo(f"Reason: {lines[0]}", err=True)
     typer.echo(f"Is it running? {START_DB_HINT}", err=True)
     raise typer.Exit(code=1)
+
+
+@models_app.command("fetch")
+def models_fetch() -> None:
+    """Download the embedding model now, so nothing is downloaded on first use.
+
+    The image builds run this. The model goes to REPOATLAS_MODEL_CACHE_DIR (default: models in
+    the data directory); the hashing stand-in (hash-<dim>) needs no download.
+    """
+    from repoatlas.retrieval.embed import embedder_for
+
+    settings = get_settings()
+    embedder = embedder_for(settings)
+    dim = len(embedder.embed_query("warm up"))
+    where = settings.model_cache_dir or settings.data_dir / "models"
+    typer.echo(f"{embedder.model_name}: {dim} dimensions, ready in {where}")
 
 
 @db_app.command("upgrade")

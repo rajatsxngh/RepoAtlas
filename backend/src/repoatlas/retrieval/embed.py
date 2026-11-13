@@ -218,9 +218,8 @@ def embedder_for(settings: Settings) -> Embedder:
     name = settings.embedding_model
     if name.startswith(HASH_PREFIX):
         return HashEmbedder(int(name.removeprefix(HASH_PREFIX)))
-    return FastEmbedEmbedder(
-        name, cache_dir=settings.data_dir / "models", threads=settings.embedding_threads
-    )
+    cache_dir = settings.model_cache_dir or settings.data_dir / "models"
+    return FastEmbedEmbedder(name, cache_dir=cache_dir, threads=settings.embedding_threads)
 
 
 # --- the embeddings cache -----------------------------------------------------------------

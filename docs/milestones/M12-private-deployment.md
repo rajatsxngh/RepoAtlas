@@ -49,7 +49,7 @@ DEP-1, DEP-2, DEP-3, DEP-4, DEP-5, DEP-6, DEP-7
 
 ## Tasks
 
-- [ ] **T1 — Production images.** API, worker, and web Dockerfiles; local check that they build and start.
+- [x] **T1 — Production images.** API, worker, and web Dockerfiles; local check that they build and start.
 - [ ] **T2 — Self-host compose and guide.** A fresh database migrates; the stack comes up healthy.
 - [ ] **T3 — Provider comparison and deployment reference.** Decision 0020, `docs/deploy.md` (every environment variable per service), `docs/live-pass.md`. Provisioning is a live-pass item.
 - [ ] **T4 — Release workflow.** Image builds and a compose smoke check in CI; push, migration, deploy, and readiness jobs behind `DEPLOY_ENABLED`.
