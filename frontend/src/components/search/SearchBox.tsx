@@ -63,6 +63,15 @@ export function SearchBox({
   const api = useApi();
   const listId = useId();
   const input = useRef<HTMLInputElement>(null);
+  // Closing waits a moment after blur so a click on an option lands first; the timer is
+  // cleared on unmount so it never updates a component (or a test page) that is gone.
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (closeTimer.current !== null) clearTimeout(closeTimer.current);
+    },
+    [],
+  );
   const [text, setText] = useState("");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -151,7 +160,10 @@ export function SearchBox({
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 120)}
+          onBlur={() => {
+            if (closeTimer.current !== null) clearTimeout(closeTimer.current);
+            closeTimer.current = setTimeout(() => setOpen(false), 120);
+          }}
           onKeyDown={onKeyDown}
           className="h-full min-w-0 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-faint [&::-webkit-search-cancel-button]:hidden"
         />
