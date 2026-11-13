@@ -43,6 +43,13 @@ export type RefusalKind = NonNullable<AnswerView["refusal_kind"]>;
 export type QaRunView = Schemas["QaRunView"];
 export type TraceView = Schemas["TraceView"];
 export type SpanView = Schemas["SpanView"];
+export type ImpactRequest = Schemas["ImpactRequest"];
+export type ImpactResponse = Schemas["ImpactResponse"];
+export type ImpactItem = Schemas["ImpactItem"];
+export type ImpactGroup = ImpactItem["group"];
+export type UnknownSite = Schemas["UnknownSite"];
+export type PathStep = Schemas["PathStep"];
+export type ImpactParams = Schemas["ImpactParams"];
 
 /** The steps `POST /snapshots/{id}/ask` reports in its `status` events, in order. */
 export type AskStep = "retrieving" | "answering" | "validating";

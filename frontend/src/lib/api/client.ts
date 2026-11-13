@@ -18,6 +18,8 @@ import type {
   EdgeLinks,
   EdgeLinksQuery,
   GraphPath,
+  ImpactRequest,
+  ImpactResponse,
   JobView,
   LocateBody,
   LocateQuery,
@@ -246,6 +248,18 @@ export class ApiClient {
 
   readCode(snapshotId: number, query: CodeQuery, signal?: AbortSignal): Promise<CodeSlice> {
     return this.request("GET", this.snapshotPath(snapshotId, "/code"), { query, signal });
+  }
+
+  /** What breaks if a symbol (or the code a diff touches) changes. Not retried on 429. */
+  analyzeImpact(
+    snapshotId: number,
+    request: ImpactRequest,
+    signal?: AbortSignal,
+  ): Promise<ImpactResponse> {
+    return this.request("POST", this.snapshotPath(snapshotId, "/impact"), {
+      body: request,
+      signal,
+    });
   }
 
   /**

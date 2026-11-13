@@ -23,6 +23,7 @@ import {
   type MockFixture,
 } from "./fixtures";
 import { mockAnswer, sseBody } from "./ask";
+import { mockImpact } from "./impact";
 import { MockApiError, MockGraph } from "./graph";
 
 export interface MockResponse {
@@ -391,6 +392,24 @@ export class MockBackend {
     };
   }
 
+  private impactRuns = 0;
+
+  /** `POST /snapshots/{id}/impact` with a symbol key (diffs need the API's text search). */
+  private async impact(snapshotId: number, body: unknown): Promise<MockResponse> {
+    const graph = await this.ready(snapshotId);
+    const request = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
+    const key = typeof request.symbol_key === "string" ? request.symbol_key : "";
+    if (!key || "diff" in request) {
+      throw new MockApiError(
+        422,
+        "invalid_request",
+        "Mock mode analyzes a symbol_key only (diffs need the API).",
+      );
+    }
+    this.impactRuns += 1;
+    return { status: 200, body: mockImpact(graph, key, this.impactRuns) };
+  }
+
   /** Answers one request (method, URL under `/api/v1`, parsed JSON body). */
   async handle(method: string, url: URL, body: unknown): Promise<MockResponse> {
     try {
@@ -424,6 +443,8 @@ export class MockBackend {
     if (method === "POST" && path === "/repos") return { status: 202, body: this.buildRepo(body) };
     const ask = /^\/snapshots\/(\d+)\/ask$/.exec(path);
     if (method === "POST" && ask) return this.ask(Number(ask[1]), body);
+    const impact = /^\/snapshots\/(\d+)\/impact$/.exec(path);
+    if (method === "POST" && impact) return this.impact(Number(impact[1]), body);
     if (method !== "GET") throw new MockApiError(405, "invalid_request", "Method Not Allowed");
     if (path === "/health") return { status: 200, body: { status: "ok", version: "mock" } };
     if (path === "/ready") {

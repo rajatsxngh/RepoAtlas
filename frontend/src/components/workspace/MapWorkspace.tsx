@@ -10,6 +10,7 @@ import {
   type SelectedEdge,
 } from "@/components/graph/GraphCanvas";
 import type { NodeAction } from "@/components/graph/layers";
+import { ImpactPanel, impactLayers } from "@/components/impact/ImpactPanel";
 import { EdgePanel } from "@/components/panel/EdgePanel";
 import { NodePanel } from "@/components/panel/NodePanel";
 import { OverviewPanel } from "@/components/panel/OverviewPanel";
@@ -23,6 +24,7 @@ import {
   type ApiNode,
   type Citation,
   type GraphPath,
+  type ImpactResponse,
   type SnapshotView,
 } from "@/lib/api/types";
 import { queryKeys } from "@/lib/query";
@@ -38,6 +40,7 @@ export const WORKSPACE_ACTIONS: NodeAction[] = [
   { id: "focus", label: "Center on the map", appliesTo: [...NODE_KINDS] },
   { id: "path-from", label: "Find a path from here", appliesTo: PATH_KINDS },
   { id: "path-to", label: "Find a path to here", appliesTo: PATH_KINDS },
+  { id: "what_breaks", label: "What breaks?", appliesTo: ["function", "method", "class"] },
 ];
 
 /** The map page: header with the repository and search, the map, and the selected node. */
@@ -63,9 +66,15 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
   const [path, setPath] = useState<GraphPath | null>(null);
   const [askOpen, setAskOpen] = useState(false);
   const [citation, setCitation] = useState<Citation | null>(null);
+  const [impactKey, setImpactKey] = useState<string | null>(null);
+  const [impact, setImpact] = useState<ImpactResponse | null>(null);
   const layers = useMemo(
-    () => [...(path ? [pathLayer(path)] : []), ...(citation ? [citationLayer(citation)] : [])],
-    [path, citation],
+    () => [
+      ...(path ? [pathLayer(path)] : []),
+      ...(citation ? [citationLayer(citation)] : []),
+      ...(impact && impactKey ? impactLayers(impact) : []),
+    ],
+    [path, citation, impact, impactKey],
   );
 
   useEffect(() => {
@@ -98,14 +107,30 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
   const onAction = useCallback(
     (key: string, actionId: string) => {
       if (actionId === "focus") void show(key);
+      if (actionId === "what_breaks") {
+        setImpact(null);
+        setImpactKey(key);
+        setAskOpen(false);
+        setCitation(null);
+        setSelected(null);
+        setEdge(null);
+      }
       if (actionId === "path-from" || actionId === "path-to") {
         setPathOpen(true);
         setPath(null);
         void nodeOf(key).then((node) => (actionId === "path-from" ? setFrom(node) : setTo(node)));
       }
     },
-    [nodeOf, show],
+    [nodeOf, show, setSelected],
   );
+
+  const onImpactReport = useCallback(async (report: ImpactResponse | null) => {
+    setImpact(report);
+    if (!report) return;
+    const keys = [...report.targets, ...report.items.slice(0, 20).map((item) => item.symbol_key)];
+    await canvas.current?.revealNodes(keys);
+    canvas.current?.fitView(keys);
+  }, []);
 
   const onFound = useCallback(async (found: GraphPath) => {
     setPath(found);
@@ -158,6 +183,8 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
             onClick={() => {
               setSelected(null);
               setEdge(null);
+              setImpactKey(null);
+              setImpact(null);
               setAskOpen(true);
             }}
             icon={<MessageSquareText className="h-4 w-4" aria-hidden="true" />}
@@ -209,6 +236,22 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
             </div>
           ) : null}
         </main>
+        {impactKey ? (
+          // Stays mounted while a node or edge panel is shown, so the report isn't lost.
+          <div className={`w-[min(440px,42vw)] shrink-0 ${selected || edge ? "hidden" : ""}`}>
+            <ImpactPanel
+              key={impactKey}
+              snapshotId={snapshot.id}
+              symbolKey={impactKey}
+              onReport={(report) => void onImpactReport(report)}
+              onOpen={(key) => void show(key)}
+              onClose={() => {
+                setImpactKey(null);
+                setImpact(null);
+              }}
+            />
+          </div>
+        ) : null}
         {askOpen ? (
           // Stays mounted while a node or edge panel is shown, so the answer isn't lost.
           <div className={`w-[min(440px,42vw)] shrink-0 ${selected || edge ? "hidden" : ""}`}>
@@ -244,7 +287,7 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
               onClose={() => setEdge(null)}
             />
           </div>
-        ) : overviewOpen && !askOpen ? (
+        ) : overviewOpen && !askOpen && !impactKey ? (
           <div className="w-[min(380px,36vw)] shrink-0">
             <OverviewPanel
               snapshotId={snapshot.id}

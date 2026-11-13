@@ -72,7 +72,7 @@ IMP-1, IMP-2, IMP-3, IMP-4, IMP-5, IMP-6, IMP-7, IMP-8, IMP-9
 - [x] **T3 — Unknown bucket.** Unresolved-call matching and string-literal references; tests.
 - [x] **T4 — Diff targets.** Unified-diff parsing and symbol mapping; tests with edits, additions, deletions.
 - [x] **T5 — Report and API.** `ImpactReport` schema, `impact_runs` migration, endpoint, OpenAPI and TypeScript types.
-- [ ] **T6 — UI.** "What breaks?" action, `ImpactPanel`, scored highlight layer, evidence navigation; Playwright test.
+- [x] **T6 — UI.** "What breaks?" action, `ImpactPanel`, scored highlight layer, evidence navigation; Playwright test.
 - [ ] **T7 — Explanation.** `explain_impact` with validated citations; tests with `FakeLLM`.
 - [ ] **T8 — Registration.** Adapter to `ImpactPrediction`; registered `impact_engine`.
 - [ ] **T9 — Tuning on dev.** Parameter sweep; decision record with chosen values.

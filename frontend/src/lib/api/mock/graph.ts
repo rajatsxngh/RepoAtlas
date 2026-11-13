@@ -142,6 +142,16 @@ export class MockGraph {
     return found;
   }
 
+  /** Edges arriving at ``key`` (canonical order). */
+  edgesInto(key: string): readonly Edge[] {
+    return this.incoming.get(key) ?? [];
+  }
+
+  /** Edges leaving ``key`` (canonical order). */
+  edgesFrom(key: string): readonly Edge[] {
+    return this.outgoing.get(key) ?? [];
+  }
+
   childrenOf(key: string): string[] {
     return this.children.get(key) ?? [];
   }
