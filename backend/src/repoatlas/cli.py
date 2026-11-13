@@ -122,9 +122,21 @@ def models_fetch() -> None:
 def db_upgrade(
     revision: Annotated[str, typer.Argument(help="Target revision.")] = "head",
 ) -> None:
-    """Apply migrations up to REVISION (default: the latest)."""
+    """Apply migrations up to REVISION (default: the latest).
+
+    A database at a revision this version doesn't know was migrated by a newer release (this
+    one is running again after a rollback). Migrations are backward compatible with the
+    previous release, so there is nothing to do, and the command succeeds.
+    """
     database_url = get_settings().database_url
     try:
+        current = migrate.current_revision(database_url)
+        if current is not None and current not in migrate.known_revisions():
+            typer.echo(
+                f"Database is at revision {current}, which this version doesn't know: a newer "
+                "release migrated it. Nothing to do."
+            )
+            return
         migrate.upgrade(database_url, revision)
         current = migrate.current_revision(database_url)
     except OperationalError as error:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from sqlalchemy import Engine, text
+from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.orm import Session
 from typer.testing import CliRunner
 
@@ -62,3 +62,23 @@ def test_cli_reports_the_revision(
         get_settings.cache_clear()
     assert result.exit_code == 0, result.output
     assert "0008_spans_llm_started_at" in result.output
+
+
+def test_upgrade_leaves_a_database_from_a_newer_release_alone(
+    scratch_db_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """After a rollback, the previous release's migration step must not fail (DEP-4)."""
+    migrate.upgrade(scratch_db_url)
+    engine = create_engine(scratch_db_url)
+    with engine.begin() as connection:
+        connection.execute(text("UPDATE alembic_version SET version_num = '9999_from_the_future'"))
+    engine.dispose()
+    monkeypatch.setenv("REPOATLAS_DATABASE_URL", scratch_db_url)
+    get_settings.cache_clear()
+    try:
+        result = CliRunner().invoke(app, ["db", "upgrade"])
+    finally:
+        get_settings.cache_clear()
+    assert result.exit_code == 0, result.output
+    assert "9999_from_the_future" in result.output and "Nothing to do" in result.output
+    assert migrate.current_revision(scratch_db_url) == "9999_from_the_future"
