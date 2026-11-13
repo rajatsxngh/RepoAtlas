@@ -30,7 +30,7 @@ def data() -> MemoryImpactData:
 
 def analyze(key: str, **params: object) -> ImpactReport:
     return ImpactEngine(data()).analyze(
-        1, SymbolTarget(symbol_key=key), ImpactParams(**params) if params else None
+        1, SymbolTarget(symbol_key=key), ImpactParams.model_validate(params) if params else None
     )
 
 

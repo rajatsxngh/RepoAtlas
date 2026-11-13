@@ -20,7 +20,8 @@ from repoatlas.evals.runner import run_eval
 from repoatlas.impact.engine import ImpactEngine
 from repoatlas.impact.schema import ImpactParams, SymbolTarget
 from repoatlas.impact.system import EngineImpactSystem, impact_engine, to_prediction
-from tests.unit.evals.test_runner import ScriptedSystem, make_run
+from tests.unit.evals.helpers import ScriptedSystem
+from tests.unit.evals.test_runner import make_run
 from tests.unit.impact.helpers import MAIN, PARSE, TEST_PARSE, TOKENIZE, project_data
 
 pytestmark = pytest.mark.anyio

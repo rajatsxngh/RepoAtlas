@@ -31,8 +31,8 @@ def synthetic(
     specs: list[tuple[str, str, EdgeKind, float]] = []
     for edge in edges:
         src, dst = edge[0], edge[1]
-        kind = edge[2] if len(edge) >= 3 else CALLS  # type: ignore[misc]
-        conf = edge[3] if len(edge) == 4 else confidence  # type: ignore[misc]
+        kind = edge[2] if len(edge) >= 3 else CALLS
+        conf = edge[3] if len(edge) == 4 else confidence
         specs.append((src, dst, kind, conf))
     parents = parents or {}
     names = sorted(
