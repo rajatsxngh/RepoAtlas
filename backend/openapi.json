@@ -1755,7 +1755,7 @@
           "health"
         ],
         "summary": "Readiness",
-        "description": "The database answers and is migrated to the revision this code expects (503 otherwise).",
+        "description": "The database answers and is migrated to the revision this code expects (503 otherwise).\n\nA database at a revision this code doesn't know is ``ahead``: a newer release migrated it\nand this is the previous release, running again after a rollback. Migrations are backward\ncompatible with the previous release (DEP-4), so that is ready too.",
         "operationId": "ready",
         "responses": {
           "200": {
@@ -3405,6 +3405,7 @@
             "type": "string",
             "enum": [
               "ok",
+              "ahead",
               "unreachable",
               "not_migrated"
             ],
@@ -3442,7 +3443,7 @@
           "expected_revision"
         ],
         "title": "ReadyStatus",
-        "description": "Readiness: the database is reachable and migrated to the revision this code expects."
+        "description": "Readiness: the database is reachable and migrated to the revision this code expects, or\n``ahead`` of it (migrated by a newer release; this one runs again after a rollback)."
       },
       "RepoInfo": {
         "properties": {

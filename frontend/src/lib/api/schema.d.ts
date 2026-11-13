@@ -369,6 +369,10 @@ export interface paths {
         /**
          * Readiness
          * @description The database answers and is migrated to the revision this code expects (503 otherwise).
+         *
+         *     A database at a revision this code doesn't know is ``ahead``: a newer release migrated it
+         *     and this is the previous release, running again after a rollback. Migrations are backward
+         *     compatible with the previous release (DEP-4), so that is ready too.
          */
         get: operations["ready"];
         put?: never;
@@ -1081,7 +1085,8 @@ export interface components {
         };
         /**
          * ReadyStatus
-         * @description Readiness: the database is reachable and migrated to the revision this code expects.
+         * @description Readiness: the database is reachable and migrated to the revision this code expects, or
+         *     ``ahead`` of it (migrated by a newer release; this one runs again after a rollback).
          */
         ReadyStatus: {
             /**
@@ -1093,7 +1098,7 @@ export interface components {
              * Database
              * @enum {string}
              */
-            database: "ok" | "unreachable" | "not_migrated";
+            database: "ok" | "ahead" | "unreachable" | "not_migrated";
             /** Revision */
             revision: string | null;
             /** Expected Revision */

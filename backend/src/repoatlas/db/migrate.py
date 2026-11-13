@@ -52,6 +52,12 @@ def head_revision() -> str | None:
     return ScriptDirectory.from_config(alembic_config()).get_current_head()
 
 
+def known_revisions() -> frozenset[str]:
+    """Every revision shipped with the package."""
+    scripts = ScriptDirectory.from_config(alembic_config())
+    return frozenset(script.revision for script in scripts.walk_revisions())
+
+
 def next_revision_id(head: str | None, message: str) -> str:
     """Return a sequential, readable revision ID such as ``0002_add_repos_table``."""
     number = int(head.split("_", 1)[0]) + 1 if head else 1

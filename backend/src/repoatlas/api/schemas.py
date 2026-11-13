@@ -115,10 +115,11 @@ class HealthStatus(_Schema):
 
 
 class ReadyStatus(_Schema):
-    """Readiness: the database is reachable and migrated to the revision this code expects."""
+    """Readiness: the database is reachable and migrated to the revision this code expects, or
+    ``ahead`` of it (migrated by a newer release; this one runs again after a rollback)."""
 
     status: Literal["ready", "not_ready"]
-    database: Literal["ok", "unreachable", "not_migrated"]
+    database: Literal["ok", "ahead", "unreachable", "not_migrated"]
     revision: str | None
     expected_revision: str | None
 
