@@ -1,0 +1,220 @@
+name: Release
+
+# Build the production images, check them as a running stack, and (only when deployment is
+# switched on) publish and deploy them. See docs/deploy.md and docs/runbook.md.
+#
+# What runs when:
+#   - A push that changes the deployment files (branches main and m*), a version tag (v*), or a
+#     manual run: the "stack" job builds the three images, starts the self-host stack, and runs
+#     the end-to-end check (migrations, the access gate, a build, a question through the
+#     offline stand-in, impact analysis). It needs no secrets and costs nothing.
+#   - A version tag or a manual run, and only if the repository variable DEPLOY_ENABLED is
+#     "true": "publish" pushes the images to GHCR, then "deploy" runs the migrations, deploys
+#     the backend and the web app, and smoke-checks the deployment.
+#
+# DEPLOY_ENABLED is not set: hosting is a live-pass item (decision 0020). Until the owner sets
+# it, nothing is published or deployed, whatever is pushed or tagged.
+#
+# Rolling back: run this workflow by hand with "version" set to the release to go back to. The
+# images are not rebuilt; the deploy job deploys that version. Migrations are backward
+# compatible with the previous release, so no downgrade is needed.
+
+on:
+  push:
+    branches: [main, "m*"]
+    tags: ["v*"]
+    paths:
+      - "infra/**"
+      - "scripts/selfhost_check.py"
+      - ".github/workflows/release.yml"
+      - ".dockerignore"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Deploy this existing version (for example v0.3.0) instead of building. Used to roll back."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  COMPOSE: docker compose -f infra/compose.selfhost.yml --env-file infra/ci.env
+
+jobs:
+  stack:
+    name: Build images and check the stack
+    if: ${{ inputs.version == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Settings for this run (random secrets, the offline stand-in)
+        env:
+          GITHUB_API_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "REPOATLAS_ACCESS_TOKEN=$(openssl rand -hex 24)"
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)"
+            echo "REPOATLAS_LLM_TRANSPORT=offline"
+            echo "REPOATLAS_GITHUB_TOKEN=${GITHUB_API_TOKEN}"
+            echo "REPOATLAS_VERSION=ci"
+          } > infra/ci.env
+      - name: Build the API, worker, and web images
+        run: $COMPOSE build
+      - name: The images run without root
+        run: |
+          for image in api worker web; do
+            user="$(docker image inspect "repoatlas-${image}:ci" --format '{{.Config.User}}')"
+            echo "repoatlas-${image}: user ${user}"
+            case "${user}" in ""|root|0|0:0) echo "::error::repoatlas-${image} runs as root"; exit 1;; esac
+          done
+      - name: Start the stack (migrations run first)
+        run: $COMPOSE up -d --wait --wait-timeout 300
+      - name: Migrations ran before the services started
+        run: |
+          test "$(docker inspect repoatlas-selfhost-migrate-1 --format '{{.State.ExitCode}}')" = "0"
+          $COMPOSE logs migrate
+      - name: End-to-end check (gate, build, question, impact analysis)
+        run: python3 scripts/selfhost_check.py --env-file infra/ci.env --expect-offline --json check.json
+      - name: Logs
+        if: always()
+        run: $COMPOSE logs --no-color --tail 200 api worker web
+      - name: Keep the check's summary
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: selfhost-check
+          path: check.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Stop the stack
+        if: always()
+        run: $COMPOSE down --volumes
+
+  publish:
+    name: Publish images (GHCR)
+    needs: stack
+    if: ${{ vars.DEPLOY_ENABLED == 'true' && (github.ref_type == 'tag' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        image: [api, worker, web]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Image name (lower case) and version
+        id: name
+        run: |
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/repoatlas-${{ matrix.image }}" >> "$GITHUB_OUTPUT"
+          echo "version=${GITHUB_REF_NAME//\//-}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/${{ matrix.image }}.Dockerfile
+          push: true
+          tags: |
+            ${{ steps.name.outputs.image }}:${{ steps.name.outputs.version }}
+            ${{ steps.name.outputs.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  deploy:
+    name: Migrate, deploy, and smoke-check
+    # Runs after "publish", or on its own when a manual run names an existing version.
+    needs: [publish]
+    if: ${{ always() && vars.DEPLOY_ENABLED == 'true' && (needs.publish.result == 'success' || (needs.publish.result == 'skipped' && inputs.version != '')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    env:
+      VERSION: ${{ inputs.version != '' && inputs.version || github.ref_name }}
+      PROVIDER: ${{ vars.DEPLOY_PROVIDER }} # "railway" or "fly"; chosen at the live pass
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Image names
+        id: images
+        run: |
+          prefix="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/repoatlas"
+          echo "api=${prefix}-api:${VERSION//\//-}" >> "$GITHUB_OUTPUT"
+          echo "worker=${prefix}-worker:${VERSION//\//-}" >> "$GITHUB_OUTPUT"
+      - name: Migrate the database (once per release, before the new version starts)
+        env:
+          REPOATLAS_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          docker run --rm -e REPOATLAS_DATABASE_URL "${{ steps.images.outputs.api }}" repoatlas db upgrade
+          docker run --rm -e REPOATLAS_DATABASE_URL "${{ steps.images.outputs.api }}" repoatlas db current
+
+      # The provider steps below follow each provider's documented CLI. They have not been run:
+      # hosting is a live-pass item (docs/live-pass.md). Confirm the commands when provisioning.
+      - name: Deploy the backend (Fly.io)
+        if: ${{ env.PROVIDER == 'fly' }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          curl -fsSL https://fly.io/install.sh | sh
+          export PATH="$HOME/.fly/bin:$PATH"
+          flyctl deploy --app "${{ vars.FLY_API_APP }}" --image "${{ steps.images.outputs.api }}"
+          flyctl deploy --app "${{ vars.FLY_WORKER_APP }}" --image "${{ steps.images.outputs.worker }}"
+      - name: Deploy the backend (Railway)
+        if: ${{ env.PROVIDER == 'railway' }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          npm install --global @railway/cli
+          # Each service is configured (once, in Railway) to run its GHCR image at the tag in the
+          # REPOATLAS_VERSION service variable; setting the variable redeploys the service.
+          for service in "${{ vars.RAILWAY_API_SERVICE }}" "${{ vars.RAILWAY_WORKER_SERVICE }}"; do
+            railway variables --service "${service}" --set "REPOATLAS_VERSION=${VERSION//\//-}"
+          done
+      - name: No backend provider is configured
+        if: ${{ env.PROVIDER != 'fly' && env.PROVIDER != 'railway' }}
+        run: |
+          echo "::error::Set the DEPLOY_PROVIDER repository variable to 'railway' or 'fly' (docs/deploy.md)."
+          exit 1
+
+      - name: Deploy the web app (Vercel)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          git fetch --depth 1 origin "refs/tags/${VERSION}:refs/tags/${VERSION}" || true
+          git checkout "${VERSION}" 2>/dev/null || echo "Deploying the web app from ${GITHUB_SHA}."
+          npx --yes vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
+          npx --yes vercel@latest build --prod --token="${VERCEL_TOKEN}"
+          npx --yes vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
+
+      - name: Smoke check (liveness, the gate, readiness at the new revision)
+        env:
+          REPOATLAS_ACCESS_TOKEN: ${{ secrets.REPOATLAS_ACCESS_TOKEN }}
+        run: |
+          for attempt in $(seq 1 20); do
+            if python3 scripts/selfhost_check.py --base-url "${{ vars.PUBLIC_URL }}" --only gate; then exit 0; fi
+            echo "Not ready yet (attempt ${attempt}); waiting."
+            sleep 15
+          done
+          echo "::error::The deployment did not become ready. Roll back: run this workflow with the previous version."
+          exit 1
