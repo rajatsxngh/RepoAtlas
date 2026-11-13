@@ -657,7 +657,7 @@ export interface components {
          * @description Every ``error.code`` the API returns. Codes are stable: clients may branch on them.
          * @enum {string}
          */
-        ErrorCode: "invalid_request" | "invalid_url" | "repo_private" | "repo_too_large" | "repo_empty" | "not_found" | "rate_limited" | "snapshot_not_ready" | "upstream_unavailable" | "llm_unavailable" | "answer_failed" | "internal";
+        ErrorCode: "invalid_request" | "unauthorized" | "invalid_url" | "repo_private" | "repo_too_large" | "repo_empty" | "not_found" | "rate_limited" | "snapshot_not_ready" | "upstream_unavailable" | "llm_unavailable" | "answer_failed" | "internal";
         /**
          * ErrorResponse
          * @description The body of every error response.

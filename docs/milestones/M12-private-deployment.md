@@ -55,7 +55,7 @@ DEP-1, DEP-2, DEP-3, DEP-4, DEP-5, DEP-6, DEP-7
 - [ ] **T4 — Release workflow.** Image builds and a compose smoke check in CI; push, migration, deploy, and readiness jobs behind `DEPLOY_ENABLED`.
 - [ ] **T5 — Frontend ready for Vercel.** Environment wiring (API origin, same-origin proxy) and the web side of the access gate; tests. Deploying is a live-pass item.
 - [x] **T6 — Spend guard and caps.** Implementation and tests (cap reached → budget refusal; per-client caps → 429; concurrency cap respected).
-- [ ] **T7 — Private access gate.** API middleware; tests (missing or wrong token rejected).
+- [x] **T7 — Private access gate.** API middleware; tests (missing or wrong token rejected).
 - [ ] **T8 — End-to-end check and runbook.** On the local self-host stack: build a repo, ask a question (offline stand-in), run impact analysis, roll back to earlier images; write the runbook.
 
 ## Exit criteria

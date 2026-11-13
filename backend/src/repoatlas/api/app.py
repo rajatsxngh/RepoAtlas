@@ -6,10 +6,10 @@ with ``uvicorn repoatlas.api.app:create_app --factory``.
 
 Middleware, outermost first: a request ID for every request (echoed in ``X-Request-ID`` and
 bound to the log context), CORS for the web app's origins, a last-resort handler that turns
-unexpected exceptions into a 500 in the error model, per-client rate limits (inside CORS, so a
-browser can read a 429's ``Retry-After``), a cap on request bodies, and the symbol-key path
-fix. Routes run as plain functions in the threadpool, because the store and the GitHub client
-are synchronous.
+unexpected exceptions into a 500 in the error model, the private access gate when a token is
+set (``repoatlas.api.access``), per-client rate limits (inside CORS, so a browser can read a
+429's ``Retry-After``), a cap on request bodies, and the symbol-key path fix. Routes run as
+plain functions in the threadpool, because the store and the GitHub client are synchronous.
 """
 
 from __future__ import annotations
@@ -25,6 +25,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from repoatlas import __version__
 from repoatlas.api import errors
+from repoatlas.api.access import AccessGateMiddleware
 from repoatlas.api.middleware import (
     REQUEST_ID_HEADER,
     BodyLimitMiddleware,
@@ -72,6 +73,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ]
     )
 
+    gate = (
+        []
+        if settings.access_token is None
+        else [Middleware(AccessGateMiddleware, token=settings.access_token, prefix=API_PREFIX)]
+    )
+
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         try:
@@ -94,11 +101,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 CORSMiddleware,
                 allow_origins=settings.cors_origins,
                 allow_methods=["GET", "POST"],
-                allow_headers=["Content-Type", REQUEST_ID_HEADER],
+                allow_headers=["Authorization", "Content-Type", REQUEST_ID_HEADER],
                 expose_headers=["Retry-After", REQUEST_ID_HEADER],
                 max_age=600,
             ),
             Middleware(UnhandledErrorMiddleware),
+            *gate,
             *limits,
             Middleware(BodyLimitMiddleware, max_bytes=settings.max_body_bytes),
             Middleware(EncodedKeyMiddleware, prefix=API_PREFIX),

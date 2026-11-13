@@ -2382,6 +2382,7 @@
         "type": "string",
         "enum": [
           "invalid_request",
+          "unauthorized",
           "invalid_url",
           "repo_private",
           "repo_too_large",

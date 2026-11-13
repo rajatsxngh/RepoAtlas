@@ -47,6 +47,7 @@ class ErrorCode(StrEnum):
     """Every ``error.code`` the API returns. Codes are stable: clients may branch on them."""
 
     INVALID_REQUEST = "invalid_request"  # a malformed request: parameters, body, method
+    UNAUTHORIZED = "unauthorized"  # a private deployment, and no valid access token (401)
     INVALID_URL = "invalid_url"  # not an https://github.com/<owner>/<repo> URL
     REPO_PRIVATE = "repo_private"
     REPO_TOO_LARGE = "repo_too_large"

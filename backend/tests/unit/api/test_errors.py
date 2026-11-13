@@ -41,6 +41,7 @@ NOW = datetime(2026, 11, 7, 12, 0, tzinfo=UTC)
 def test_error_codes_are_the_documented_stable_set() -> None:
     assert {code.value for code in ErrorCode} == {
         "invalid_request",
+        "unauthorized",
         "invalid_url",
         "repo_private",
         "repo_too_large",
