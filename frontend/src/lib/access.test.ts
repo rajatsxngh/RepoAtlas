@@ -114,8 +114,8 @@ describe("the gate (proxy.ts)", () => {
     vi.stubEnv("REPOATLAS_ACCESS_TOKEN", TOKEN);
     const page = await proxy(visit("/s/12?node=a%2Fb"));
     expect(page.status).toBe(307);
-    expect(page.headers.get("location")).toBe("/access?next=%2Fs%2F12%3Fnode%3Da%252Fb");
-    expect((await proxy(visit("/"))).headers.get("location")).toBe("/access");
+    expect(page.headers.get("location")).toBe(`${SITE}/access?next=%2Fs%2F12%3Fnode%3Da%252Fb`);
+    expect((await proxy(visit("/"))).headers.get("location")).toBe(`${SITE}/access`);
     expect((await proxy(visit("/s/1", "wrong"))).status).toBe(307);
     expect((await proxy(visit("/s/1", TOKEN))).status).toBe(307); // the token is not the cookie
   });
