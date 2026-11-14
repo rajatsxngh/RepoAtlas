@@ -87,7 +87,7 @@ Each variant has its own canary string so a leak can be traced to its source.
 - [x] **T4 — Trace panel and cost badges.** API enrichments if needed; `TracePanel`; Playwright test.
 - [x] **T5 — Injection detector.** Rules, severity, tests; false-positive rate on benchmark repos recorded.
 - [x] **T6 — Hardened prompts.** Flagged spans in evidence, system message update, UI warning icon; prompt layout tests; the recorded answer cassette's request rebased (decision 0021).
-- [ ] **T7 — Planted-injection fixture.** At least 15 variants, canaries, questions.
+- [x] **T7 — Planted-injection fixture.** At least 15 variants, canaries, questions.
 - [ ] **T8 — Injection suite.** `injection` suite and `canary_leak` scorer registered with the eval runner; systems `oneshot` and `impact_explain`; the suite builds its fixture snapshot.
 - [ ] **T9 — Allowlists.** Helpers applied to every code read; tests.
 - [ ] **T10 — Security checklist and tests.** One test per checklist item.
