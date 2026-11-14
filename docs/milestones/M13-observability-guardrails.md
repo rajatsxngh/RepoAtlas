@@ -1,6 +1,6 @@
 # M13 — Observability panel & guardrails
 
-**Type of work:** Reliability and security · **Size:** L (11 tasks) · **Status:** In progress
+**Type of work:** Reliability and security · **Size:** L (11 tasks) · **Status:** Done
 
 ## Goal
 
@@ -108,7 +108,7 @@ Each variant has its own canary string so a leak can be traced to its source.
 ## Exit criteria
 
 - [x] Every answer and impact explanation shows a complete trace in the UI, with export on or off.
-- [ ] Deterministic injection tests pass in CI.
+- [x] Deterministic injection tests pass in CI.
 - [x] The injection suite runs end to end through the eval runner for one-shot answers and impact explanations without a model: every planted variant reaches a prompt or is shown not to be indexed, the scorer catches a stand-in that obeys each variant, and a stand-in that answers from the evidence scores zero leaks.
 - [x] Every security checklist item has a passing test.
 
@@ -151,10 +151,12 @@ uv run repoatlas eval run --suite injection --system impact_explain --runs 3 --m
 
 Gate checked on 2026-11-15 on branch `m13-observability-guardrails`, on Windows 11 with Postgres in Docker. **This is the build gate of decisions 0020 and 0021: it was reached without calling a model or spending anything. The live injection runs are not done; they are pending in [`docs/live-pass.md`](../live-pass.md), and until they pass no answering mode has met the gate rule.**
 
+**CI.** On commit `367b7ca`, CI run 43649419612 passed on every job (Linux full checks, Windows unit tests, API types, docs lint, frontend with the end-to-end specs), and Release run 43649419542 passed its stack job: GitHub's runner built the three images, started the self-host stack, and passed the end-to-end check through the offline stand-in. The publish and deploy jobs were skipped, as intended (`DEPLOY_ENABLED` is not set).
+
 **Exit criteria.** What was run, with the numbers, is in [`docs/m13-gate-evidence.md`](../m13-gate-evidence.md).
 
 - **Traces in the UI.** `TracePanel` opens from the cost badge on every answer and explanation and from every impact report. Playwright's five trace specs pass: in mock mode an answer, a refused answer, an impact report, and an explanation each show their steps, model, tokens, cost, and time; against the real API and trace store (the model replaced by the offline stand-in) an answer shows `answer` with `retrieve`, `llm.call`, and `validate` under it, and an impact report and its explanation show their own traces. With OTLP export off nothing is sent and the stored trace is complete; with it on, one connected trace (request, SQL statements, RepoAtlas steps) arrives at an OTLP/HTTP collector inside the test; with the collector unreachable the answer still succeeds (`tests/integration/observability/test_export.py`).
-- **Deterministic injection tests.** `uv run pytest -m injection_static`: 224 tests pass locally (detector, prompt layout, fixture, scorer, allowlists, the suite with stand-ins). Whether they pass in CI is recorded below once CI has run.
+- **Deterministic injection tests.** `uv run pytest -m injection_static`: 224 tests pass locally (detector, prompt layout, fixture, scorer, allowlists, the suite with stand-ins). They pass in CI too: the Linux job runs all of them, the Windows job the ones that need no database.
 - **The injection suite, end to end, without a model.** The fixture (17 variants) is built into a snapshot by the real pipeline; the registered `oneshot` and `impact_explain` systems retrieve from it and build their prompts; the runner scores with `canary_leak` and writes schema-valid reports. All 16 indexed variants reach one-shot prompts, and 6 reach explanation prompts; the README variant is shown not to be indexed. The obedient stand-in is caught on every variant in its prompts, each by its own canary (16 and 6), with every extra marker; the careful stand-in scores 1.000 with zero leaks over three runs of every question in both modes (45 and 15 answers). The documented command, run through the CLI with the real LLM client over the offline stand-in, ends `1.000 [1.000, 1.000]; $0.00 spent … complete` for both modes.
 - **Security checklist.** `docs/security-checklist.md` has ten items (prompt injection, XSS through repository text, XSS through answer markdown, path traversal, SSRF, oversized inputs, secrets, running repository code, resource abuse, access). `tests/unit/security/test_checklist.py` checks that every item names a test and that all 70 named tests exist (60 in pytest, 10 in the web app's suites); they all pass.
 
