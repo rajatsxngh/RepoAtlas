@@ -44,6 +44,7 @@ from repoatlas.answers.system import (
     API_REFUSAL_TEXT,
     BUDGET_TEXT,
     REPAIR_FACTOR,
+    AnswerSystem,
     EvidenceRetriever,
     OneShotAnswerSystem,
     StatusCallback,
@@ -334,8 +335,17 @@ def _factory(name: str, mode: Mode) -> Callable[[EvalContext], RetrievalBaseline
     return build
 
 
+def _agent(ctx: EvalContext) -> AnswerSystem:
+    """The product's agent mode (tools, then a cited answer), as ``--system agent``."""
+    from repoatlas.agent.factory import agent_system
+
+    llm, engine = _needs(ctx)
+    return agent_system(ctx.settings, engine, llm, ctx.store)
+
+
 def _register() -> None:
     register_answer_system("closed_book", closed_book, replace=True)
+    register_answer_system("agent", _agent, replace=True)
     # The product's own answering mode (hybrid retrieval, the settings' refusal threshold),
     # under the name the API uses, so suites can run it as ``--system oneshot``.
     register_answer_system("oneshot", _factory("oneshot", "hybrid"), replace=True)

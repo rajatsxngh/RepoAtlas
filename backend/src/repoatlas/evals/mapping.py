@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from sqlalchemy import Engine
 
 from repoatlas.answers.schema import AnswerResult
-from repoatlas.evals.outputs import Outcome, PredictedClaim, SystemOutput
+from repoatlas.evals.outputs import Outcome, PredictedClaim, SystemOutput, ToolCallRecord
 from repoatlas.graph.model import CodeGraph, Node
 from repoatlas.retrieval.evidence import EvidenceRef
 
@@ -187,6 +187,10 @@ def answer_output(result: AnswerResult, index: SymbolIndex, latency_s: float) ->
         claims_dropped=metrics.claims_dropped,
         evidence_count=metrics.evidence_count,
         evidence_flagged=metrics.evidence_flagged,
+        tool_calls=[
+            ToolCallRecord(name=use.name, arguments=use.arguments, allowed=use.allowed)
+            for use in result.tool_uses
+        ],
         cost_usd=result.cost_usd,
         latency_s=round(latency_s, 3),
         input_tokens=result.usage.total_input_tokens,

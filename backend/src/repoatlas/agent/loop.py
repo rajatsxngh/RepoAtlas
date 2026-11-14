@@ -29,6 +29,18 @@ Guards:
 
 Every step and every tool call is a span of the current trace, and ``on_step`` hears a
 ``StepEvent`` after each tool call.
+
+``AgentAnswerSystem`` (AGT-5) is the whole answering mode, registered as ``agent``. After
+exploring, it gives the ``large`` model the same conversation, unchanged, with tool choice
+``none`` and the ``AnswerDraft`` schema; the draft may cite only ledger IDs, and
+``CitationValidator`` checks them exactly as it checks one-shot citations. Refusals:
+
+- ``api``: the model stopped with a refusal stop reason, while exploring or answering;
+- ``budget``: a limit stopped the exploration before any evidence was found, the final call
+  would not fit the answer's cost budget, or the daily spend cap stopped a call. When a limit
+  stops the exploration *with* evidence in the ledger, the answer is written from the ledger;
+- ``evidence``: the tools found nothing, the model said the evidence isn't enough, or no claim
+  kept a valid citation.
 """
 
 from __future__ import annotations
@@ -50,22 +62,42 @@ from repoatlas.agent.guard import (
 )
 from repoatlas.agent.ledger import Ledger
 from repoatlas.agent.prompting import (
+    BUDGET_STOPS,
     FINAL_ANSWER,
     FINAL_ANSWER_TOOL,
     StopReason,
     build_agent_messages,
     closing_text,
     estimate_conversation_tokens,
+    system_prompt,
 )
 from repoatlas.agent.results import ToolError
 from repoatlas.agent.tools import TOOLS_BY_NAME, Toolbox, tool_definitions
+from repoatlas.answers.policy import RefusalDecision, RefusalPolicy
 from repoatlas.answers.prompting import estimate_tokens
-from repoatlas.answers.schema import Budget, ToolUse
-from repoatlas.canonical import canonical_json
+from repoatlas.answers.schema import (
+    AnswerDraft,
+    AnswerMetrics,
+    AnswerResult,
+    Budget,
+    ToolUse,
+    answer_draft_schema,
+)
+from repoatlas.answers.system import (
+    API_REFUSAL_TEXT,
+    BUDGET_TEXT,
+    DAILY_CAP_TEXT,
+    NO_EVIDENCE_TEXT,
+    UNVERIFIED_TEXT,
+    StatusCallback,
+    daily_cap_decision,
+)
+from repoatlas.answers.validate import BlobSource, CitationValidator
+from repoatlas.canonical import canonical_json, digest
 from repoatlas.llm.client import LLM
 from repoatlas.llm.pricing import PriceTable
 from repoatlas.llm.types import LLMResult, Message, Role, SpendCapReached, ToolCall, Usage
-from repoatlas.tracing import trace_span
+from repoatlas.tracing import TraceSink, start_trace, trace_span
 
 REPAIR_FACTOR = 2  # the final call may be repeated once to repair invalid output
 MAX_ARGUMENT_CHARS = 2_000  # arguments kept on a ToolUse; larger ones are dropped
@@ -430,3 +462,225 @@ def _tool_result(call: ToolCall, text: str, *, is_error: bool) -> dict[str, Any]
     if is_error:
         block["is_error"] = True
     return block
+
+
+# ---------------------------------------------------------------------------
+# The answering mode
+# ---------------------------------------------------------------------------
+
+STEPS = ("exploring", "answering", "validating")
+STOPPED_EARLY_TEXT = (
+    "The exploration reached its limit before it found any code to answer from. Try a more "
+    "specific question."
+)
+_LIMITS: dict[str, str] = {
+    "max_steps": "the step limit",
+    "token_budget": "the token budget",
+    "spend_budget": "the cost budget",
+}
+
+
+async def _no_status(_step: str) -> None:
+    return None
+
+
+class AgentAnswerSystem:
+    """Answers by exploring with tools (``small``) and then writing a cited answer
+    (``large``). Same result type, validator, and refusal kinds as one-shot answers."""
+
+    name = "agent"
+
+    def __init__(
+        self,
+        llm: LLM,
+        toolbox_for: Callable[[int], Toolbox],
+        validator: CitationValidator,
+        policy: RefusalPolicy,
+        *,
+        blobs: BlobSource,
+        prices: PriceTable,
+        sink: TraceSink | None = None,
+        limits: AgentConfig | None = None,
+        efforts: dict[str, str | None] | None = None,
+    ) -> None:
+        self.llm = llm
+        self.validator = validator
+        self.policy = policy
+        self.prices = prices
+        self.sink = sink
+        self.limits = limits or AgentConfig()
+        self.efforts = dict(efforts or {})
+        self.explorer = Explorer(
+            llm, toolbox_for, lambda: Ledger(blobs), prices=prices, config=self.limits
+        )
+
+    def config(self) -> dict[str, Any]:
+        """What the evaluation cache keys on: models, limits, the prompt, the tools."""
+        limits = self.limits
+        return {
+            "kind": "agent",
+            "explore_model": self.llm.model_for(limits.explore_role),
+            "answer_model": self.llm.model_for(limits.answer_role),
+            "explore_effort": self.efforts.get(limits.explore_role),
+            "answer_effort": self.efforts.get(limits.answer_role),
+            "max_steps": limits.max_steps,
+            "max_input_tokens": limits.max_input_tokens,
+            "per_tool_result_tokens": limits.per_tool_result_tokens,
+            "step_output_tokens": limits.step_output_tokens,
+            "prompt_sha256": digest({"prompt": system_prompt(limits.max_steps)}),
+            "tools_sha256": digest({"tools": self.explorer.tools}),
+            "schema_sha256": digest(answer_draft_schema()),
+        }
+
+    async def answer(
+        self,
+        snapshot_id: int,
+        question: str,
+        budget: Budget,
+        *,
+        on_status: StatusCallback | None = None,
+        on_step: StepCallback | None = None,
+    ) -> AnswerResult:
+        with (
+            start_trace("answer", snapshot_id, sink=self.sink) as trace,
+            trace_span("answer", "answer", system=self.name) as root,
+        ):
+            result = await self._run(
+                snapshot_id, question, budget, on_status or _no_status, on_step or _quiet, root
+            )
+            root.set(
+                refused=result.refused,
+                refusal_kind=result.refusal_kind,
+                claims=len(result.claims),
+                citations=len(result.citations),
+                evidence=result.metrics.evidence_count,
+                evidence_flagged=result.metrics.evidence_flagged,
+                tool_calls=len(result.tool_uses),
+                prefilter_citation_validity=result.metrics.prefilter_citation_validity,
+                dropped_claim_rate=result.metrics.dropped_claim_rate,
+            )
+        return result.model_copy(update={"trace_id": trace.id})
+
+    async def _run(
+        self,
+        snapshot_id: int,
+        question: str,
+        budget: Budget,
+        status: StatusCallback,
+        notify: StepCallback,
+        root: Any,
+    ) -> AnswerResult:
+        await status("exploring")
+        found = await self.explorer.run(snapshot_id, question, budget, on_step=notify)
+        ledger = found.ledger
+        root.set(steps=found.steps, stop=found.stop)
+        metrics = AnswerMetrics(evidence_count=len(ledger), evidence_flagged=ledger.flagged)
+
+        def refused(
+            decision: RefusalDecision,
+            text: str,
+            *,
+            llm: LLMResult | None = None,
+            draft: AnswerDraft | None = None,
+            measured: AnswerMetrics = metrics,
+        ) -> AnswerResult:
+            return AnswerResult(
+                answer_markdown=text,
+                claims=[],
+                citations=[],
+                refused=True,
+                refusal_kind=decision.kind,
+                refusal_reason=decision.reason,
+                usage=found.usage + llm.usage if llm is not None else found.usage,
+                cost_usd=found.cost_usd + (llm.cost_usd if llm is not None else 0.0),
+                metrics=measured,
+                draft=draft,
+                tool_uses=found.tool_uses,
+            )
+
+        if found.refusal is not None:
+            return refused(self.policy.api_check(found.refusal), API_REFUSAL_TEXT)
+        if found.cap_error is not None:
+            return refused(daily_cap_decision(found.cap_error), DAILY_CAP_TEXT)
+        if len(ledger) == 0:
+            if found.stop in BUDGET_STOPS:
+                limit = _LIMITS.get(found.stop, "a limit")
+                reason = f"The exploration reached {limit} before any evidence was found."
+                decision = RefusalDecision(refuse=True, kind="budget", reason=reason)
+                return refused(decision, STOPPED_EARLY_TEXT)
+            reason = "The tools found no code in the snapshot for this question."
+            decision = RefusalDecision(refuse=True, kind="evidence", reason=reason)
+            return refused(decision, NO_EVIDENCE_TEXT)
+
+        role = self.limits.answer_role
+        decision = self.policy.budget_check(
+            budget,
+            spent_usd=found.cost_usd,
+            next_call_usd=self.explorer.final_cost(found.messages, budget),
+        )
+        if decision.refuse:
+            return refused(decision, BUDGET_TEXT)
+
+        await status("answering")
+        with trace_span("agent.answer", "agent", after=found.stop, evidence=len(ledger)) as span:
+            try:
+                llm = await self.llm.complete(
+                    role,
+                    found.messages,
+                    schema=AnswerDraft,
+                    tools=found.tools,
+                    tool_choice="none",
+                    max_tokens=budget.max_output_tokens,
+                )
+            except SpendCapReached as exc:
+                return refused(daily_cap_decision(exc), DAILY_CAP_TEXT)
+        await notify(
+            StepEvent(
+                seq=found.events + 1,
+                step=found.steps + 1,
+                kind="answer",
+                tool=FINAL_ANSWER,
+                model=llm.model,
+                tokens_in=llm.usage.total_input_tokens,
+                tokens_out=llm.usage.output_tokens,
+                cost_usd=llm.cost_usd,
+                span_id=str(span.id),
+            )
+        )
+        decision = self.policy.api_check(llm)
+        if decision.refuse:
+            return refused(decision, API_REFUSAL_TEXT, llm=llm)
+        draft = llm.parsed
+        if not isinstance(draft, AnswerDraft):
+            raise TypeError("The answer call returned no AnswerDraft.")
+
+        await status("validating")
+        evidence = ledger.evidence
+        with trace_span("validate", "validation") as span:
+            report = await anyio.to_thread.run_sync(
+                lambda: self.validator.validate(draft, evidence)
+            )
+            span.set(
+                citations=report.metrics.citations_total,
+                valid=report.metrics.citations_valid,
+                dropped_claims=report.metrics.claims_dropped,
+            )
+        decision = self.policy.post_check(
+            report, model_refused=draft.refused, reason=draft.refusal_reason
+        )
+        if decision.refuse:
+            text = draft.answer_markdown if draft.refused and draft.answer_markdown else None
+            return refused(
+                decision, text or UNVERIFIED_TEXT, llm=llm, draft=draft, measured=report.metrics
+            )
+        return AnswerResult(
+            answer_markdown=report.answer_markdown,
+            claims=report.claims,
+            citations=report.citations,
+            refused=False,
+            usage=found.usage + llm.usage,
+            cost_usd=found.cost_usd + llm.cost_usd,
+            metrics=report.metrics,
+            draft=draft,
+            tool_uses=found.tool_uses,
+        )

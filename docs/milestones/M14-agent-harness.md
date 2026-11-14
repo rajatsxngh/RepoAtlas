@@ -30,7 +30,8 @@ Let a tool-using agent explore the graph for questions one retrieval pass can't 
   | `get_owners` | `path` or `symbol_key` | Top authors with shares |
   | `get_impact` | `symbol_key`, `limit ≤ 30` | Grouped impact items and unknown sites |
 
-- **`repoatlas.agent.loop.AgentAnswerSystem`** — config `max_steps = 12`, `max_input_tokens`, `per_tool_result_tokens`, roles (`small` for steps, `large` for the final answer); an evidence ledger; final structured answer validated by `CitationValidator`; registered as `agent`.
+- **`repoatlas.agent.loop.AgentAnswerSystem`** — limits `AgentConfig(max_steps = 12, max_input_tokens, per_tool_result_tokens)`, roles (`small` for steps, `large` for the final answer); an evidence ledger (`repoatlas.agent.ledger.Ledger`, IDs `E1…`); final structured answer validated by `CitationValidator`; `answer(snapshot_id, question, budget, *, on_status=None, on_step=None)` where `on_step` hears a `StepEvent` per tool call and for the final call; registered as `agent`. Built from settings by `repoatlas.agent.factory` (`agent_from_settings`, `agent_system`, `toolbox_factory`, `agent_budget`).
+- **Tool output for a model** (`repoatlas.agent.guard`): `check_arguments`, `prepare_result(result, evidence_lines, max_tokens=…)` (trim, detector marks, evidence list), `prepare_error`.
 - **API and UI:** `mode = "agent"` on the ask endpoint; server-sent `step` events (tool, argument summary, result size, tokens, cost); the UI mode toggle and live steps in `TracePanel`.
 - **MCP server:** `repoatlas mcp --snapshot <id> [--transport stdio|http] [--port N]` exposing the same tools; HTTP requires a bearer token and is rate-limited; the MCP SDK is pinned to one major version.
 - **Results:** the injection suite and the agent-versus-one-shot comparison run end to end without a model (decision 0022); the live results are pending in [`docs/live-pass.md`](../live-pass.md).
@@ -75,7 +76,7 @@ AGT-1, AGT-2, AGT-3, AGT-4, AGT-5, AGT-6, AGT-7, AGT-8
 - [x] **T1 — Tools.** Implementations and schemas; unit tests per tool on the fixture repos.
 - [x] **T2 — Validation, allowlists, trimming.** Argument validators, snapshot allowlist, result trimming, detector pass on tool output.
 - [x] **T3 — Agent loop.** Steps, stop conditions, budgets, routing, repeated-call guard; scripted `FakeLLM` tests (normal finish, step cap, budget stop, tool error).
-- [ ] **T4 — Evidence ledger and final answer.** Validation of ledger citations; refusal rules.
+- [x] **T4 — Evidence ledger and final answer.** Validation of ledger citations; refusal rules.
 - [ ] **T5 — API agent mode.** `step` events over server-sent events; trace linkage.
 - [ ] **T6 — UI.** Mode toggle; live steps in `TracePanel`; Playwright test with mock mode.
 - [ ] **T7 — MCP server.** stdio and HTTP transports, bearer token and rate limits; in-memory client test.

@@ -72,8 +72,9 @@ class FakeToolbox:
         return result
 
 
-def call(name: str, call_id: str = "", **arguments: Any) -> ToolCall:
-    return ToolCall(id=call_id or f"toolu_{name}", name=name, input=arguments)
+def call(tool: str, call_id: str = "", /, **arguments: Any) -> ToolCall:
+    """A scripted tool call (positional-only, so a tool argument may be called ``name``)."""
+    return ToolCall(id=call_id or f"toolu_{tool}", name=tool, input=arguments)
 
 
 def turn(

@@ -81,7 +81,8 @@ All are backward compatible; the milestone files list them under "Added later by
 0022".
 
 - **Answer contracts (M07).** `AnswerResult` gains `tool_uses: list[ToolUse(step, name,
-  arguments, allowed, error, evidence_ids, result_tokens)]` (empty for modes without tools).
+  arguments, allowed, error, evidence_ids, result_tokens, truncated, cached, flags)]` (empty
+  for modes without tools).
   `LLM.complete` accepts `tool_choice` (`auto` or `none`). `OfflineTransport` plays the agent
   as described above.
 - **Ask API (M04, M07).** `mode` accepts `agent`; the stream gains `step` events. A stored run
