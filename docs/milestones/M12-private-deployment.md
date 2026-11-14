@@ -102,6 +102,8 @@ Live pass: the same check against the hosted URL, and in the browser on the depl
 
 Gate checked on 2026-11-14 on branch `m12-deploy-limits`, on Windows 11 with Docker 29.9.2 and Postgres up. **This is the build gate of decision 0020: it was reached without spending anything. The hosted deployment and the live answer check are not done; they are pending in [`docs/live-pass.md`](../live-pass.md).**
 
+**CI.** On commit `0025485`, CI run 43618086803 passed on every job (Linux full checks, Windows unit tests, API types, docs lint, frontend), and Release run 43618086982 passed its stack job: GitHub's runner built the three images, started the stack, and passed the same end-to-end check. The publish and deploy jobs were skipped, as intended (`DEPLOY_ENABLED` is not set).
+
 **Exit criteria.** What was run, with the output, is in [`docs/m12-gate-evidence.md`](../m12-gate-evidence.md).
 
 - **Local self-host stack.** On a fresh `infra/compose.selfhost.yml` stack (production images, the real embedding model inside them, `REPOATLAS_LLM_TRANSPORT=offline`), `scripts/selfhost_check.py` passed every step: the gate rejects a missing or wrong token; the token page sets the cookie; `/ready` is at `0008_spans_llm_started_at`; `pallets/itsdangerous` (commit `672971d`) builds to a ready snapshot; a question streams `retrieving`, `answering`, `validating` and returns 3 claims with 3 valid citations into `src/itsdangerous/signer.py`; impact analysis on `want_bytes` returns 56 symbols (30 callers, 24 tests, 2 public APIs). The answer is the offline stand-in's and says so; no model was called.
