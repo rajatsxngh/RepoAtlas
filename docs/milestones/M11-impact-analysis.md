@@ -16,6 +16,7 @@ Answer "What breaks if I change X?" with a ranked, explained list of affected te
 
 ## Provides
 
+- **Added later by decision 0021** (backward compatible): `POST /snapshots/{id}/impact/{run_id}/explain` returns the cited explanation of a stored run as an `AnswerView` (stored in `qa_runs` with mode `impact_explain`; counted as a question by the rate limits and the spend cap); `repoatlas.impact.explain.explainer_from_settings(settings, engine, store=None)` builds the explainer the API uses; the impact panel has an Explain button.
 - **`repoatlas.impact.engine.ImpactEngine`**
   - `analyze(snapshot_id, target: SymbolTarget | DiffTarget, params: ImpactParams = defaults) -> ImpactReport`
   - `ImpactParams(max_depth=4, decay=0.4, min_score=0.05, limit=200, edge_kinds=(calls, inherits, imports, tested_by, routes_to))` — defaults tuned on dev (decision 0019; the starting decay was 0.6)

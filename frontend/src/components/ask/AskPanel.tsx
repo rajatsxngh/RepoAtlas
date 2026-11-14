@@ -15,8 +15,8 @@ import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { useApi } from "@/lib/api/context";
 import { describeError } from "@/lib/api/errors";
-import type { AnswerView, AskStep, Citation, RefusalKind } from "@/lib/api/types";
-import { Markdown } from "@/lib/markdown";
+import type { AnswerView, AskStep, Citation } from "@/lib/api/types";
+import { AnswerBody, citationLabel } from "./AnswerBody";
 
 export interface AskPanelProps {
   snapshotId: number;
@@ -32,37 +32,10 @@ const STEP_TEXT: Record<AskStep, string> = {
   validating: "Checking every citation…",
 };
 
-const REFUSAL_TITLE: Record<RefusalKind, string> = {
-  evidence: "Not enough evidence",
-  api: "The model declined",
-  budget: "Over the cost budget",
-};
-
 /** Lines of context shown around a cited range. */
 const CONTEXT_LINES = 3;
 
-export function citationLabel(citation: Citation): string {
-  const { path, start_line: start, end_line: end } = citation.ref;
-  const name = path.split("/").at(-1) ?? path;
-  return start === end ? `${name}:${start}` : `${name}:${start}–${end}`;
-}
-
-function percent(value: number | null | undefined): string {
-  return value === null || value === undefined ? "–" : `${Math.round(value * 100)}%`;
-}
-
-function Metrics({ answer }: { answer: AnswerView }) {
-  const { metrics } = answer;
-  return (
-    <p className="text-[11px] text-fg-faint" data-testid="answer-metrics">
-      {metrics.citations_total > 0
-        ? `${metrics.citations_valid} of ${metrics.citations_total} citations valid before filtering (${percent(metrics.prefilter_citation_validity)})`
-        : "No citations checked"}
-      {metrics.claims_dropped > 0 ? ` · ${metrics.claims_dropped} claims dropped` : ""}
-      {` · $${answer.cost_usd.toFixed(4)}`}
-    </p>
-  );
-}
+export { citationLabel };
 
 export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPanelProps) {
   const api = useApi();
@@ -179,59 +152,7 @@ export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPan
           </div>
         ) : null}
 
-        {answer ? (
-          <section aria-label="Answer" className="space-y-3">
-            {answer.refused && answer.refusal_kind ? (
-              <div className="rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm">
-                <p className="font-medium text-fg">{REFUSAL_TITLE[answer.refusal_kind]}</p>
-                {answer.refusal_reason ? (
-                  <p className="mt-0.5 text-fg-muted">{answer.refusal_reason}</p>
-                ) : null}
-              </div>
-            ) : null}
-            <Markdown>{answer.answer_markdown}</Markdown>
-            {answer.claims.length > 0 ? (
-              <ol aria-label="Claims" className="space-y-2">
-                {answer.claims.map((claim) => (
-                  <li key={claim.id} className="rounded-lg border border-line px-3 py-2">
-                    <p className="text-sm text-fg">
-                      <span className="mr-1.5 font-mono text-[11px] text-fg-faint">
-                        [{claim.id}]
-                      </span>
-                      {claim.text}
-                    </p>
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {answer.citations
-                        .filter((citation) => citation.claim_id === claim.id)
-                        .map((citation) => {
-                          const active =
-                            cited?.claim_id === citation.claim_id &&
-                            cited.evidence_id === citation.evidence_id;
-                          return (
-                            <button
-                              key={citation.evidence_id}
-                              type="button"
-                              aria-pressed={active}
-                              title={`${citation.ref.path}, lines ${citation.ref.start_line}–${citation.ref.end_line}`}
-                              onClick={() => open(citation)}
-                              className={`rounded-md border px-1.5 py-0.5 font-mono text-[11px] ${
-                                active
-                                  ? "border-focus bg-focus/10 text-fg"
-                                  : "border-line bg-surface-2 text-fg-muted hover:text-fg"
-                              }`}
-                            >
-                              {citationLabel(citation)}
-                            </button>
-                          );
-                        })}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            ) : null}
-            <Metrics answer={answer} />
-          </section>
-        ) : null}
+        {answer ? <AnswerBody answer={answer} cited={cited} onCite={open} /> : null}
 
         {cited ? (
           <CodeViewer

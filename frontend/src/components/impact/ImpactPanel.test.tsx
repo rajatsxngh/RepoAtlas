@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ApiClient } from "@/lib/api/client";
 import type { ImpactResponse } from "@/lib/api/types";
+import { MockBackend } from "@/lib/api/mock/backend";
+import { createMockFetch } from "@/lib/api/mock/fetch";
 import { renderWithApi } from "@/test/render";
 import { ImpactPanel, evidenceLabel, impactLayers, symbolLabel } from "./ImpactPanel";
 
@@ -103,6 +105,49 @@ describe("ImpactPanel", () => {
     expect(screen.getByRole("region", { name: "Callers" })).toHaveTextContent(
       "<img src=x onerror=alert(1)>",
     );
+  });
+
+  it("explains the report on request, with citations that open the code", async () => {
+    const onOpen = vi.fn();
+    const user = userEvent.setup();
+    renderWithApi(<ImpactPanel snapshotId={1} symbolKey={ADD} onOpen={onOpen} />);
+    const panel = screen.getByRole("complementary", { name: "What breaks" });
+    const explain = await within(panel).findByRole("button", { name: "Explain" });
+    // Nothing is asked of the model until the button is pressed.
+    expect(within(panel).queryByRole("region", { name: "Explanation" })).toBeNull();
+    await user.click(explain);
+    const explanation = await within(panel).findByRole("region", { name: "Explanation" });
+    expect(explanation).toHaveTextContent("The list may be incomplete");
+    const claims = within(explanation).getByRole("list", { name: "Claims" });
+    const chip = within(claims).getAllByRole("button")[0]!;
+    await user.click(chip);
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+    expect(onOpen).toHaveBeenCalled();
+    expect(await within(panel).findByRole("figure")).toBeInTheDocument();
+    expect(within(explanation).getByTestId("answer-metrics")).toHaveTextContent("$0.0048");
+    expect(within(panel).getByRole("button", { name: "Explain again" })).toBeEnabled();
+  });
+
+  it("shows why an explanation is unavailable, and keeps the report", async () => {
+    const user = userEvent.setup();
+    const mock = createMockFetch(new MockBackend(), { latencyMs: 0 });
+    const api = new ApiClient({
+      baseUrl: "http://x/api/v1",
+      fetch: async (input, init) =>
+        input.endsWith("/explain")
+          ? new Response(
+              JSON.stringify({
+                error: { code: "llm_unavailable", message: "No API key.", details: {} },
+              }),
+              { status: 503 },
+            )
+          : mock(input, init),
+    });
+    renderWithApi(<ImpactPanel snapshotId={1} symbolKey={ADD} />, { api });
+    const panel = screen.getByRole("complementary", { name: "What breaks" });
+    await user.click(await within(panel).findByRole("button", { name: "Explain" }));
+    expect(await within(panel).findByRole("alert")).toBeInTheDocument();
+    expect(within(panel).getByRole("region", { name: "Callers" })).toBeInTheDocument();
   });
 
   it("shows errors", async () => {

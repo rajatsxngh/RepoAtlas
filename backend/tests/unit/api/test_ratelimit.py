@@ -97,6 +97,8 @@ def test_settings_configure_the_limits() -> None:
         ("POST", "/api/v1/repos/", "build"),
         ("GET", "/api/v1/repos", "read"),
         ("POST", "/api/v1/snapshots/1/ask", "ask"),
+        ("POST", "/api/v1/snapshots/1/impact/7/explain", "ask"),
+        ("POST", "/api/v1/snapshots/1/impact", "read"),
         ("GET", "/api/v1/qa/4", "read"),
         ("GET", "/api/v1/snapshots/1/subgraph", "read"),
         ("GET", "/api/v1/jobs/3", "read"),

@@ -45,6 +45,16 @@ test("What breaks? lists ranked tests and callers, highlights them, and opens ev
   await expect(viewer).toContainText("add");
   await expect(viewer.locator(".ra-code-mark").first()).toBeVisible();
 
+  // The explanation is asked for on request and cites the report's evidence.
+  await expect(panel.getByRole("region", { name: "Explanation" })).toHaveCount(0);
+  await panel.getByRole("button", { name: "Explain", exact: true }).click();
+  const explanation = panel.getByRole("region", { name: "Explanation" });
+  await expect(explanation).toContainText("The list may be incomplete");
+  const chip = explanation.getByRole("list", { name: "Claims" }).getByRole("button").first();
+  await chip.click();
+  await expect(chip).toHaveAttribute("aria-pressed", "true");
+  await expect(panel.getByRole("figure")).toBeVisible();
+
   // Closing the panel removes the layer.
   await panel.getByRole("button", { name: "Close impact" }).click();
   await expect(panel).toHaveCount(0);

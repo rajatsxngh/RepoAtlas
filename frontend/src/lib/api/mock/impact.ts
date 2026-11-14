@@ -8,6 +8,7 @@
  */
 
 import type {
+  AnswerView,
   ApiNode,
   Edge,
   EdgeKind,
@@ -208,5 +209,81 @@ export function mockImpact(
     },
     run_id: runId,
     trace_id: `00000000-0000-4000-8000-${String(runId).padStart(12, "0")}`,
+  };
+}
+
+const EXPLAIN_CLAIMS = 3;
+
+/**
+ * Mock mode's explanation of a report: one claim per top item that has evidence, citing that
+ * evidence. A report with nothing to cite is refused, like the API does without calling a model.
+ */
+export function mockExplanation(report: ImpactResponse, runId: number): AnswerView {
+  const traceId = `00000000-0000-4000-8000-${String(runId).padStart(12, "0")}`;
+  const cited = report.items.filter((item) => item.evidence.length > 0).slice(0, EXPLAIN_CLAIMS);
+  const empty = { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0 };
+  if (cited.length === 0) {
+    return {
+      run_id: runId,
+      answer_markdown: "The impact report has no code to cite, so there is nothing to explain.",
+      claims: [],
+      citations: [],
+      refused: true,
+      refusal_kind: "evidence",
+      refusal_reason: "The change reaches nothing to explain.",
+      usage: empty,
+      cost_usd: 0,
+      trace_id: traceId,
+      metrics: {
+        prefilter_citation_validity: null,
+        dropped_claim_rate: null,
+        citations_total: 0,
+        citations_valid: 0,
+        claims_total: 0,
+        claims_dropped: 0,
+        evidence_count: 0,
+        retrieval_top_score: null,
+      },
+    };
+  }
+  const groupName = { test: "test", public_api: "public API", caller: "caller" } as const;
+  const claims = cited.map((item, index) => ({
+    id: `c${index + 1}`,
+    text: `${item.name} is an affected ${groupName[item.group]} (score ${item.score.toFixed(2)}).`,
+    evidence_ids: [`E${index + 2}`],
+    symbol: item.name.split(".").at(-1) ?? item.name,
+  }));
+  const citations = cited.map((item, index) => ({
+    claim_id: `c${index + 1}`,
+    evidence_id: `E${index + 2}`,
+    ref: item.evidence[0]!,
+  }));
+  const markers = claims.map((claim) => `[${claim.id}]`).join("");
+  return {
+    run_id: runId,
+    answer_markdown: `The change reaches ${report.stats.items} symbols; the strongest are cited here ${markers}. The list may be incomplete. This is a mock explanation: mock mode has no model.`,
+    claims,
+    citations,
+    refused: false,
+    refusal_kind: null,
+    refusal_reason: null,
+    usage: {
+      input_tokens: 1800,
+      output_tokens: 240,
+      cache_read_tokens: 1100,
+      cache_write_tokens: 0,
+    },
+    cost_usd: 0.0048,
+    trace_id: traceId,
+    metrics: {
+      prefilter_citation_validity: 1,
+      dropped_claim_rate: 0,
+      citations_total: citations.length,
+      citations_valid: citations.length,
+      claims_total: claims.length,
+      claims_dropped: 0,
+      evidence_count: cited.length + 1,
+      retrieval_top_score: null,
+    },
   };
 }

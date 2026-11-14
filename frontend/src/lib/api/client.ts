@@ -263,6 +263,18 @@ export class ApiClient {
   }
 
   /**
+   * A cited explanation of a stored impact run. It calls the model once, so it counts as a
+   * question and is never retried.
+   */
+  explainImpact(snapshotId: number, runId: number, signal?: AbortSignal): Promise<AnswerView> {
+    return this.request(
+      "POST",
+      this.snapshotPath(snapshotId, `/impact/${encodeURIComponent(String(runId))}/explain`),
+      { signal },
+    );
+  }
+
+  /**
    * Ask a question. The answer streams as server-sent events: `status` steps, then the validated
    * `answer` and `done`, or an `error` (thrown as an `ApiError`). Never retried: each question
    * costs money.

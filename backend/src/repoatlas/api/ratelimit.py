@@ -178,7 +178,8 @@ class RateLimitMiddleware:
             return None
         if method == "POST" and path.rstrip("/") == f"{self.prefix}/repos":
             return "build"
-        if method == "POST" and path.rstrip("/").endswith("/ask"):
+        # Questions and impact explanations each call the model.
+        if method == "POST" and path.rstrip("/").endswith(("/ask", "/explain")):
             return "ask"
         return "read"
 

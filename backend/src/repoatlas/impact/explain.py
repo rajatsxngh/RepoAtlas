@@ -12,6 +12,8 @@ an ``api`` refusal; claims without a valid citation are dropped.
 
 from __future__ import annotations
 
+from typing import Any
+
 import anyio
 
 from repoatlas.answers.policy import RefusalDecision, RefusalPolicy
@@ -269,4 +271,24 @@ def _refused(
         cost_usd=llm.cost_usd if llm is not None else 0.0,
         metrics=metrics,
         draft=draft,
+    )
+
+
+def explainer_from_settings(settings: Any, engine: Any, store: Any = None) -> ImpactExplainer:
+    """The explainer the API uses. Raises ``LLMNotConfigured`` without an API key; its calls
+    count against the settings' daily spend cap, like every answer's."""
+    from repoatlas.answers.validate import StoreBlobs
+    from repoatlas.impact.store_data import StoreImpactData
+    from repoatlas.limits import SpendGuard
+    from repoatlas.llm.client import LLMClient
+    from repoatlas.store.graphstore import GraphStore
+    from repoatlas.tracing.store import SqlTraceSink
+
+    llm = LLMClient.from_settings(settings, guard=SpendGuard.from_settings(settings, engine))
+    return ImpactExplainer(
+        StoreImpactData(store or GraphStore.from_settings(settings, engine)),
+        StoreBlobs(engine),
+        llm,
+        prices=PriceTable(settings.llm_prices),
+        sink=SqlTraceSink(engine),
     )

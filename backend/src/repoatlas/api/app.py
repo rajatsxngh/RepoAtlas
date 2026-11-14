@@ -125,6 +125,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     errors.install(app)
     app.state.answer_systems = {}  # answer systems by mode, built on first use
     app.state.impact_engine = ImpactEngine(StoreImpactData(app.state.store))
+    app.state.impact_explainer = None  # built on first use (it needs the LLM client)
     for router in (
         repos.router,
         jobs.router,

@@ -12,14 +12,21 @@ import pytest
 from fastapi import FastAPI
 from sqlalchemy import Engine, text
 
+from repoatlas.answers.schema import AnswerDraft, Claim
+from repoatlas.answers.validate import StoreBlobs
 from repoatlas.api.app import API_PREFIX, create_app
 from repoatlas.impact.data import MemoryImpactData
 from repoatlas.impact.engine import ImpactEngine
+from repoatlas.impact.explain import ImpactExplainer
 from repoatlas.impact.runs import load_impact_run
 from repoatlas.impact.schema import DiffTarget, SymbolTarget
 from repoatlas.impact.store_data import StoreImpactData
+from repoatlas.llm.fake import FakeLLM
+from repoatlas.llm.pricing import DEFAULT_PRICES, PriceTable
+from repoatlas.llm.types import TransientLLMError
 from repoatlas.store.graphstore import GraphStore
 from repoatlas.store.loader import begin_snapshot, save_snapshot
+from repoatlas.tracing.store import SqlTraceSink
 from tests.integration.conftest import empty_store
 from tests.integration.store.helpers import FINGERPRINT, SHA_A, SHA_B, build_files, repo_meta
 from tests.unit.api.helpers import api_settings, client_for, error_of
@@ -166,3 +173,105 @@ async def test_unknown_symbols_and_snapshots_are_404_and_unready_ones_409(setup:
     unready = await post(setup, {"symbol_key": TOKENIZE}, snapshot=setup.pending)
     assert unready.status_code == 409
     assert error_of(unready)["code"] == "snapshot_not_ready"
+
+
+# --- explanations (GRD-1) ---------------------------------------------------------------
+
+EXPLANATION = AnswerDraft(
+    answer_markdown="Changing `_tokenize` affects `parse` [c1], tested by `test_parse` [c2]. "
+    "Also `cli` [c3].",
+    claims=[
+        Claim(id="c1", text="parse calls _tokenize.", evidence_ids=["E2"], symbol="parse"),
+        Claim(id="c2", text="test_parse calls parse.", evidence_ids=["E4"], symbol="test_parse"),
+        Claim(id="c3", text="The CLI breaks.", evidence_ids=["E9"], symbol="main"),
+    ],
+    refused=False,
+)
+
+
+def install_explainer(setup: Setup, llm: FakeLLM) -> None:
+    setup.app.state.impact_explainer = ImpactExplainer(
+        StoreImpactData(setup.app.state.store),
+        StoreBlobs(setup.engine),
+        llm,
+        prices=PriceTable(DEFAULT_PRICES),
+        sink=SqlTraceSink(setup.engine),
+    )
+
+
+async def explain(setup: Setup, run_id: int, snapshot: int | None = None) -> Any:
+    sid = setup.snapshot if snapshot is None else snapshot
+    async with client_for(setup.app) as client:
+        return await client.post(f"{API_PREFIX}/snapshots/{sid}/impact/{run_id}/explain")
+
+
+async def test_explaining_a_stored_run_returns_a_cited_answer_with_its_own_trace(
+    setup: Setup,
+) -> None:
+    llm = FakeLLM([EXPLANATION])
+    install_explainer(setup, llm)
+    report = (await post(setup, {"symbol_key": TOKENIZE})).json()
+    response = await explain(setup, report["run_id"])
+    assert response.status_code == 200, response.text
+    answer = response.json()
+    assert answer["refused"] is False
+    assert [claim["id"] for claim in answer["claims"]] == ["c1", "c2"]  # c3 cites nothing given
+    assert [c["ref"]["path"] for c in answer["citations"]] == ["pkg/core.py", "tests/test_core.py"]
+    assert answer["cost_usd"] > 0
+    assert "draft" not in answer
+    assert answer["trace_id"] != report["trace_id"]
+
+    async with client_for(setup.app) as client:
+        trace = (await client.get(f"{API_PREFIX}/traces/{answer['trace_id']}")).json()
+        stored = (await client.get(f"{API_PREFIX}/qa/{answer['run_id']}")).json()
+    assert trace["kind"] == "impact_explain"
+    assert [span["name"] for span in trace["spans"]] == [
+        "impact.explain",
+        "impact.evidence",
+        "validate",
+    ]
+    assert trace["status"] == "ok"  # (FakeLLM records no model span; LLMClient does)
+    assert stored["mode"] == "impact_explain"
+    assert f"`{TOKENIZE}`" in stored["question"]
+    assert stored["answer"]["claims"] == answer["claims"]
+    (call,) = llm.calls
+    assert "<evidence id=" in call.messages[1]["content"][0]["text"]
+
+
+async def test_explain_errors(setup: Setup, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_explainer(setup, FakeLLM([TransientLLMError("overloaded", status=529)]))
+    report = (await post(setup, {"symbol_key": TOKENIZE})).json()
+    busy = await explain(setup, report["run_id"])
+    assert busy.status_code == 503 and error_of(busy)["code"] == "answer_failed"
+
+    missing = await explain(setup, 999_999)
+    assert missing.status_code == 404
+    assert error_of(missing)["details"]["resource"] == "impact_run"
+    assert (await explain(setup, report["run_id"], snapshot=999_999)).status_code == 404
+    assert (await explain(setup, report["run_id"], snapshot=setup.pending)).status_code == 409
+    assert (await explain(setup, 0)).status_code == 422
+
+    # Without an API key (and without the offline stand-in) explanations are unavailable.
+    setup.app.state.impact_explainer = None
+    monkeypatch.setattr(setup.app.state.settings, "anthropic_api_key", None)
+    unavailable = await explain(setup, report["run_id"])
+    assert unavailable.status_code == 503
+    assert error_of(unavailable)["code"] == "llm_unavailable"
+
+
+async def test_explanations_work_through_the_offline_stand_in(
+    setup: Setup, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    setup.app.state.impact_explainer = None
+    monkeypatch.setattr(setup.app.state.settings, "anthropic_api_key", None)
+    monkeypatch.setattr(setup.app.state.settings, "llm_transport", "offline")
+    report = (await post(setup, {"symbol_key": TOKENIZE})).json()
+    try:
+        response = await explain(setup, report["run_id"])
+    finally:
+        setup.app.state.impact_explainer = None
+    assert response.status_code == 200, response.text
+    answer = response.json()
+    assert answer["refused"] is False and answer["cost_usd"] == 0
+    assert "no model wrote this answer" in answer["answer_markdown"]
+    assert len(answer["citations"]) == 3

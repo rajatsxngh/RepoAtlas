@@ -10,6 +10,7 @@ import type {
   BuildAccepted,
   Direction,
   EdgeKind,
+  ImpactResponse,
   JobView,
   NodeKind,
   SnapshotView,
@@ -23,7 +24,7 @@ import {
   type MockFixture,
 } from "./fixtures";
 import { mockAnswer, sseBody } from "./ask";
-import { mockImpact } from "./impact";
+import { mockExplanation, mockImpact } from "./impact";
 import { MockApiError, MockGraph } from "./graph";
 
 export interface MockResponse {
@@ -407,7 +408,27 @@ export class MockBackend {
       );
     }
     this.impactRuns += 1;
-    return { status: 200, body: mockImpact(graph, key, this.impactRuns) };
+    const report = mockImpact(graph, key, this.impactRuns);
+    this.impactReports.set(report.run_id, { snapshotId, report });
+    return { status: 200, body: report };
+  }
+
+  private impactReports = new Map<number, { snapshotId: number; report: ImpactResponse }>();
+
+  /** `POST /snapshots/{id}/impact/{run_id}/explain`: a mock explanation of a stored report. */
+  private async explain(snapshotId: number, runId: number): Promise<MockResponse> {
+    await this.ready(snapshotId);
+    const stored = this.impactReports.get(runId);
+    if (!stored || stored.snapshotId !== snapshotId) {
+      throw new MockApiError(
+        404,
+        "not_found",
+        `Snapshot ${snapshotId} has no impact run ${runId}.`,
+        { resource: "impact_run", snapshot_id: snapshotId, run_id: runId },
+      );
+    }
+    this.askRuns += 1;
+    return { status: 200, body: mockExplanation(stored.report, 1000 + this.askRuns) };
   }
 
   /** Answers one request (method, URL under `/api/v1`, parsed JSON body). */
@@ -445,6 +466,8 @@ export class MockBackend {
     if (method === "POST" && ask) return this.ask(Number(ask[1]), body);
     const impact = /^\/snapshots\/(\d+)\/impact$/.exec(path);
     if (method === "POST" && impact) return this.impact(Number(impact[1]), body);
+    const explain = /^\/snapshots\/(\d+)\/impact\/(\d+)\/explain$/.exec(path);
+    if (method === "POST" && explain) return this.explain(Number(explain[1]), Number(explain[2]));
     if (method !== "GET") throw new MockApiError(405, "invalid_request", "Method Not Allowed");
     if (path === "/health") return { status: 200, body: { status: "ok", version: "mock" } };
     if (path === "/ready") {

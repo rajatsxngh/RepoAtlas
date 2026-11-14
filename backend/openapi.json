@@ -1727,6 +1727,126 @@
         }
       }
     },
+    "/api/v1/snapshots/{snapshot_id}/impact/{run_id}/explain": {
+      "post": {
+        "tags": [
+          "impact"
+        ],
+        "summary": "Explain an impact report",
+        "description": "A short cited summary of a stored impact run: which tests, public APIs, and callers the\nchange affects and why. Claims that can't be verified against the cited code are left\nout; a report with nothing to cite is refused without calling the model.",
+        "operationId": "explain_impact_run",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "description": "The impact run's ID.",
+              "title": "Run Id"
+            },
+            "description": "The impact run's ID."
+          },
+          {
+            "name": "snapshot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "description": "Snapshot ID.",
+              "title": "Snapshot Id"
+            },
+            "description": "Snapshot ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnswerView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [

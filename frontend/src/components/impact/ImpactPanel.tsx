@@ -6,11 +6,15 @@
  * (calls the graph could not resolve, string literals naming the symbol) are listed apart and
  * never counted as safe. Clicking an item or a site opens its evidence in the code viewer and
  * tells the workspace to show it on the map. Names and paths are repo text, rendered as text.
+ *
+ * "Explain" asks the model for a short cited summary of the report (GRD-1). It is a separate
+ * step because it calls the model once: it counts as a question and costs money.
  */
 
-import { useQuery } from "@tanstack/react-query";
-import { CircleHelp, X, Zap } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { CircleHelp, Sparkles, X, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AnswerBody } from "@/components/ask/AnswerBody";
 import { CodeViewer } from "@/components/code/CodeViewer";
 import type { HighlightLayer } from "@/components/graph/layers";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +22,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { useApi } from "@/lib/api/context";
 import { describeError } from "@/lib/api/errors";
 import type {
+  Citation,
   EvidenceRef,
   ImpactGroup,
   ImpactItem,
@@ -140,7 +145,10 @@ function ItemRow({
   );
 }
 
-type Opened = { kind: "item"; key: string; ref: EvidenceRef } | { kind: "site"; ref: EvidenceRef };
+type Opened =
+  | { kind: "item"; key: string; ref: EvidenceRef }
+  | { kind: "site"; ref: EvidenceRef }
+  | { kind: "citation"; citation: Citation; ref: EvidenceRef };
 
 export function ImpactPanel({
   snapshotId,
@@ -164,6 +172,20 @@ export function ImpactPanel({
     onReport?.(report ?? null);
   }, [onReport, report]);
   const failure = query.error ? describeError(query.error) : null;
+
+  const runId = report?.run_id;
+  const explanation = useMutation({
+    mutationKey: ["impact-explain", snapshotId, runId],
+    mutationFn: () => api.explainImpact(snapshotId, runId!),
+    retry: false,
+  });
+  const { reset: resetExplanation } = explanation;
+  useEffect(() => resetExplanation(), [resetExplanation, runId]);
+  const explainFailure = explanation.error ? describeError(explanation.error) : null;
+  const pickCitation = (citation: Citation) => {
+    setOpened({ kind: "citation", citation, ref: citation.ref });
+    if (citation.ref.symbol_key) onOpen?.(citation.ref.symbol_key);
+  };
 
   const pickItem = (item: ImpactItem) => {
     const ref = item.evidence[0];
@@ -215,6 +237,45 @@ export function ImpactPanel({
               {report.unknown.length} unknown · scores combine every path (decay{" "}
               {report.params.decay}, depth ≤ {report.params.max_depth})
             </p>
+            <section aria-label="Explain" className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => explanation.mutate()}
+                  disabled={explanation.isPending}
+                  icon={
+                    explanation.isPending ? (
+                      <Spinner className="h-3.5 w-3.5" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                    )
+                  }
+                >
+                  {explanation.data ? "Explain again" : "Explain"}
+                </Button>
+                <span className="text-[11px] text-fg-faint">
+                  A cited summary from the model. Counts as one question.
+                </span>
+              </div>
+              {explanation.isPending ? (
+                <p role="status" className="flex items-center gap-2 text-sm text-fg-muted">
+                  <Spinner /> Writing the explanation and checking its citations…
+                </p>
+              ) : null}
+              {explainFailure ? (
+                <div role="alert" className="rounded-lg border border-line px-3 py-2 text-sm">
+                  <p className="font-medium text-fg">{explainFailure.title}</p>
+                  <p className="mt-0.5 text-fg-muted">{explainFailure.detail}</p>
+                </div>
+              ) : null}
+              {explanation.data && !explanation.isPending ? (
+                <AnswerBody
+                  label="Explanation"
+                  answer={explanation.data}
+                  cited={opened?.kind === "citation" ? opened.citation : null}
+                  onCite={pickCitation}
+                />
+              ) : null}
+            </section>
             {GROUPS.map((group) => {
               const items = report.items.filter((item) => item.group === group.id);
               return (

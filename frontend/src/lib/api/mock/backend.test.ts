@@ -85,6 +85,24 @@ describe("mock build flow", () => {
     if (code === "rate_limited") expect(error).toMatchObject({ retryAfterS: 42 });
   });
 
+  it("explains a stored impact run, and only on the snapshot it belongs to", async () => {
+    const { api } = setup();
+    const report = await api.analyzeImpact(1, {
+      symbol_key: "py:src/shop/cart.py:Cart.add:method",
+      side: "old",
+    });
+    const answer = await api.explainImpact(1, report.run_id);
+    expect(answer.refused).toBe(false);
+    expect(answer.claims.length).toBeGreaterThan(0);
+    expect(answer.citations.map((c) => c.claim_id)).toEqual(answer.claims.map((c) => c.id));
+    expect(answer.trace_id).not.toBe(report.trace_id);
+    await expect(api.explainImpact(1, 999)).rejects.toMatchObject({
+      status: 404,
+      details: { resource: "impact_run" },
+    });
+    await expect(api.explainImpact(2, report.run_id)).rejects.toMatchObject({ status: 404 });
+  });
+
   it("answers reads like the API", async () => {
     const { api } = setup();
     const detail = await api.getNode(1, "py:src/shop/cart.py:Cart:class");
