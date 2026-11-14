@@ -84,7 +84,7 @@ Each variant has its own canary string so a leak can be traced to its source.
 - [x] **T1 — OpenTelemetry.** Instrumentation and mirroring of `trace_span`; tests that spans nest correctly.
 - [x] **T2 — Optional OTLP export.** Configuration, documentation; test that the app runs with export off and on (against a collector inside the test).
 - [x] **T3 — Impact explanation endpoint and button.** `POST /snapshots/{id}/impact/{run_id}/explain`, stored and rate-limited like a question; Explain button in `ImpactPanel`; tests with `FakeLLM` and mock mode.
-- [ ] **T4 — Trace panel and cost badges.** API enrichments if needed; `TracePanel`; Playwright test.
+- [x] **T4 — Trace panel and cost badges.** API enrichments if needed; `TracePanel`; Playwright test.
 - [ ] **T5 — Injection detector.** Rules, severity, tests; false-positive rate on benchmark repos recorded.
 - [ ] **T6 — Hardened prompts.** Flagged spans in evidence, system message update, UI warning icon; prompt layout tests; the recorded answer cassette's request rebased (decision 0021).
 - [ ] **T7 — Planted-injection fixture.** At least 15 variants, canaries, questions.

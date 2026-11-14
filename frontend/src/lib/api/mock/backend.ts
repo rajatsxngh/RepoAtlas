@@ -12,6 +12,7 @@ import type {
   EdgeKind,
   ImpactResponse,
   JobView,
+  TraceView,
   NodeKind,
   SnapshotView,
   SubgraphLevel,
@@ -26,6 +27,7 @@ import {
 import { mockAnswer, sseBody } from "./ask";
 import { mockExplanation, mockImpact } from "./impact";
 import { MockApiError, MockGraph } from "./graph";
+import { mockAnswerTrace, mockImpactTrace } from "./trace";
 
 export interface MockResponse {
   status: number;
@@ -377,6 +379,7 @@ export class MockBackend {
     }
     this.askRuns += 1;
     const answer = mockAnswer(graph, question, this.askRuns);
+    this.traces.set(answer.trace_id!, mockAnswerTrace(answer, snapshotId, "answer"));
     const steps =
       answer.refused && answer.metrics.claims_total === 0
         ? ["retrieving"]
@@ -394,6 +397,8 @@ export class MockBackend {
   }
 
   private impactRuns = 0;
+  /** Traces of everything this backend answered, by ID (`GET /traces/{id}`). */
+  private traces = new Map<string, TraceView>();
 
   /** `POST /snapshots/{id}/impact` with a symbol key (diffs need the API's text search). */
   private async impact(snapshotId: number, body: unknown): Promise<MockResponse> {
@@ -410,6 +415,10 @@ export class MockBackend {
     this.impactRuns += 1;
     const report = mockImpact(graph, key, this.impactRuns);
     this.impactReports.set(report.run_id, { snapshotId, report });
+    this.traces.set(
+      report.trace_id,
+      mockImpactTrace(report.trace_id, snapshotId, report.items.length),
+    );
     return { status: 200, body: report };
   }
 
@@ -428,7 +437,9 @@ export class MockBackend {
       );
     }
     this.askRuns += 1;
-    return { status: 200, body: mockExplanation(stored.report, 1000 + this.askRuns) };
+    const answer = mockExplanation(stored.report, 1000 + this.askRuns);
+    this.traces.set(answer.trace_id!, mockAnswerTrace(answer, snapshotId, "impact_explain"));
+    return { status: 200, body: answer };
   }
 
   /** Answers one request (method, URL under `/api/v1`, parsed JSON body). */
@@ -475,6 +486,17 @@ export class MockBackend {
         status: 200,
         body: { status: "ready", database: "ok", revision: "mock", expected_revision: "mock" },
       };
+    }
+    const trace = /^\/traces\/([0-9a-fA-F-]{36})$/.exec(path);
+    if (trace) {
+      const found = this.traces.get(trace[1]!.toLowerCase());
+      if (!found) {
+        throw new MockApiError(404, "not_found", `Trace ${trace[1]} does not exist.`, {
+          resource: "trace",
+          trace_id: trace[1],
+        });
+      }
+      return { status: 200, body: found };
     }
     const job = /^\/jobs\/(\d+)$/.exec(path);
     if (job) return { status: 200, body: this.getJob(Number(job[1])) };

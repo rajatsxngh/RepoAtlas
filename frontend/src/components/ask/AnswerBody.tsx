@@ -2,12 +2,14 @@
 
 /**
  * A validated answer as the panels show it: the refusal (if any), the markdown through the
- * sanitized renderer, each claim with its citations as chips, and the measured numbers. Used
+ * sanitized renderer, each claim with its citations as chips, the measured numbers, and a cost
+ * badge that opens the run's trace. Used
  * for answers to questions and for explanations of impact reports. Claims and paths are repo
  * or model text, rendered as text.
  */
 
 import type { ReactNode } from "react";
+import { TraceToggle } from "@/components/trace/TracePanel";
 import type { AnswerView, Citation, RefusalKind } from "@/lib/api/types";
 import { Markdown } from "@/lib/markdown";
 
@@ -107,6 +109,13 @@ export function AnswerBody({
         </ol>
       ) : null}
       <Metrics answer={answer} />
+      <TraceToggle
+        traceId={answer.trace_id}
+        costUsd={answer.cost_usd}
+        tokens={
+          answer.usage.input_tokens + answer.usage.cache_read_tokens + answer.usage.output_tokens
+        }
+      />
       {children}
     </section>
   );

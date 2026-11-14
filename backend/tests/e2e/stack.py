@@ -72,6 +72,8 @@ def main() -> None:
         web_origins=",".join(origins),
         rate_limit_enabled=False,
         embedding_model="hash-256",  # no model download in end-to-end runs
+        anthropic_api_key=None,
+        llm_transport="offline",  # answers and explanations without a model (decision 0020)
         worker_poll_s=0.2,
         job_retry_backoff_s=(1.0,),
     )

@@ -15,6 +15,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { CircleHelp, Sparkles, X, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AnswerBody } from "@/components/ask/AnswerBody";
+import { TraceToggle } from "@/components/trace/TracePanel";
 import { CodeViewer } from "@/components/code/CodeViewer";
 import type { HighlightLayer } from "@/components/graph/layers";
 import { Button } from "@/components/ui/Button";
@@ -237,6 +238,7 @@ export function ImpactPanel({
               {report.unknown.length} unknown · scores combine every path (decay{" "}
               {report.params.decay}, depth ≤ {report.params.max_depth})
             </p>
+            <TraceToggle traceId={report.trace_id} label="Trace of the analysis" />
             <section aria-label="Explain" className="space-y-2">
               <div className="flex items-center gap-2">
                 <Button
