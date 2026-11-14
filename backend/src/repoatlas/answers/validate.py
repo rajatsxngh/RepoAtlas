@@ -43,6 +43,9 @@ class BlobSource(Protocol):
     def text(self, blob_oid: str) -> str | None: ...
 
 
+_FULL_OID = re.compile(r"[0-9a-f]{40}")
+
+
 class StoreBlobs:
     """Blob text from the store's ``blobs`` table, keeping the most recent ``cache_size``."""
 
@@ -53,6 +56,8 @@ class StoreBlobs:
         self._lock = threading.Lock()
 
     def text(self, blob_oid: str) -> str | None:
+        if not _FULL_OID.fullmatch(blob_oid):  # never a query for something that isn't an OID
+            return None
         with self._lock:
             if blob_oid in self._cache:
                 self._cache.move_to_end(blob_oid)

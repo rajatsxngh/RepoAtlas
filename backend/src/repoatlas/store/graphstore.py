@@ -27,6 +27,11 @@ from repoatlas.graph.model import (
     owner_sort_key,
     unresolved_sort_key,
 )
+from repoatlas.guardrails.allowlist import (
+    SnapshotFile,
+    ensure_snapshot_path,
+    validate_line_range,
+)
 from repoatlas.store import rows
 from repoatlas.store.cache import (
     DIRECTIONS,
@@ -42,7 +47,6 @@ from repoatlas.store.cache import (
 from repoatlas.store.errors import (
     InvalidQuery,
     NodeNotFound,
-    PathNotInSnapshot,
     SnapshotNotFound,
     SnapshotNotReady,
     TextNotStored,
@@ -540,12 +544,9 @@ class GraphStore:
             if file.line_count is None:
                 reason = file.skip_reason or "no text"
                 raise TextNotStored(f"{path} was skipped ({reason}); its text is not stored.")
-            first = max(start, 1)
-            last = min(end, file.line_count, first + self.max_read_lines - 1)
-            if first > last:
-                raise InvalidQuery(
-                    f"Line {first} is past the end of {path} ({file.line_count} lines)."
-                )
+            first, last = validate_line_range(
+                start, end, line_count=file.line_count, max_lines=self.max_read_lines, path=path
+            )
             body = connection.execute(
                 text(
                     "SELECT array_to_string((string_to_array(text, chr(10)))"
@@ -569,7 +570,7 @@ class GraphStore:
         """Authors of ``path``, most commits first (empty for files without history)."""
         with self.engine.connect() as connection:
             self._require_ready(snapshot_id, connection)
-            file_id = _file_id(connection, snapshot_id, path)
+            file_id = _file_row(connection, snapshot_id, path).id
             owners = [
                 rows.owner_from_row(row)
                 for row in connection.execute(
@@ -670,29 +671,32 @@ def _edge_kinds(
     return [kind for kind in EdgeKind if kind in chosen]
 
 
-def _file_id(connection: Connection, snapshot_id: int, path: str) -> int:
-    file_id = connection.execute(
-        text("SELECT id FROM files WHERE snapshot_id = :s AND path = :path"),
-        {"s": snapshot_id, "path": path},
-    ).scalar_one_or_none()
-    if file_id is None:
-        raise PathNotInSnapshot(f"Snapshot {snapshot_id} has no file {path!r}.")
-    return int(file_id)
+def _file_row(connection: Connection, snapshot_id: int, path: str) -> SnapshotFile:
+    """The snapshot's file at ``path``: its row ID, blob, skip reason, and stored line count
+    (``None`` without text). Every read that names a path goes through the allowlist
+    (``ensure_snapshot_path``, GRD-7): the path's shape is checked, then it must be one of the
+    snapshot's own ``files`` rows."""
 
+    def lookup(snapshot: int, wanted: str) -> SnapshotFile | None:
+        row = connection.execute(
+            text(
+                "SELECT f.id, f.blob_oid, f.skip_reason, b.line_count FROM files f "
+                "LEFT JOIN blobs b ON b.oid = f.blob_oid AND f.skip_reason IS NULL "
+                "WHERE f.snapshot_id = :s AND f.path = :path"
+            ),
+            {"s": snapshot, "path": wanted},
+        ).first()
+        if row is None:
+            return None
+        return SnapshotFile(
+            id=row.id,
+            path=wanted,
+            blob_oid=row.blob_oid,
+            line_count=row.line_count,
+            skip_reason=row.skip_reason,
+        )
 
-def _file_row(connection: Connection, snapshot_id: int, path: str) -> Any:
-    """The file's row ID, blob, skip reason, and stored line count (``None`` without text)."""
-    row = connection.execute(
-        text(
-            "SELECT f.id, f.blob_oid, f.skip_reason, b.line_count FROM files f "
-            "LEFT JOIN blobs b ON b.oid = f.blob_oid AND f.skip_reason IS NULL "
-            "WHERE f.snapshot_id = :s AND f.path = :path"
-        ),
-        {"s": snapshot_id, "path": path},
-    ).first()
-    if row is None:
-        raise PathNotInSnapshot(f"Snapshot {snapshot_id} has no file {path!r}.")
-    return row
+    return ensure_snapshot_path(snapshot_id, path, lookup=lookup)
 
 
 def _nodes_by_id(connection: Connection, ids: Sequence[int]) -> dict[int, Node]:
