@@ -48,7 +48,7 @@ recorded response and rewrite only the cassette's request.
    impact run as an `AnswerView`, is stored in `qa_runs` with mode `impact_explain`, counts as
    a question for rate limits and the spend cap, and has a button in the impact panel.
 6. **The answer cassette is rebased, not re-recorded.** Its request is rewritten to the
-   hardened prompt; its response stays the one recorded from the API on 2026-11-12. The
+   hardened prompt; its response stays the one recorded from the API on 2026-11-11. The
    cassette gains a `note` saying so and keeps `"source": "live"`. Replay still fails on any
    further request change. Re-recording it is a live-pass item. The cassette shows that the
    request shape is the one the client sends and that a real response parses and validates; it

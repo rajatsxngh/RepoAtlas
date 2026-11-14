@@ -9,7 +9,7 @@ synthetic outputs and re-run on cached outputs for free.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -60,6 +60,17 @@ class JudgeScore(BaseModel):
     rationale: str = ""
 
 
+class ToolCallRecord(BaseModel):
+    """One tool call an answering mode made. ``allowed`` is False when the mode's allowlist
+    refused it (the call did not run). One-shot modes make none."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    allowed: bool = True
+
+
 class SystemOutput(BaseModel):
     kind: Literal["answer", "impact"] = "answer"
     outcome: Outcome = "answered"
@@ -78,6 +89,8 @@ class SystemOutput(BaseModel):
     claims_total: int = 0
     claims_dropped: int = 0
     evidence_count: int = 0
+    evidence_flagged: int = 0  # evidence blocks the injection detector marked
+    tool_calls: list[ToolCallRecord] = Field(default_factory=list)
     # Added by the checker and the judge when they run.
     support: list[SupportLabel] | None = None
     judge: JudgeScore | None = None

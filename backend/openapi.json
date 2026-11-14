@@ -1992,6 +1992,11 @@
             "title": "Evidence Count",
             "default": 0
           },
+          "evidence_flagged": {
+            "type": "integer",
+            "title": "Evidence Flagged",
+            "default": 0
+          },
           "retrieval_top_score": {
             "anyOf": [
               {
@@ -2211,6 +2216,13 @@
           },
           "ref": {
             "$ref": "#/components/schemas/EvidenceRef"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flags"
           }
         },
         "type": "object",
@@ -2219,7 +2231,8 @@
           "evidence_id",
           "ref"
         ],
-        "title": "Citation"
+        "title": "Citation",
+        "description": "A claim's valid citation. ``flags`` are the kinds of instruction-like text the detector\nmarked in the cited evidence (GRD-3); the text was given to the model as data."
       },
       "Claim": {
         "properties": {

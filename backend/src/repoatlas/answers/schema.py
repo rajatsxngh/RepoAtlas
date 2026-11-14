@@ -17,6 +17,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from repoatlas.guardrails.detector import Flag, kinds, marked, scan, scan_path
 from repoatlas.llm.compat import output_schema
 from repoatlas.llm.types import Usage
 from repoatlas.retrieval.evidence import EvidenceRef
@@ -55,11 +56,15 @@ def answer_draft_schema() -> dict[str, Any]:
 
 
 class Citation(BaseModel):
+    """A claim's valid citation. ``flags`` are the kinds of instruction-like text the detector
+    marked in the cited evidence (GRD-3); the text was given to the model as data."""
+
     model_config = ConfigDict(frozen=True)
 
     claim_id: str
     evidence_id: str
     ref: EvidenceRef
+    flags: list[str] = Field(default_factory=list)
 
 
 class AnswerMetrics(BaseModel):
@@ -73,6 +78,7 @@ class AnswerMetrics(BaseModel):
     claims_total: int = 0
     claims_dropped: int = 0
     evidence_count: int = 0
+    evidence_flagged: int = 0  # evidence blocks the injection detector marked
     retrieval_top_score: float | None = None
 
 
@@ -104,15 +110,34 @@ class NumberedEvidence(BaseModel):
 
     id: str
     item: EvidenceItem
+    # What the injection detector marked (GRD-3): in the text (spans index ``item.text``) and
+    # in the file's path. Only findings at or above the marking severity are kept.
+    flags: tuple[Flag, ...] = ()
+    path_flags: tuple[Flag, ...] = ()
 
     @property
     def ref(self) -> EvidenceRef:
         return self.item.ref
 
+    @property
+    def flag_kinds(self) -> list[str]:
+        """The kinds marked in the text or the path, in a fixed order."""
+        return kinds([*self.flags, *self.path_flags])
+
 
 def number_evidence(items: list[EvidenceItem]) -> dict[str, NumberedEvidence]:
-    """``E1``…``En`` for the evidence in the order given (the retriever's score order)."""
+    """``E1``…``En`` for the evidence in the order given (the retriever's score order), each
+    scanned by the injection detector."""
     return {
-        f"E{index}": NumberedEvidence(id=f"E{index}", item=item)
+        f"E{index}": NumberedEvidence(
+            id=f"E{index}",
+            item=item,
+            flags=tuple(marked(scan(item.text))),
+            path_flags=tuple(marked(scan_path(item.ref.path))),
+        )
         for index, item in enumerate(items, start=1)
     }
+
+
+def flagged_count(evidence: dict[str, NumberedEvidence]) -> int:
+    return sum(1 for item in evidence.values() if item.flags or item.path_flags)

@@ -186,6 +186,7 @@ def answer_output(result: AnswerResult, index: SymbolIndex, latency_s: float) ->
         claims_total=metrics.claims_total,
         claims_dropped=metrics.claims_dropped,
         evidence_count=metrics.evidence_count,
+        evidence_flagged=metrics.evidence_flagged,
         cost_usd=result.cost_usd,
         latency_s=round(latency_s, 3),
         input_tokens=result.usage.total_input_tokens,

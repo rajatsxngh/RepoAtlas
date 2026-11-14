@@ -35,6 +35,9 @@ class Cassette(BaseModel):
     description: str = ""
     source: Literal["live", "docs"] = "live"
     recorded_at: str | None = None
+    # Anything a reader must know about this recording, for example that its requests were
+    # rebased onto a changed prompt while its responses are older (decision 0021).
+    note: str | None = None
     interactions: list[Interaction] = Field(default_factory=list)
 
 

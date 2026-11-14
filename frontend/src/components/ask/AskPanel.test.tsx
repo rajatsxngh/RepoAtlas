@@ -45,6 +45,7 @@ const HOSTILE: AnswerView = {
     claims_total: 2,
     claims_dropped: 1,
     evidence_count: 4,
+    evidence_flagged: 0,
     retrieval_top_score: 0.03,
   },
 };

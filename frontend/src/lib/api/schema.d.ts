@@ -461,6 +461,11 @@ export interface components {
              * @default 0
              */
             evidence_count: number;
+            /**
+             * Evidence Flagged
+             * @default 0
+             */
+            evidence_flagged: number;
             /** Retrieval Top Score */
             retrieval_top_score?: number | null;
         };
@@ -539,13 +544,19 @@ export interface components {
              */
             url: string;
         };
-        /** Citation */
+        /**
+         * Citation
+         * @description A claim's valid citation. ``flags`` are the kinds of instruction-like text the detector
+         *     marked in the cited evidence (GRD-3); the text was given to the model as data.
+         */
         Citation: {
             /** Claim Id */
             claim_id: string;
             /** Evidence Id */
             evidence_id: string;
             ref: components["schemas"]["EvidenceRef"];
+            /** Flags */
+            flags?: string[];
         };
         /**
          * Claim

@@ -23,6 +23,7 @@ from repoatlas.answers.schema import (
     AnswerMetrics,
     AnswerResult,
     Budget,
+    flagged_count,
     number_evidence,
 )
 from repoatlas.answers.system import DAILY_CAP_TEXT, daily_cap_decision
@@ -88,6 +89,7 @@ class ImpactExplainer:
                 refusal_kind=result.refusal_kind,
                 claims=len(result.claims),
                 evidence=result.metrics.evidence_count,
+                evidence_flagged=result.metrics.evidence_flagged,
             )
         return result.model_copy(update={"trace_id": trace.id})
 
@@ -136,6 +138,7 @@ class ImpactExplainer:
                 metrics,
             )
         evidence = number_evidence(items)
+        metrics = metrics.model_copy(update={"evidence_flagged": flagged_count(evidence)})
         messages = build_answer_messages(
             impact_question(report, self.chosen_items(report)), evidence
         )

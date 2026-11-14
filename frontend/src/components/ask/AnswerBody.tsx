@@ -3,11 +3,14 @@
 /**
  * A validated answer as the panels show it: the refusal (if any), the markdown through the
  * sanitized renderer, each claim with its citations as chips, the measured numbers, and a cost
- * badge that opens the run's trace. Used
- * for answers to questions and for explanations of impact reports. Claims and paths are repo
- * or model text, rendered as text.
+ * badge that opens the run's trace. Used for answers to questions and for explanations of
+ * impact reports. Claims and paths are repo or model text, rendered as text.
+ *
+ * A citation whose code the injection detector flagged (GRD-3) shows a warning icon: the code
+ * contains text that looks written to steer an AI, and it was given to the model as data.
  */
 
+import { TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { TraceToggle } from "@/components/trace/TracePanel";
 import type { AnswerView, Citation, RefusalKind } from "@/lib/api/types";
@@ -25,6 +28,22 @@ export function citationLabel(citation: Citation): string {
   return start === end ? `${name}:${start}` : `${name}:${start}–${end}`;
 }
 
+/** What the injection detector found, in words. Unknown kinds (from a newer API) read as is. */
+const FLAG_TEXT: Record<string, string> = {
+  instruction_to_assistant: "instructions addressed to an AI",
+  role_or_system_claim: "a fake system or role message",
+  tool_request: "a request to call a tool",
+  exfiltration_url: "a link built to carry data out",
+  encoded_payload: "an encoded payload",
+  canary_like: "a marker token",
+};
+
+/** The warning on a citation whose code contains instruction-like text. */
+export function flagWarning(flags: readonly string[]): string {
+  const found = flags.map((flag) => FLAG_TEXT[flag] ?? flag).join(", ");
+  return `This code contains text that looks like it was written to steer an AI (${found}). It was treated as data, not followed.`;
+}
+
 function percent(value: number | null | undefined): string {
   return value === null || value === undefined ? "–" : `${Math.round(value * 100)}%`;
 }
@@ -37,6 +56,9 @@ function Metrics({ answer }: { answer: AnswerView }) {
         ? `${metrics.citations_valid} of ${metrics.citations_total} citations valid before filtering (${percent(metrics.prefilter_citation_validity)})`
         : "No citations checked"}
       {metrics.claims_dropped > 0 ? ` · ${metrics.claims_dropped} claims dropped` : ""}
+      {metrics.evidence_flagged > 0
+        ? ` · ${metrics.evidence_flagged} of ${metrics.evidence_count} code excerpts flagged as instruction-like`
+        : ""}
       {` · $${answer.cost_usd.toFixed(4)}`}
     </p>
   );
@@ -86,19 +108,29 @@ export function AnswerBody({
                     const active =
                       cited?.claim_id === citation.claim_id &&
                       cited.evidence_id === citation.evidence_id;
+                    const flags = citation.flags ?? [];
+                    const where = `${citation.ref.path}, lines ${citation.ref.start_line}–${citation.ref.end_line}`;
                     return (
                       <button
                         key={citation.evidence_id}
                         type="button"
                         aria-pressed={active}
-                        title={`${citation.ref.path}, lines ${citation.ref.start_line}–${citation.ref.end_line}`}
+                        data-flagged={flags.length > 0 ? "true" : undefined}
+                        title={flags.length > 0 ? `${where}. ${flagWarning(flags)}` : where}
                         onClick={() => onCite(citation)}
-                        className={`rounded-md border px-1.5 py-0.5 font-mono text-[11px] ${
+                        className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[11px] ${
                           active
                             ? "border-focus bg-focus/10 text-fg"
                             : "border-line bg-surface-2 text-fg-muted hover:text-fg"
                         }`}
                       >
+                        {flags.length > 0 ? (
+                          <TriangleAlert
+                            className="h-3 w-3 text-warn"
+                            role="img"
+                            aria-label={flagWarning(flags)}
+                          />
+                        ) : null}
                         {citationLabel(citation)}
                       </button>
                     );

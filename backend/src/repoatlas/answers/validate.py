@@ -26,7 +26,14 @@ from typing import Literal, Protocol
 from pydantic import BaseModel
 from sqlalchemy import Engine, text
 
-from repoatlas.answers.schema import AnswerDraft, AnswerMetrics, Citation, Claim, NumberedEvidence
+from repoatlas.answers.schema import (
+    AnswerDraft,
+    AnswerMetrics,
+    Citation,
+    Claim,
+    NumberedEvidence,
+    flagged_count,
+)
 from repoatlas.store.blobs import line_count, split_lines
 
 Reason = Literal["unknown_id", "blob_missing", "range_missing", "symbol_not_in_range"]
@@ -119,7 +126,12 @@ class CitationValidator:
             if valid_ids:
                 kept.append(claim.model_copy(update={"evidence_ids": valid_ids}))
                 citations.extend(
-                    Citation(claim_id=claim.id, evidence_id=eid, ref=evidence_map[eid].ref)
+                    Citation(
+                        claim_id=claim.id,
+                        evidence_id=eid,
+                        ref=evidence_map[eid].ref,
+                        flags=evidence_map[eid].flag_kinds,
+                    )
                     for eid in valid_ids
                 )
             else:
@@ -134,6 +146,7 @@ class CitationValidator:
             claims_total=len(draft.claims),
             claims_dropped=len(dropped),
             evidence_count=len(evidence_map),
+            evidence_flagged=flagged_count(evidence_map),
         )
         return ValidationReport(
             claims=kept,

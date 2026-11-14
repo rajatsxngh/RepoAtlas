@@ -19,7 +19,7 @@ configuration plus one run per item.
 | 5 | M12 | On the self-host stack with an API key: a question gets a cited answer from the live model | API key, a few cents of calls | Pending |
 | 6 | M13 | Live injection suite for one-shot answers, three runs per question: zero canary leaks | API key; capped at $2.00 | Pending |
 | 7 | M13 | Live injection suite for impact explanations, three runs per question: zero canary leaks | API key; capped at $2.00 | Pending |
-| 8 | M13 | Re-record the answer cassette against the hardened prompt (its request was rebased, its response is from 2026-11-12) | API key, about a cent | Pending |
+| 8 | M13 | Re-record the answer cassette against the hardened prompt (its request was rebased, its response is from 2026-11-11) | API key, about a cent | Pending |
 | 9 | M13 | Spans arrive in a real Langfuse project over OTLP/HTTP | Langfuse account (free tier or self-hosted) | Pending |
 
 ## How to run them

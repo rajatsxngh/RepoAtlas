@@ -66,6 +66,7 @@ export function mockAnswer(graph: MockGraph, question: string, runId: number): A
         claims_total: 0,
         claims_dropped: 0,
         evidence_count: 0,
+        evidence_flagged: 0,
         retrieval_top_score: 0.01,
       },
     };
@@ -98,6 +99,7 @@ export function mockAnswer(graph: MockGraph, question: string, runId: number): A
       claims_total: 1,
       claims_dropped: 0,
       evidence_count: 8,
+      evidence_flagged: 0,
       retrieval_top_score: 0.033,
     },
   };

@@ -15,6 +15,7 @@ Answer questions with claims that each cite exact code, refuse when evidence is 
 
 ## Provides
 
+- **Added later by decision 0021** (backward compatible): numbered evidence carries `flags` and `path_flags` from the injection detector; the evidence block header gains `flags="kind,…"` when the block is marked, and marked spans are wrapped in `<flagged reason="…">…</flagged>` (`repoatlas.answers.prompting.mark_flagged`; repo text can't forge or close the marker); `SYSTEM_PROMPT` gains the flagged-text rule; `Citation` gains `flags: list[str]` and `AnswerMetrics` gains `evidence_flagged`; `Cassette` gains an optional `note`, and `REPOATLAS_REBASE_CASSETTES=1` rewrites a cassette's requests while keeping its recorded responses (`tests.cassettes`); every `trace_span` is mirrored as an OpenTelemetry span.
 - **Added later by decision 0020** (backward compatible): `LLMClient(…, guard=…)` and `LLMClient.from_settings(settings, transport=None, *, guard=None)` — a spending guard is asked before every request and raises `repoatlas.llm.types.SpendCapReached`, which answer systems turn into a `budget` refusal; `llm_transport = "offline"` selects `repoatlas.llm.offline.OfflineTransport`, a stand-in that calls no model (stack checks only; refused when an API key is set); `oneshot_from_settings` attaches the settings' `SpendGuard`; the ask stream sends a `: keep-alive` comment every 15 seconds of silence.
 - **`repoatlas.llm.client.LLMClient`**
   - `complete(role, messages, *, schema=None, tools=None, max_tokens, cache_static=True) -> LLMResult`

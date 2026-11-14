@@ -31,6 +31,7 @@ from repoatlas.answers.schema import (
     AnswerMetrics,
     AnswerResult,
     Budget,
+    flagged_count,
     number_evidence,
 )
 from repoatlas.answers.validate import CitationValidator
@@ -125,6 +126,7 @@ class OneShotAnswerSystem:
                 claims=len(result.claims),
                 citations=len(result.citations),
                 evidence=result.metrics.evidence_count,
+                evidence_flagged=result.metrics.evidence_flagged,
                 prefilter_citation_validity=result.metrics.prefilter_citation_validity,
                 dropped_claim_rate=result.metrics.dropped_claim_rate,
             )
@@ -149,6 +151,7 @@ class OneShotAnswerSystem:
             return _refused(decision, NO_EVIDENCE_TEXT, metrics)
 
         evidence = number_evidence(retrieval.evidence)
+        metrics = metrics.model_copy(update={"evidence_flagged": flagged_count(evidence)})
         messages = build_answer_messages(question, evidence)
         model = self.llm.model_for("large")
         worst = REPAIR_FACTOR * self.prices.max_cost(

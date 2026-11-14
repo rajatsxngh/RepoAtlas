@@ -30,7 +30,11 @@ OFFLINE_NOTICE = (
     "retrieved for the question."
 )
 MAX_OFFLINE_CLAIMS = 3
-_EVIDENCE = re.compile(r'^<evidence id="(E\d+)" path="[^"\n]*" lines="(\d+)-(\d+)">$', re.MULTILINE)
+# The header may also carry flags="…" (kinds the injection detector marked in the block).
+_EVIDENCE = re.compile(
+    r'^<evidence id="(E\d+)" path="[^"\n]*" lines="(\d+)-(\d+)"(?: flags="[a-z_,]*")?>$',
+    re.MULTILINE,
+)
 _DRAFT_FIELDS = frozenset({"answer_markdown", "claims", "refused", "refusal_reason"})
 
 

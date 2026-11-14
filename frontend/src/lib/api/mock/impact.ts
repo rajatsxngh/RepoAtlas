@@ -242,6 +242,7 @@ export function mockExplanation(report: ImpactResponse, runId: number): AnswerVi
         claims_total: 0,
         claims_dropped: 0,
         evidence_count: 0,
+        evidence_flagged: 0,
         retrieval_top_score: null,
       },
     };
@@ -283,6 +284,7 @@ export function mockExplanation(report: ImpactResponse, runId: number): AnswerVi
       claims_total: claims.length,
       claims_dropped: 0,
       evidence_count: cited.length + 1,
+      evidence_flagged: 0,
       retrieval_top_score: null,
     },
   };
