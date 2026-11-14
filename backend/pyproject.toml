@@ -117,6 +117,7 @@ markers = [
     "unit: fast tests with no external services (applied automatically under tests/unit)",
     "integration: tests that need Postgres (applied automatically under tests/integration)",
     "live: tests that call paid external APIs; opt in with -m live; never run in CI",
+    "injection_static: deterministic injection tests: prompt layout, detector, allowlists (no model)",
 ]
 
 [tool.coverage.run]

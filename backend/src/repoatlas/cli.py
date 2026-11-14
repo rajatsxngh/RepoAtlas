@@ -21,6 +21,7 @@ from repoatlas.config import get_settings
 from repoatlas.db import migrate
 from repoatlas.db.engine import create_db_engine, redact_url
 from repoatlas.evals.cli import eval_app
+from repoatlas.guardrails.cli import guardrails_app
 from repoatlas.impact.cli import impact_app
 from repoatlas.ingest.errors import IngestError
 from repoatlas.jobs.worker import Worker
@@ -56,6 +57,7 @@ app.add_typer(sandbox_app, name="sandbox")
 app.add_typer(bench_app, name="bench")
 app.add_typer(eval_app, name="eval")
 app.add_typer(impact_app, name="impact")
+app.add_typer(guardrails_app, name="guardrails")
 
 
 def _show_version(value: bool) -> None:

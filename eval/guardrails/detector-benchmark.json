@@ -1,0 +1,87 @@
+{
+  "chunks": 13200,
+  "chunks_marked": 0,
+  "detector_version": 1,
+  "mark_severity": 0.5,
+  "marked_rate": 0.0,
+  "snapshots": [
+    {
+      "chunks": 2110,
+      "chunks_flagged": 0,
+      "chunks_marked": 0,
+      "commit": "cf19179e8e2fd54c601378cec9e0d21bb12b6fb1",
+      "flags_by_kind": {},
+      "marked_by_kind": {},
+      "marked_rate": 0.0,
+      "paths": 86,
+      "paths_marked": 0,
+      "repo": "pallets/click",
+      "samples": [],
+      "snapshot_id": 19
+    },
+    {
+      "chunks": 841,
+      "chunks_flagged": 12,
+      "chunks_marked": 0,
+      "commit": "6e83187b8feb273ed4c6cdab5efd8d54901dfab3",
+      "flags_by_kind": {
+        "exfiltration_url": 28
+      },
+      "marked_by_kind": {},
+      "marked_rate": 0.0,
+      "paths": 36,
+      "paths_marked": 0,
+      "repo": "psf/requests",
+      "samples": [],
+      "snapshot_id": 20
+    },
+    {
+      "chunks": 1301,
+      "chunks_flagged": 29,
+      "chunks_marked": 0,
+      "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+      "flags_by_kind": {
+        "exfiltration_url": 58
+      },
+      "marked_by_kind": {},
+      "marked_rate": 0.0,
+      "paths": 57,
+      "paths_marked": 0,
+      "repo": "encode/httpx",
+      "samples": [],
+      "snapshot_id": 21
+    },
+    {
+      "chunks": 3716,
+      "chunks_flagged": 6,
+      "chunks_marked": 0,
+      "commit": "ec4d3f5dad1105c522c83ec4877e04937cb2405e",
+      "flags_by_kind": {
+        "exfiltration_url": 8
+      },
+      "marked_by_kind": {},
+      "marked_rate": 0.0,
+      "paths": 659,
+      "paths_marked": 0,
+      "repo": "remeda/remeda",
+      "samples": [],
+      "snapshot_id": 22
+    },
+    {
+      "chunks": 5232,
+      "chunks_flagged": 12,
+      "chunks_marked": 0,
+      "commit": "c7ec94d309ee8acb25113e3db738b3e03816a424",
+      "flags_by_kind": {
+        "exfiltration_url": 40
+      },
+      "marked_by_kind": {},
+      "marked_rate": 0.0,
+      "paths": 503,
+      "paths_marked": 0,
+      "repo": "colinhacks/zod",
+      "samples": [],
+      "snapshot_id": 23
+    }
+  ]
+}
