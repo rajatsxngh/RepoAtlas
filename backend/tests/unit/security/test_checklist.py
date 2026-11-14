@@ -86,4 +86,4 @@ def test_every_named_web_test_exists(path: str, title: str) -> None:
 def test_the_checklist_says_what_is_not_yet_shown() -> None:
     injection = ITEMS["S1"][1]
     assert "Not yet shown" in injection and "live-pass.md" in injection
-    assert len(PYTEST_REFS) >= 40 and len(WEB_REFS) >= 8
+    assert len(PYTEST_REFS) >= 40 and len(WEB_REFS) >= 8  # 60 and 10 at the M13 gate

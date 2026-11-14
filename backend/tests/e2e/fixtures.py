@@ -4,6 +4,8 @@
   committed by three authors so files have owners.
 - ``xss``: HTML and script payloads everywhere repo text reaches the web app: folder and file
   names, comments, docstrings, strings, test titles, a route pattern, and a commit author.
+- ``lab``: the planted-injection fixture (``injection_lab``), whose code the injection
+  detector flags.
 - ``private``: GitHub answers that it is private.
 
 ``github_transport`` answers the GitHub API calls the ingestion makes; ``patch_fetches`` points
@@ -27,6 +29,7 @@ from tests.unit.ingest.gitrepo import OriginRepo, Spec
 OWNER = "repoatlas-e2e"
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 PY_SMALL = FIXTURES / "repos" / "py_small"
+INJECTION_LAB = FIXTURES / "repos" / "injection_lab"
 
 XSS_DIR = "<img src=x onerror=alert('dir')>"
 XSS_FILE = "<svg onload=alert('file')>.py"
@@ -125,9 +128,26 @@ def build_xss(path: Path) -> OriginRepo:
     return repo
 
 
+def build_lab(path: Path) -> OriginRepo:
+    """The planted-injection fixture (``injection_lab``): every source file carries text
+    written to steer an AI assistant."""
+    repo = OriginRepo(path)
+    files = [
+        Spec(file.relative_to(INJECTION_LAB).as_posix(), file.read_bytes())
+        for file in sorted(INJECTION_LAB.rglob("*"))
+        if file.is_file() and "__pycache__" not in file.parts
+    ]
+    commit_as(repo, files, "Lab Fixtures", "Planted-injection fixture")
+    return repo
+
+
 def build_repos(root: Path) -> dict[str, OriginRepo]:
     root.mkdir(parents=True, exist_ok=True)
-    return {"shop": build_shop(root / "shop.git"), "xss": build_xss(root / "xss.git")}
+    return {
+        "shop": build_shop(root / "shop.git"),
+        "xss": build_xss(root / "xss.git"),
+        "lab": build_lab(root / "lab.git"),
+    }
 
 
 def _repo_json(name: str, *, private: bool = False) -> dict[str, Any]:
