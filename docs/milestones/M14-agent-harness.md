@@ -72,7 +72,7 @@ AGT-1, AGT-2, AGT-3, AGT-4, AGT-5, AGT-6, AGT-7, AGT-8
 
 ## Tasks
 
-- [ ] **T1 — Tools.** Implementations and schemas; unit tests per tool on the fixture repos.
+- [x] **T1 — Tools.** Implementations and schemas; unit tests per tool on the fixture repos.
 - [ ] **T2 — Validation, allowlists, trimming.** Argument validators, snapshot allowlist, result trimming, detector pass on tool output.
 - [ ] **T3 — Agent loop.** Steps, stop conditions, budgets, routing, repeated-call guard; scripted `FakeLLM` tests (normal finish, step cap, budget stop, tool error).
 - [ ] **T4 — Evidence ledger and final answer.** Validation of ledger citations; refusal rules.
