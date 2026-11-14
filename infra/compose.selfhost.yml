@@ -27,6 +27,9 @@ x-backend-env: &backend-env
   REPOATLAS_MAX_REPO_SIZE_KB: ${REPOATLAS_MAX_REPO_SIZE_KB:-500000}
   REPOATLAS_MAX_SOURCE_FILES: ${REPOATLAS_MAX_SOURCE_FILES:-5000}
   REPOATLAS_MAX_FILE_BYTES: ${REPOATLAS_MAX_FILE_BYTES:-1000000}
+  # Optional trace export over OTLP/HTTP (docs/observability.md). Empty: nothing is sent.
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+  OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
 
 x-backend-build-args: &backend-build-args
   EMBEDDING_MODEL: ${REPOATLAS_EMBEDDING_MODEL:-jinaai/jina-embeddings-v2-base-code}

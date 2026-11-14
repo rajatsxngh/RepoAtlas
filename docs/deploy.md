@@ -44,6 +44,9 @@ deployed.
 | `REPOATLAS_TRUST_PROXY_HEADERS` | `true` | — | The visitor's address comes from the web app (`X-Forwarded-For`). Set it only when the API is reachable through the web app alone. |
 | `REPOATLAS_RATE_LIMIT_SALT` | recommended | — | Random; keeps hashed visitor keys stable across restarts. **Secret.** |
 | `REPOATLAS_WEB_ORIGINS` | optional | — | The web app's origin, for CORS. Not needed when every call comes through the web app. |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | optional | optional | Base URL of an OTLP/HTTP destination; spans go to `<url>/v1/traces`. Unset: nothing is exported. No `REPOATLAS_` prefix. See [observability.md](observability.md). |
+| `OTEL_EXPORTER_OTLP_HEADERS` | optional | optional | `key=value` pairs separated by commas, for example the destination's `Authorization`. **Secret.** |
+| `OTEL_SERVICE_NAME` | optional | optional | The service name on exported spans (default `repoatlas`). |
 | `REPOATLAS_LOG_FORMAT` | `json` | `json` | Set by the images. |
 | `REPOATLAS_DATA_DIR` | `/data` | `/data` | Set by the images. |
 | `REPOATLAS_MODEL_CACHE_DIR`, `REPOATLAS_EMBEDDING_MODEL`, `HF_HUB_OFFLINE` | set by the image | set by the image | The model is inside the image; don't change these. |

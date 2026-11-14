@@ -36,6 +36,8 @@ if TYPE_CHECKING:
     from repoatlas.config import Settings
 
 TRACER_NAME = "repoatlas"
+SQL_TRACER_NAME = "repoatlas.sqlalchemy"
+MAX_STATEMENT_CHARS = 2_000
 TRACES_PATH = "/v1/traces"
 # Liveness and readiness probes would otherwise be most of the exported spans.
 EXCLUDED_URLS = "health,ready"
@@ -137,9 +139,42 @@ def instrument_engine(engine: Engine) -> None:
     provider = _provider
     if provider is None:
         return
-    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+    # Done here with engine events: the opentelemetry-instrumentation-sqlalchemy package does
+    # not support SQLAlchemy 2.1 (and imports its asyncio module, which needs greenlet).
+    from sqlalchemy import event
 
-    SQLAlchemyInstrumentor().instrument(engine=engine, tracer_provider=provider)
+    sql_tracer = provider.get_tracer(SQL_TRACER_NAME)
+    system = engine.dialect.name
+
+    def before(
+        _conn: Any, _cursor: Any, statement: str, _params: Any, context: Any, _many: bool
+    ) -> None:
+        if context is None:
+            return
+        words = statement.split(None, 1)
+        context._repoatlas_span = sql_tracer.start_span(
+            words[0].upper() if words else "SQL",
+            kind=otel_trace.SpanKind.CLIENT,
+            attributes={"db.system": system, "db.statement": statement[:MAX_STATEMENT_CHARS]},
+        )
+
+    def after(
+        _conn: Any, _cursor: Any, _statement: str, _params: Any, context: Any, _many: bool
+    ) -> None:
+        span = getattr(context, "_repoatlas_span", None)
+        if span is not None:
+            span.end()
+
+    def failed(error: Any) -> None:
+        span = getattr(error.execution_context, "_repoatlas_span", None)
+        if span is not None:
+            name = type(error.original_exception).__name__
+            span.set_status(otel_trace.Status(otel_trace.StatusCode.ERROR, name))
+            span.end()
+
+    event.listen(engine, "before_cursor_execute", before)
+    event.listen(engine, "after_cursor_execute", after)
+    event.listen(engine, "handle_error", failed)
 
 
 def _instrument_httpx(provider: TracerProvider) -> None:
