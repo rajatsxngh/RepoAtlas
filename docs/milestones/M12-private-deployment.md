@@ -1,6 +1,6 @@
 # M12 — Private deployment & limits
 
-**Type of work:** DevOps · **Size:** M (8 tasks) · **Status:** In progress
+**Type of work:** DevOps · **Size:** M (8 tasks) · **Status:** Done
 
 ## Goal
 
@@ -25,6 +25,14 @@ Run the whole product in the cloud — privately — with hard limits on cost an
 - **Offline stand-in:** `REPOATLAS_LLM_TRANSPORT=offline` (decision 0020) — a transport that calls no model, for stack checks without a key.
 - **Runbook:** `docs/runbook.md` — deploy, roll back, pause (scale to zero), resume, tear down, restore the database from backup.
 - **Live-pass list:** `docs/live-pass.md` — the checks that need spending, each with the steps to run it.
+- **Delivered details** (backward compatible with the above):
+  - `SpendGuard(engine, cap_usd, *, ttl_s=30, clock, now)` with `spent_today()`, `check()` (raises `repoatlas.llm.types.SpendCapReached`), `record(cost_usd)`, and `from_settings(settings, engine)` (`None` without a cap). `LLMClient(…, guard=…)` asks it before every request, repair calls included; `OneShotAnswerSystem` and `ImpactExplainer` turn `SpendCapReached` into a `budget` refusal. Settings: `daily_spend_cap_usd` (5; unset for no cap), `builds_per_day` (3), `asks_per_day` (20), `job_max_running` (2), `access_token`, `trust_proxy_headers`, `llm_transport`, `model_cache_dir`. Migration `0008_spans_llm_started_at` (a partial index for the daily total).
+  - `repoatlas.api.access`: `AccessGateMiddleware(app, *, token, prefix)`, `cookie_value(token)` (sha256 of `repoatlas-access:` and the token; the web app computes the same), cookie name `repoatlas_access`. Open without the token: `/api/v1/health` and CORS preflights. Error code `unauthorized` (401).
+  - Web app: `src/proxy.ts` (the gate), `/access` and `POST /access/enter` (token entry; HTTP-only cookie for 30 days, `Secure` on HTTPS), `/api/v1/[...path]` (forwards to `REPOATLAS_API_ORIGIN` with the token and the visitor's address; streams), `/healthz`. Build with `NEXT_PUBLIC_API_URL=/` to use the forwarding route; `NEXT_OUTPUT=standalone` for the image.
+  - `/ready` answers ready with `database: "ahead"` on a schema newer than the code, and `repoatlas db upgrade` then does nothing, so the previous release starts after a rollback.
+  - `repoatlas models fetch` (downloads the embedding model; the image builds run it). `scripts/selfhost_check.py` (`--env-file` or `--base-url` and `--token`; `--only gate`, `--skip-build ID`, `--expect-offline`, `--expect-live`, `--json FILE`): the end-to-end check of a running deployment.
+  - The ask stream sends a `: keep-alive` comment after every 15 seconds of silence.
+  - `infra/selfhost.env.example` (settings of the self-host stack), `docs/m12-gate-evidence.md` (what was run for the gate).
 
 ## Requirements
 
@@ -56,14 +64,14 @@ DEP-1, DEP-2, DEP-3, DEP-4, DEP-5, DEP-6, DEP-7
 - [x] **T5 — Frontend ready for Vercel.** Environment wiring (API origin, same-origin proxy) and the web side of the access gate; tests. Deploying is a live-pass item.
 - [x] **T6 — Spend guard and caps.** Implementation and tests (cap reached → budget refusal; per-client caps → 429; concurrency cap respected).
 - [x] **T7 — Private access gate.** API middleware; tests (missing or wrong token rejected).
-- [ ] **T8 — End-to-end check and runbook.** On the local self-host stack: build a repo, ask a question (offline stand-in), run impact analysis, roll back to earlier images; write the runbook.
+- [x] **T8 — End-to-end check and runbook.** On the local self-host stack: build a repo, ask a question (offline stand-in), run impact analysis, roll back to earlier images; write the runbook.
 
 ## Exit criteria
 
-- [ ] On the local self-host stack: a repo builds, a question returns a cited answer through the offline stand-in, and impact analysis returns a report.
-- [ ] Spend-cap, per-client cap, and access-gate tests pass.
-- [ ] Starting the stack runs migrations automatically, and a rollback to earlier images works on the migrated database.
-- [ ] The runbook covers deploy, rollback, pause, resume, teardown, and restore.
+- [x] On the local self-host stack: a repo builds, a question returns a cited answer through the offline stand-in, and impact analysis returns a report.
+- [x] Spend-cap, per-client cap, and access-gate tests pass.
+- [x] Starting the stack runs migrations automatically, and a rollback to earlier images works on the migrated database.
+- [x] The runbook covers deploy, rollback, pause, resume, teardown, and restore.
 
 ### Live pass (pending; not part of this gate)
 
@@ -92,4 +100,28 @@ Live pass: the same check against the hosted URL, and in the browser on the depl
 
 ## Results
 
-_Filled in at the gate._
+Gate checked on 2026-11-14 on branch `m12-deploy-limits`, on Windows 11 with Docker 29.9.2 and Postgres up. **This is the build gate of decision 0020: it was reached without spending anything. The hosted deployment and the live answer check are not done; they are pending in [`docs/live-pass.md`](../live-pass.md).**
+
+**Exit criteria.** What was run, with the output, is in [`docs/m12-gate-evidence.md`](../m12-gate-evidence.md).
+
+- **Local self-host stack.** On a fresh `infra/compose.selfhost.yml` stack (production images, the real embedding model inside them, `REPOATLAS_LLM_TRANSPORT=offline`), `scripts/selfhost_check.py` passed every step: the gate rejects a missing or wrong token; the token page sets the cookie; `/ready` is at `0008_spans_llm_started_at`; `pallets/itsdangerous` (commit `672971d`) builds to a ready snapshot; a question streams `retrieving`, `answering`, `validating` and returns 3 claims with 3 valid citations into `src/itsdangerous/signer.py`; impact analysis on `want_bytes` returns 56 symbols (30 callers, 24 tests, 2 public APIs). The answer is the offline stand-in's and says so; no model was called.
+- **Limit and gate tests.** `tests/integration/limits` (12 tests: the daily total from `spans`, the 30-second cache, the alert, a new day, an ask over the cap refusing with `budget`, the job cap with racing claims), `tests/unit/api/test_access.py` (22: missing and wrong tokens in every form, header and cookie, open routes, no token in logs), `tests/unit/api/test_ratelimit.py` (daily caps → 429 until midnight UTC, trusted proxy addresses), and the web app's 45 gate and forwarding tests pass.
+- **Migrations and rollback.** Starting the stack ran `0007 → 0008` before the API and the worker started. With a stand-in next release (migration 0009) on the database, rolling back to this release with the runbook's `up -d` worked: its migration step did nothing, `/ready` said `ahead`, and a question and an impact request passed. Rolling back further to images of commit `d631d47` (from before migration 0008) passed the same check.
+- **Runbook.** `docs/runbook.md` covers deploy, rollback, pause, resume, backup, restore, and teardown. Each self-host procedure was run on the stack (after teardown and restore, the earlier snapshot answered again without a rebuild). The hosted procedures are written and marked not yet run.
+
+**Tests.** In `backend/`, `uv run poe check` passes: 1,522 tests passed, 1 skipped (symlinks need extra privileges on Windows), 7 deselected (the `live` tests); ruff, mypy (384 files), and the docs lint pass. Frontend: lint, typecheck, and 299 unit tests pass; Playwright passes 12 of 12 (stress test: median expansion 753 ms, slowest 1,212 ms). The OpenAPI spec and TypeScript types are current.
+
+**Live pass (pending).** Five items in `docs/live-pass.md`: the backend on Railway or Fly with managed Postgres, the frontend on Vercel, a release and a rollback through the workflow, the end-to-end check on the hosted deployment with a live answer, and a live answer on the self-host stack. DEP-3 (hosted deployment) is built for but not delivered. The release workflow's publish and deploy jobs are written and have never run; its provider commands are unconfirmed.
+
+**Found by running the stack** (not by unit tests): the token-page redirect returned 500 in the built web image (Next.js rejects a relative `Location` from `proxy.ts`); a rolled-back release could not start, because `/ready` and `repoatlas db upgrade` both treated a newer schema as an error; the spend-cap alert raised when its log stream was closed, turning a refusal into an error.
+
+**Deviations** (decision 0020 covers the first three).
+- No hosted deployment, no provider chosen, and no live LLM call. T3 compares the providers on paper, T5 makes the web app ready for Vercel without deploying it, and T8's check runs on the local stack through the offline stand-in.
+- The web app serves the API under its own origin instead of calling it across origins, so the HTTP-only cookie covers API calls and the API needs no public address. A third image (`web.Dockerfile`) makes the self-host stack complete.
+- Earlier contracts gained backward-compatible additions (`/ready` `ahead`, `unauthorized`, daily caps, the LLM client's guard); decision 0020 lists them.
+- Per-client daily caps are counted in the API's memory, like the hourly buckets: they start again when the API restarts and need one API instance. The spend cap is read from the database and has neither limit.
+- Published without a reverse proxy, the self-host web app can't tell visitors apart reliably (a caller can set the forwarding headers). The guide says so; the token and the spend cap don't depend on addresses.
+- The gate has no Playwright spec (it would need a third web build); the stack check covers it over HTTP, in CI too.
+- The stack run used images built at commit `ebdd171`; the later commits change the spend guard's alert handling, tests, and docs.
+
+**Cost.** $0: no LLM call, no hosting, no new accounts.

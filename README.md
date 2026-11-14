@@ -9,6 +9,8 @@ Paste a public GitHub URL, get an interactive map of the code, and ask hard ques
 - [Product requirements](docs/PRD.md)
 - [Milestones and build order](docs/milestones/README.md)
 - [Decision records](docs/decisions/README.md)
+- [Self-hosting with Docker Compose](docs/self-hosting.md), [deploying](docs/deploy.md), and the [runbook](docs/runbook.md)
+- [Live pass](docs/live-pass.md): checks that wait for spending to be approved
 - [Guide for coding sessions](CLAUDE.md)
 
 ## Development
