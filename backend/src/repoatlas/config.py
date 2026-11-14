@@ -7,7 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from repoatlas.llm.compat import Effort
@@ -47,6 +47,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         env_ignore_empty=True,
         extra="ignore",
+        populate_by_name=True,  # fields with standard (unprefixed) aliases
     )
 
     database_url: str = DEFAULT_DATABASE_URL
@@ -112,6 +113,27 @@ class Settings(BaseSettings):
     access_token: SecretStr | None = None
     trust_proxy_headers: bool = False  # take the client address from X-Forwarded-For
     rate_limit_salt: SecretStr | None = None  # hashes client addresses; random per process if unset
+
+    # OpenTelemetry (decision 0014). The standard variable names work with or without the
+    # REPOATLAS_ prefix. Export is off unless the endpoint is set.
+    otel_exporter_otlp_endpoint: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "OTEL_EXPORTER_OTLP_ENDPOINT", "REPOATLAS_OTEL_EXPORTER_OTLP_ENDPOINT"
+        ),
+    )
+    # key=value pairs separated by commas (for example the destination's Authorization).
+    otel_exporter_otlp_headers: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "OTEL_EXPORTER_OTLP_HEADERS", "REPOATLAS_OTEL_EXPORTER_OTLP_HEADERS"
+        ),
+    )
+    otel_service_name: str = Field(
+        default="repoatlas",
+        validation_alias=AliasChoices("OTEL_SERVICE_NAME", "REPOATLAS_OTEL_SERVICE_NAME"),
+    )
+    otel_export_timeout_s: float = 10.0  # one export request
 
     # Background jobs and the worker
     job_lease_s: float = 60.0  # a running job whose worker sends no heartbeat this long is requeued

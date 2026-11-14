@@ -40,6 +40,7 @@ from repoatlas.db.engine import create_db_engine
 from repoatlas.impact.engine import ImpactEngine
 from repoatlas.impact.store_data import StoreImpactData
 from repoatlas.logging import configure
+from repoatlas.observability import otel
 from repoatlas.store.graphstore import GraphStore
 
 API_PREFIX = "/api/v1"
@@ -59,6 +60,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         settings.database_url, connect_timeout_s=settings.db_connect_timeout_s
     )
 
+    otel.configure(settings)
+    otel.instrument_engine(engine)
     limiter = RateLimiter.from_settings(settings) if settings.rate_limit_enabled else None
     limits = (
         []
@@ -84,6 +87,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            otel.flush()
             engine.dispose()
 
     app = FastAPI(
@@ -112,6 +116,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             Middleware(EncodedKeyMiddleware, prefix=API_PREFIX),
         ],
     )
+    otel.instrument_app(app)
     app.state.rate_limiter = limiter
     app.state.settings = settings
     app.state.engine = engine

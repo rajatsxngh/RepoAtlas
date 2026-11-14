@@ -4,7 +4,8 @@
 current trace, and leaving it ends the trace (status ``error`` if an exception escaped).
 ``trace_span(name, kind, **attrs)`` times one step of the current trace; spans nest through
 context variables, so they are safe across ``await`` and in tasks started inside a span. A span
-outside any trace is timed but not recorded.
+outside any trace is timed but not recorded. Every span is also mirrored as an OpenTelemetry
+span (``repoatlas.observability.otel``), which does nothing unless tracing is configured.
 
 LLM calls record their model, tokens, cache tokens, cost, latency, and stop reason on their
 span (``Span.record_llm``, called by ``LLMClient``). When a trace ends, its totals are summed
@@ -24,7 +25,10 @@ from datetime import UTC, datetime
 from types import TracebackType
 from typing import Any, Protocol
 
+from opentelemetry.trace import Status, StatusCode
+
 from repoatlas.llm.types import LLMResult
+from repoatlas.observability import otel
 from repoatlas.tracing.models import TraceStatus
 
 MAX_ERROR_CHARS = 500
@@ -176,15 +180,44 @@ def trace_span(name: str, kind: str, **attrs: Any) -> Iterator[Span]:
         trace.add(record)
     token = _span.set(record)
     started = time.perf_counter()
-    try:
-        yield Span(record)
-    except BaseException as exc:
-        record.status = "error"
-        record.attrs["error"] = f"{type(exc).__name__}: {exc}"[:MAX_ERROR_CHARS]
-        raise
-    else:
-        record.status = "ok"
-    finally:
-        _span.reset(token)
-        record.ended_at = _now()
-        record.attrs["duration_ms"] = round((time.perf_counter() - started) * 1000, 2)
+    # The same step as an OpenTelemetry span (a no-op unless tracing is configured): it nests
+    # under the request's span and under the enclosing ``trace_span``.
+    mirror = otel.tracer().start_as_current_span(
+        name, record_exception=False, set_status_on_exception=False, end_on_exit=True
+    )
+    with mirror as mirrored:
+        try:
+            yield Span(record)
+        except BaseException as exc:
+            record.status = "error"
+            record.attrs["error"] = f"{type(exc).__name__}: {exc}"[:MAX_ERROR_CHARS]
+            raise
+        else:
+            record.status = "ok"
+        finally:
+            _span.reset(token)
+            record.ended_at = _now()
+            record.attrs["duration_ms"] = round((time.perf_counter() - started) * 1000, 2)
+            if mirrored.is_recording():
+                _mirror(mirrored, record, trace)
+
+
+def _mirror(mirrored: Any, record: SpanRecord, trace: Trace | None) -> None:
+    """Copy the finished span's facts onto its OpenTelemetry twin: scalars only."""
+    attributes = otel.span_attributes(record.attrs)
+    attributes["repoatlas.kind"] = record.kind
+    attributes["repoatlas.span_id"] = str(record.id)
+    if trace is not None:
+        attributes["repoatlas.trace_id"] = str(trace.id)
+        attributes["repoatlas.trace_kind"] = trace.kind
+        if trace.snapshot_id is not None:
+            attributes["repoatlas.snapshot_id"] = trace.snapshot_id
+    if record.model is not None:
+        attributes["gen_ai.request.model"] = record.model
+        attributes["gen_ai.usage.input_tokens"] = record.tokens_in or 0
+        attributes["gen_ai.usage.output_tokens"] = record.tokens_out or 0
+        attributes["gen_ai.usage.cache_read_input_tokens"] = record.cache_read_tokens or 0
+        attributes["gen_ai.usage.cost"] = record.cost_usd or 0.0
+    mirrored.set_attributes(attributes)
+    if record.status == "error":
+        mirrored.set_status(Status(StatusCode.ERROR, str(record.attrs.get("error", ""))))

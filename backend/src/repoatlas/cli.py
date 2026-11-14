@@ -805,6 +805,9 @@ def worker_command(
     ] = None,
 ) -> None:
     settings = get_settings()
+    from repoatlas.observability import otel
+
+    otel.configure(settings)  # exports only when OTEL_EXPORTER_OTLP_ENDPOINT is set
     path = stop_file or settings.data_dir / "worker.stop"
     worker = Worker(settings, stop_file=path, worker_id=worker_id)
     kinds = ", ".join(worker.kinds) or "no"
@@ -827,6 +830,7 @@ def worker_command(
         worker.close()
         _connection_failed(settings.database_url, error)
     finally:
+        otel.shutdown()  # sends what is still buffered
         for number, handler in previous.items():
             signal.signal(number, handler)
     typer.echo(f"Worker {worker.id} stopped after {worker.processed} job(s).", err=True)
