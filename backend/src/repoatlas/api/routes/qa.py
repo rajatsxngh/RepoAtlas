@@ -2,7 +2,13 @@
 
 ``POST /snapshots/{id}/ask`` answers with server-sent events:
 
-- ``status`` — ``{"step": "retrieving" | "answering" | "validating"}`` as each step starts;
+- ``status`` — ``{"step": …}`` as each step starts: ``retrieving``, ``answering``,
+  ``validating`` for one-shot answers; ``exploring``, ``answering``, ``validating`` in agent
+  mode;
+- ``step`` — agent mode only (AGT-6): one event per tool call, one when the model ends the
+  exploration, and one for the final answer call, as they finish (``StepEvent``: the tool, a
+  summary of its arguments, the size of its result, the evidence it listed, and the tokens
+  and cost of the model turn behind it). ``span_id`` is the step's span in the answer's trace;
 - ``answer`` — the validated answer (``AnswerView``), refused or not;
 - ``done`` — ``{"run_id", "trace_id"}`` once the run is stored;
 - ``error`` — ``{"error": {"code", "message", "details"}}`` if answering failed.
@@ -31,6 +37,8 @@ from fastapi import APIRouter, Path, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
+from repoatlas.agent.factory import agent_budget, agent_from_settings
+from repoatlas.agent.loop import AgentAnswerSystem, StepEvent
 from repoatlas.answers.factory import oneshot_from_settings
 from repoatlas.answers.runs import load_run, save_run
 from repoatlas.answers.schema import AnswerResult, Budget
@@ -55,11 +63,20 @@ Question = Annotated[
 ]
 
 
+AskMode = Literal["oneshot", "agent"]
+
+
 class AskRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     question: Question = Field(description="The question, in plain language.")
-    mode: Literal["oneshot"] = Field(default="oneshot", description="The answering mode.")
+    mode: AskMode = Field(
+        default="oneshot",
+        description=(
+            "The answering mode: `oneshot` retrieves once and answers; `agent` explores the "
+            "code with tools first (slower, for questions one search can't answer)."
+        ),
+    )
 
 
 def answer_system(request: Request, mode: str) -> AnswerSystem:
@@ -68,12 +85,14 @@ def answer_system(request: Request, mode: str) -> AnswerSystem:
     systems = cast(dict[str, AnswerSystem], state.answer_systems)
     with _build_lock:
         if mode not in systems:
-            systems[mode] = _build(state)
+            systems[mode] = _build(state, mode)
     return systems[mode]
 
 
-def _build(state: Any) -> AnswerSystem:
+def _build(state: Any, mode: str) -> AnswerSystem:
     try:
+        if mode == "agent":
+            return agent_from_settings(state.settings, state.engine, state.store)
         return oneshot_from_settings(state.settings, state.engine, state.store)
     except LLMNotConfigured:
         raise ApiError(
@@ -102,7 +121,8 @@ def _error_event(exc: Exception) -> dict[str, Any]:
 
 
 ASK_DESCRIPTION = (
-    "Server-sent events: `status` (`{step}`), `answer` (an `AnswerView`), `done` "
+    "Server-sent events: `status` (`{step}`), in agent mode `step` (one per tool call and "
+    "one for the final answer call), `answer` (an `AnswerView`), `done` "
     "(`{run_id, trace_id}`), or `error` (the error model)."
 )
 
@@ -124,10 +144,13 @@ async def ask(
 ) -> StreamingResponse:
     """Answer a question about the snapshot with cited code, streaming each step."""
     system = await anyio.to_thread.run_sync(answer_system, request, body.mode)
-    budget = Budget(
-        max_cost_usd=settings.answer_max_cost_usd,
-        max_output_tokens=settings.answer_max_output_tokens,
-    )
+    if body.mode == "agent":
+        budget = agent_budget(settings)
+    else:
+        budget = Budget(
+            max_cost_usd=settings.answer_max_cost_usd,
+            max_output_tokens=settings.answer_max_output_tokens,
+        )
     send, receive = anyio.create_memory_object_stream[str](16)
 
     async def run() -> None:
@@ -137,9 +160,18 @@ async def ask(
                 async def on_status(step: str) -> None:
                     await send.send(sse("status", {"step": step}))
 
-                result: AnswerResult = await system.answer(
-                    snapshot_id, body.question, budget, on_status=on_status
-                )
+                async def on_step(event: StepEvent) -> None:
+                    await send.send(sse("step", event.model_dump(mode="json")))
+
+                result: AnswerResult
+                if isinstance(system, AgentAnswerSystem):
+                    result = await system.answer(
+                        snapshot_id, body.question, budget, on_status=on_status, on_step=on_step
+                    )
+                else:
+                    result = await system.answer(
+                        snapshot_id, body.question, budget, on_status=on_status
+                    )
                 run_id = await anyio.to_thread.run_sync(
                     save_run, engine, snapshot_id, body.mode, body.question, result
                 )

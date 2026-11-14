@@ -92,7 +92,8 @@ async def test_an_agent_answer_on_a_built_snapshot_is_cited_stored_and_traced(sh
     assert [(e.kind, e.tool) for e in events] == [
         ("tool", "search_code"),
         ("tool", "find_callers"),
-        ("answer", "final_answer"),
+        ("finish", "final_answer"),
+        ("answer", "answer"),
     ]
     assert events[0].evidence == 3 and events[1].evidence >= 2
     assert [use.name for use in result.tool_uses] == ["search_code", "find_callers"]

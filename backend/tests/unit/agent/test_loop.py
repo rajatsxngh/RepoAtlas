@@ -62,7 +62,10 @@ async def test_a_normal_run_explores_then_stops_on_final_answer():
     assert [(e.seq, e.step, e.tool, e.evidence) for e in events] == [
         (1, 1, "search_code", 2),
         (2, 2, "find_callees", 1),
+        (3, 3, "final_answer", 0),  # the turn that ended the exploration
     ]
+    assert [e.kind for e in events] == ["tool", "tool", "finish"]
+    assert sum(e.cost_usd for e in events) == pytest.approx(found.cost_usd)
     assert events[0].arguments == 'query="create app"' and events[0].model == SMALL
     assert events[0].tokens_in == 1_000 and events[0].cost_usd > 0
 
@@ -143,7 +146,7 @@ async def test_several_tool_calls_in_one_turn_are_answered_in_one_user_turn():
     assert [r["tool_use_id"] for r in results] == [SEARCH.id, CALLEES.id]
     assert len(llm.calls[1].messages) == 4  # system, question, the turn, one result turn
     # The turn's tokens and cost are reported once, on its first tool.
-    assert [(e.step, e.tokens_in) for e in events] == [(1, 1_000), (1, 0)]
+    assert [(e.step, e.tokens_in) for e in events] == [(1, 1_000), (1, 0), (2, 1_000)]
     assert events[1].model is None and events[1].cost_usd == 0.0
 
 

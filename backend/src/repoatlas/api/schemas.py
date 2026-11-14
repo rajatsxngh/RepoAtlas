@@ -17,6 +17,7 @@ from repoatlas.answers.schema import (
     Citation,
     Claim,
     RefusalKind,
+    ToolUse,
 )
 from repoatlas.graph.model import Node, Owner
 from repoatlas.jobs.models import JobStatus
@@ -261,6 +262,8 @@ class AnswerView(BaseModel):
     cost_usd: float
     trace_id: uuid.UUID | None
     metrics: AnswerMetrics
+    # The tool calls an agent answer made, in order (empty for other modes).
+    tool_uses: list[ToolUse] = Field(default_factory=list)
 
 
 def answer_view(result: AnswerResult, *, run_id: int | None = None) -> AnswerView:

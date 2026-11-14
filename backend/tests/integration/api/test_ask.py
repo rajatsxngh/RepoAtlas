@@ -163,7 +163,8 @@ async def test_unknown_snapshots_and_bad_questions(app: FastAPI) -> None:
             f"{API_PREFIX}/snapshots/{snapshot_id}/ask", json={"question": "x" * 2001}
         )
         mode = await client.post(
-            f"{API_PREFIX}/snapshots/{snapshot_id}/ask", json={"question": "q", "mode": "agent"}
+            f"{API_PREFIX}/snapshots/{snapshot_id}/ask",
+            json={"question": "q", "mode": "autonomous"},
         )
     assert long.status_code == 422
     assert mode.status_code == 422

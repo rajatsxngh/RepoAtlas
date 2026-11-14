@@ -263,13 +263,15 @@ async def test_status_and_step_events_follow_the_run():
         events.append(event)
 
     agent, llm, _ = system([turn(SEARCH, CALLEES), done(), DRAFT])
-    await agent.answer(7, QUESTION, BUDGET, on_status=on_status, on_step=on_step)
+    result = await agent.answer(7, QUESTION, BUDGET, on_status=on_status, on_step=on_step)
     assert tuple(statuses) == STEPS == ("exploring", "answering", "validating")
     assert [(e.seq, e.step, e.kind, e.tool) for e in events] == [
         (1, 1, "tool", "search_code"),
         (2, 1, "tool", "find_callees"),
-        (3, 3, "answer", FINAL_ANSWER),
+        (3, 2, "finish", FINAL_ANSWER),
+        (4, 3, "answer", "answer"),
     ]
+    assert sum(event.cost_usd for event in events) == pytest.approx(result.cost_usd)
     final = events[-1]
     assert final.model == LARGE and final.tokens_in == llm.usage.input_tokens
     assert final.cost_usd == pytest.approx(PriceTable(DEFAULT_PRICES).cost(llm.usage, LARGE))

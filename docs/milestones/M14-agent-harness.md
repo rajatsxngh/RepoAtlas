@@ -77,7 +77,7 @@ AGT-1, AGT-2, AGT-3, AGT-4, AGT-5, AGT-6, AGT-7, AGT-8
 - [x] **T2 — Validation, allowlists, trimming.** Argument validators, snapshot allowlist, result trimming, detector pass on tool output.
 - [x] **T3 — Agent loop.** Steps, stop conditions, budgets, routing, repeated-call guard; scripted `FakeLLM` tests (normal finish, step cap, budget stop, tool error).
 - [x] **T4 — Evidence ledger and final answer.** Validation of ledger citations; refusal rules.
-- [ ] **T5 — API agent mode.** `step` events over server-sent events; trace linkage.
+- [x] **T5 — API agent mode.** `step` events over server-sent events; trace linkage.
 - [ ] **T6 — UI.** Mode toggle; live steps in `TracePanel`; Playwright test with mock mode.
 - [ ] **T7 — MCP server.** stdio and HTTP transports, bearer token and rate limits; in-memory client test.
 - [ ] **T8 — Manual MCP check.** Connect from Claude Code and run three questions with tools that call no model; notes in Results.

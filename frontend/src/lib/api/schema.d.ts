@@ -495,6 +495,8 @@ export interface components {
             /** Trace Id */
             trace_id: string | null;
             metrics: components["schemas"]["AnswerMetrics"];
+            /** Tool Uses */
+            tool_uses?: components["schemas"]["ToolUse"][];
         };
         /** AskRequest */
         AskRequest: {
@@ -505,11 +507,11 @@ export interface components {
             question: string;
             /**
              * Mode
-             * @description The answering mode.
+             * @description The answering mode: `oneshot` retrieves once and answers; `agent` explores the code with tools first (slower, for questions one search can't answer).
              * @default oneshot
-             * @constant
+             * @enum {string}
              */
-            mode: "oneshot";
+            mode: "oneshot" | "agent";
         };
         /**
          * BuildAccepted
@@ -1282,6 +1284,49 @@ export interface components {
             kind: "symbol";
             /** Symbol Key */
             symbol_key: string;
+        };
+        /**
+         * ToolUse
+         * @description One tool call an answering mode with tools made (decision 0022). ``allowed`` is False
+         *     when the call was refused for reaching outside the snapshot (an unknown tool, a path that
+         *     is not one of its files); ``error`` is set when the call did not return a result;
+         *     ``cached`` marks a repeated call that was not run again.
+         */
+        ToolUse: {
+            /** Step */
+            step: number;
+            /** Name */
+            name: string;
+            /** Arguments */
+            arguments?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Allowed
+             * @default true
+             */
+            allowed: boolean;
+            /** Error */
+            error?: string | null;
+            /** Evidence Ids */
+            evidence_ids?: string[];
+            /**
+             * Result Tokens
+             * @default 0
+             */
+            result_tokens: number;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
+            /**
+             * Cached
+             * @default false
+             */
+            cached: boolean;
+            /** Flags */
+            flags?: string[];
         };
         /** TraceView */
         TraceView: {
@@ -2260,7 +2305,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Server-sent events: `status` (`{step}`), `answer` (an `AnswerView`), `done` (`{run_id, trace_id}`), or `error` (the error model). */
+            /** @description Server-sent events: `status` (`{step}`), in agent mode `step` (one per tool call and one for the final answer call), `answer` (an `AnswerView`), `done` (`{run_id, trace_id}`), or `error` (the error model). */
             200: {
                 headers: {
                     [name: string]: unknown;

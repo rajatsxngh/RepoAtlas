@@ -28,7 +28,7 @@ Guards:
   incomplete, so none of them run.
 
 Every step and every tool call is a span of the current trace, and ``on_step`` hears a
-``StepEvent`` after each tool call.
+``StepEvent`` after each tool call and when the model ends the exploration.
 
 ``AgentAnswerSystem`` (AGT-5) is the whole answering mode, registered as ``agent``. After
 exploring, it gives the ``large`` model the same conversation, unchanged, with tool choice
@@ -128,14 +128,16 @@ class AgentConfig(BaseModel):
 
 class StepEvent(BaseModel):
     """One thing the agent did, as the ask stream reports it. ``kind`` is ``tool`` for a tool
-    call and ``answer`` for the final answer call. The tokens and cost are those of the model
-    call that asked for it; when one model turn called several tools they are on the first."""
+    call, ``finish`` for the model ending the exploration, and ``answer`` for the final answer
+    call. The tokens and cost are those of the model turn behind the event; a turn that called
+    several tools reports them once, on its first event, so the events of an answer add up to
+    its usage and cost."""
 
     model_config = ConfigDict(frozen=True)
 
     seq: int  # order within the answer, from 1
     step: int  # the model turn, from 1
-    kind: Literal["tool", "answer"] = "tool"
+    kind: Literal["tool", "finish", "answer"] = "tool"
     tool: str
     arguments: str = ""  # a short summary
     result_tokens: int = 0
@@ -308,6 +310,8 @@ class Explorer:
                 if not calls:
                     state.stop = "no_tool_call"
                     messages.append(_user([_text(closing_text("no_tool_call"))]))
+                    state.events += 1
+                    await notify(_finish(state.events, step, result, str(span.id)))
                     return state
 
                 cut_off = result.stop_reason == "max_tokens"
@@ -351,6 +355,13 @@ class Explorer:
                     )
                     first = False
 
+                if finished:
+                    # The turn that ended the exploration: its tokens, unless a tool call of
+                    # the same turn already reported them.
+                    state.events += 1
+                    await notify(
+                        _finish(state.events, step, result if first else None, str(span.id))
+                    )
                 stop: StopReason | None = "final_answer" if finished else None
                 if stop is None and step >= config.max_steps:
                     stop = "max_steps"
@@ -441,6 +452,21 @@ def _event(seq: int, ran: _Ran, llm: LLMResult | None, span_id: str) -> StepEven
         cached=use.cached,
         truncated=use.truncated,
         flags=use.flags,
+        model=llm.model if llm is not None else None,
+        tokens_in=llm.usage.total_input_tokens if llm is not None else 0,
+        tokens_out=llm.usage.output_tokens if llm is not None else 0,
+        cost_usd=llm.cost_usd if llm is not None else 0.0,
+        span_id=span_id,
+    )
+
+
+def _finish(seq: int, step: int, llm: LLMResult | None, span_id: str) -> StepEvent:
+    """The model ended the exploration (by calling ``final_answer`` or by not calling a tool)."""
+    return StepEvent(
+        seq=seq,
+        step=step,
+        kind="finish",
+        tool=FINAL_ANSWER,
         model=llm.model if llm is not None else None,
         tokens_in=llm.usage.total_input_tokens if llm is not None else 0,
         tokens_out=llm.usage.output_tokens if llm is not None else 0,
@@ -639,7 +665,7 @@ class AgentAnswerSystem:
                 seq=found.events + 1,
                 step=found.steps + 1,
                 kind="answer",
-                tool=FINAL_ANSWER,
+                tool="answer",
                 model=llm.model,
                 tokens_in=llm.usage.total_input_tokens,
                 tokens_out=llm.usage.output_tokens,

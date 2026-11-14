@@ -1411,7 +1411,7 @@
         },
         "responses": {
           "200": {
-            "description": "Server-sent events: `status` (`{step}`), `answer` (an `AnswerView`), `done` (`{run_id, trace_id}`), or `error` (the error model).",
+            "description": "Server-sent events: `status` (`{step}`), in agent mode `step` (one per tool call and one for the final answer call), `answer` (an `AnswerView`), `done` (`{run_id, trace_id}`), or `error` (the error model).",
             "content": {
               "text/event-stream": {}
             }
@@ -2096,6 +2096,13 @@
           },
           "metrics": {
             "$ref": "#/components/schemas/AnswerMetrics"
+          },
+          "tool_uses": {
+            "items": {
+              "$ref": "#/components/schemas/ToolUse"
+            },
+            "type": "array",
+            "title": "Tool Uses"
           }
         },
         "type": "object",
@@ -2125,9 +2132,12 @@
           },
           "mode": {
             "type": "string",
-            "const": "oneshot",
+            "enum": [
+              "oneshot",
+              "agent"
+            ],
             "title": "Mode",
-            "description": "The answering mode.",
+            "description": "The answering mode: `oneshot` retrieves once and answers; `agent` explores the code with tools first (slower, for questions one search can't answer).",
             "default": "oneshot"
           }
         },
@@ -3962,6 +3972,76 @@
           "symbol_key"
         ],
         "title": "SymbolTarget"
+      },
+      "ToolUse": {
+        "properties": {
+          "step": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Step"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "arguments": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Arguments"
+          },
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed",
+            "default": true
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Ids"
+          },
+          "result_tokens": {
+            "type": "integer",
+            "title": "Result Tokens",
+            "default": 0
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached",
+            "default": false
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "step",
+          "name"
+        ],
+        "title": "ToolUse",
+        "description": "One tool call an answering mode with tools made (decision 0022). ``allowed`` is False\nwhen the call was refused for reaching outside the snapshot (an unknown tool, a path that\nis not one of its files); ``error`` is set when the call did not return a result;\n``cached`` marks a repeated call that was not run again."
       },
       "TraceView": {
         "properties": {
