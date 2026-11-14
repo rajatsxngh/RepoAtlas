@@ -37,6 +37,7 @@ ENDPOINTS = {
     ("get", "/api/v1/snapshots/{snapshot_id}/code"): "read_code",
     ("post", "/api/v1/snapshots/{snapshot_id}/ask"): "ask",
     ("post", "/api/v1/snapshots/{snapshot_id}/impact"): "analyze_impact",
+    ("post", "/api/v1/snapshots/{snapshot_id}/impact/{run_id}/explain"): "explain_impact_run",
     ("get", "/api/v1/qa/{run_id}"): "get_qa_run",
     ("get", "/api/v1/traces/{trace_id}"): "get_trace",
     ("get", "/api/v1/health"): "health",
