@@ -82,6 +82,26 @@ class AnswerMetrics(BaseModel):
     retrieval_top_score: float | None = None
 
 
+class ToolUse(BaseModel):
+    """One tool call an answering mode with tools made (decision 0022). ``allowed`` is False
+    when the call was refused for reaching outside the snapshot (an unknown tool, a path that
+    is not one of its files); ``error`` is set when the call did not return a result;
+    ``cached`` marks a repeated call that was not run again."""
+
+    model_config = ConfigDict(frozen=True)
+
+    step: int = Field(ge=1)  # the model turn that made the call
+    name: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    allowed: bool = True
+    error: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)  # ledger IDs the result listed
+    result_tokens: int = 0  # estimated tokens of the result as the model saw it
+    truncated: bool = False
+    cached: bool = False
+    flags: list[str] = Field(default_factory=list)  # kinds the detector marked in the result
+
+
 class AnswerResult(BaseModel):
     answer_markdown: str
     claims: list[Claim]
@@ -94,6 +114,7 @@ class AnswerResult(BaseModel):
     trace_id: uuid.UUID | None = None
     metrics: AnswerMetrics = Field(default_factory=AnswerMetrics)
     draft: AnswerDraft | None = None  # what the model returned, before validation
+    tool_uses: list[ToolUse] = Field(default_factory=list)  # modes with tools only
 
 
 class Budget(BaseModel):

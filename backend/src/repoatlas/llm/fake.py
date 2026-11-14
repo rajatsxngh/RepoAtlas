@@ -7,6 +7,7 @@ recorded in ``calls``. Results with a schema are parsed like the real client doe
 
 from __future__ import annotations
 
+import copy
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -27,6 +28,7 @@ class FakeCall:
     schema: type[BaseModel] | None
     tools: list[dict[str, Any]] | None
     max_tokens: int
+    tool_choice: str | None = None
 
 
 class FakeLLM:
@@ -58,8 +60,11 @@ class FakeLLM:
         tools: list[dict[str, Any]] | None = None,
         max_tokens: int,
         cache_static: bool = True,
+        tool_choice: str | None = None,
     ) -> LLMResult:
-        call = FakeCall(role, messages, schema, tools, max_tokens)
+        # The messages are copied: a caller that goes on appending to its list (an agent loop)
+        # must not change what this call is recorded to have seen.
+        call = FakeCall(role, copy.deepcopy(messages), schema, tools, max_tokens, tool_choice)
         self.calls.append(call)
         if callable(self._script):
             item = self._script(call)

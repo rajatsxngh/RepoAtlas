@@ -61,6 +61,7 @@ class LLM(Protocol):
         tools: list[dict[str, Any]] | None = None,
         max_tokens: int,
         cache_static: bool = True,
+        tool_choice: str | None = None,
     ) -> LLMResult: ...
 
 

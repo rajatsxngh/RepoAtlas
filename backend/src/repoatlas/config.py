@@ -99,6 +99,12 @@ class Settings(BaseSettings):
     answer_max_output_tokens: int = 4_096
     answer_evidence_tokens: int = 12_000  # evidence packed into the prompt
 
+    # Agent mode (decision 0022). The defaults are reasoned, not tuned.
+    agent_max_steps: int = Field(default=12, ge=1, le=50)  # model turns with tool calls
+    agent_max_input_tokens: int = Field(default=200_000, ge=1_000)  # over all calls of an answer
+    agent_per_tool_result_tokens: int = Field(default=2_000, ge=200)
+    agent_max_cost_usd: float = Field(default=0.25, gt=0)  # per answer
+
     # API
     web_origins: str = "http://localhost:3000"  # comma-separated origins allowed by CORS
     db_connect_timeout_s: float = 10.0  # opening one database connection, in the API and worker
