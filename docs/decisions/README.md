@@ -24,3 +24,4 @@ Short records of decisions that shape RepoAtlas. Each has a context, the decisio
 | [0018](0018-keep-the-code-embedding-model.md) | Keep jina-embeddings-v2-base-code as the embedding model | Accepted |
 | [0019](0019-impact-parameters.md) | Impact parameters tuned on dev | Accepted |
 | [0020](0020-build-without-spend-live-pass.md) | Build without spending; live and hosted checks move to a live pass | Accepted |
+| [0021](0021-m13-build-gate-injection-live-pass.md) | M13 without spend: a build gate for the injection suite, and what moved | Accepted |
