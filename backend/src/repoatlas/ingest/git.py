@@ -2,7 +2,7 @@
 
 Machine-level git settings (system and global config) are ignored so they can't rewrite bytes
 (``core.autocrlf``), open credential windows, or prompt for input. Only the https and file
-transports are allowed. See decision 0002.
+transports are allowed, and HTTP redirects are not followed. See decision 0002.
 """
 
 from __future__ import annotations
@@ -29,6 +29,9 @@ GIT_CONFIG_ARGS: tuple[str, ...] = (
     "protocol.https.allow=always",
     "-c",
     "protocol.file.allow=always",
+    # A fetch goes to the URL it was given and nowhere else: a redirect is an error.
+    "-c",
+    "http.followRedirects=false",
 )
 
 _ENV_OVERRIDES = {

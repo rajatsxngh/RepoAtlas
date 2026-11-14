@@ -11,14 +11,13 @@ error messages are scrubbed of anything that looks like an API key.
 
 from __future__ import annotations
 
-import re
 from typing import Any, Protocol
 
 from pydantic import SecretStr
 
 from repoatlas.llm.types import LLMRequestError, TransientLLMError
+from repoatlas.redact import redact
 
-_KEY = re.compile(r"sk-ant-[A-Za-z0-9_\-]+")
 TRANSIENT_STATUSES = frozenset({408, 409, 429, 500, 502, 503, 504, 529})
 
 
@@ -27,8 +26,8 @@ class Transport(Protocol):
 
 
 def scrub(message: str) -> str:
-    """``message`` without anything shaped like an Anthropic API key."""
-    return _KEY.sub("<redacted>", message)
+    """``message`` without anything that is or looks like a credential."""
+    return redact(message)
 
 
 def error_response(
@@ -78,7 +77,7 @@ class LiteLLMTransport:
         except Exception as exc:
             status = getattr(exc, "status_code", None)  # litellm's errors carry the HTTP status
             if not isinstance(status, int):
-                raise
+                raise  # not an API error; logs and trace spans redact what it may quote
             message = f"{type(exc).__name__}: {exc}"
             raise error_response(status, message, retry_after(exc)) from None
         if not isinstance(response, dict):

@@ -41,6 +41,7 @@ from repoatlas.impact.engine import ImpactEngine
 from repoatlas.impact.store_data import StoreImpactData
 from repoatlas.logging import configure
 from repoatlas.observability import otel
+from repoatlas.redact import register_secrets
 from repoatlas.store.graphstore import GraphStore
 
 API_PREFIX = "/api/v1"
@@ -54,6 +55,7 @@ DESCRIPTION = (
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Build the API app for ``settings`` (default: the process settings)."""
     settings = settings or get_settings()
+    register_secrets(settings)  # so no log line, span, or error can carry them
     if not structlog.is_configured():
         configure(settings)
     engine = create_db_engine(

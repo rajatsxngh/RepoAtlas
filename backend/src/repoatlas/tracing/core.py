@@ -29,6 +29,7 @@ from opentelemetry.trace import Status, StatusCode
 
 from repoatlas.llm.types import LLMResult
 from repoatlas.observability import otel
+from repoatlas.redact import redact
 from repoatlas.tracing.models import TraceStatus
 
 MAX_ERROR_CHARS = 500
@@ -190,7 +191,7 @@ def trace_span(name: str, kind: str, **attrs: Any) -> Iterator[Span]:
             yield Span(record)
         except BaseException as exc:
             record.status = "error"
-            record.attrs["error"] = f"{type(exc).__name__}: {exc}"[:MAX_ERROR_CHARS]
+            record.attrs["error"] = redact(f"{type(exc).__name__}: {exc}")[:MAX_ERROR_CHARS]
             raise
         else:
             record.status = "ok"

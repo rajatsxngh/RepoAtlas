@@ -110,6 +110,10 @@ def check_repo_size(meta: RepoMeta, max_size_kb: int) -> None:
         )
 
 
+class _RedirectRefused(Exception):
+    """A request (a redirect) aimed at a host other than the GitHub API's."""
+
+
 class GitHubClient:
     """Minimal GitHub REST client for repository metadata and branch heads."""
 
@@ -131,12 +135,23 @@ class GitHubClient:
         }
         if token:
             headers["Authorization"] = f"Bearer {token}"
+        origin = httpx.URL(base_url)
+
+        def same_origin_only(request: httpx.Request) -> None:
+            # GitHub redirects renamed repositories within its API. A redirect anywhere else
+            # is never followed: the request is refused before it is sent.
+            url = request.url
+            if (url.scheme, url.host, url.port) != (origin.scheme, origin.host, origin.port):
+                raise _RedirectRefused(url.host)
+
         self._http = httpx.Client(
             base_url=base_url,
             headers=headers,
             timeout=timeout,
             transport=transport,
             follow_redirects=True,
+            max_redirects=3,
+            event_hooks={"request": [same_origin_only]},
         )
         self._retries = retries
         self._backoff_s = backoff_s
@@ -191,6 +206,10 @@ class GitHubClient:
             last_attempt = attempt == self._retries
             try:
                 response = self._http.get(path, headers=headers)
+            except _RedirectRefused as exc:
+                raise GitHubError(
+                    "GitHub redirected the request to another host; it was not followed."
+                ) from exc
             except httpx.TransportError as exc:
                 if last_attempt:
                     raise GitHubError(f"Could not reach GitHub ({type(exc).__name__}).") from exc
