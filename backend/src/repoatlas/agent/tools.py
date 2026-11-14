@@ -16,7 +16,8 @@ store, the retriever, and the impact engine:
 
 A ``Toolbox`` is bound to one snapshot when it is made; no tool takes a snapshot, a URL, or a
 command, so a caller can only ever read that snapshot's stored data. ``call(name, arguments)``
-checks the arguments against the tool's model before anything runs and returns a
+checks the arguments against the tool's model and the allowlist helpers
+(``repoatlas.agent.guard.check_arguments``) before anything runs and returns a
 ``ToolResult``: text for the caller, and ``EvidenceRef``s (the same references retrieval
 returns) for every piece of code the text is about. A tool that can't run raises ``ToolError``
 with a message the caller can act on.
@@ -33,6 +34,8 @@ from typing import Any, Protocol, Self
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
+from repoatlas.agent.guard import check_arguments
+from repoatlas.agent.results import ToolError, ToolResult
 from repoatlas.graph.model import Edge, EdgeKind, Node, Owner
 from repoatlas.impact.schema import GROUPS, ImpactParams, ImpactReport, SymbolTarget
 from repoatlas.retrieval.evidence import EvidenceRef
@@ -56,27 +59,6 @@ OWNER_FILE_LINES = 20  # lines of the file that an ownership result's evidence c
 SEARCH_TOKENS = 4_000  # evidence budget of one search
 MAX_TEXT_CHARS = 500
 MAX_KEY_CHARS = 4_096
-
-
-class ToolResult(BaseModel):
-    """What a tool returns. ``evidence`` lists the code ``content`` is about, in the order the
-    text mentions it; ``truncated`` says the tool left something out (the text says what)."""
-
-    model_config = ConfigDict(frozen=True)
-
-    content: str
-    evidence: list[EvidenceRef] = Field(default_factory=list)
-    truncated: bool = False
-
-
-class ToolError(Exception):
-    """The call did not run, or failed. ``allowed`` is False when the call was refused because
-    it reached outside what tools may touch: an unknown tool, or a path that is not a file of
-    the snapshot."""
-
-    def __init__(self, message: str, *, allowed: bool = True) -> None:
-        super().__init__(message)
-        self.allowed = allowed
 
 
 # ---------------------------------------------------------------------------
@@ -353,6 +335,7 @@ class Toolbox:
 
     def call(self, name: str, arguments: dict[str, Any]) -> ToolResult:
         spec, args = self.parse(name, arguments)
+        check_arguments(args)
         try:
             return spec.run(self, args)
         except PathNotInSnapshot as exc:
@@ -684,3 +667,6 @@ def tool_definitions() -> list[dict[str, Any]]:
     """Every tool in Messages API form, in a fixed order (the order is part of the cached
     prompt prefix)."""
     return [spec.definition() for spec in TOOLS]
+
+
+__all__ = ["TOOLS", "TOOL_NAMES", "ToolError", "ToolResult", "ToolSpec", "Toolbox"]

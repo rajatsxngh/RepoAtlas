@@ -162,7 +162,7 @@ def test_unknown_symbols_and_other_snapshots_are_errors_the_caller_can_act_on(sh
     box = shop.toolbox()
     for name, arguments in (
         ("find_callers", {"symbol_key": "py:src/shop/cart.py:Cart.nope:method"}),
-        ("find_callees", {"symbol_key": "total"}),
+        ("find_callees", {"symbol_key": "py:src/shop/cart.py:total:function"}),
         ("trace_path", {"from_key": TOTAL, "to_key": "py:x.py:y:function"}),
         ("get_owners", {"symbol_key": "py:x.py:y:function"}),
         ("get_impact", {"symbol_key": "py:x.py:y:function"}),
