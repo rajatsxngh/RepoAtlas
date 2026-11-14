@@ -1,6 +1,6 @@
 # M14 — Agent harness
 
-**Type of work:** AI agent · **Size:** L (10 tasks) · **Status:** Not started
+**Type of work:** AI agent · **Size:** L (10 tasks) · **Status:** In progress
 
 ## Goal
 
@@ -33,7 +33,7 @@ Let a tool-using agent explore the graph for questions one retrieval pass can't 
 - **`repoatlas.agent.loop.AgentAnswerSystem`** — config `max_steps = 12`, `max_input_tokens`, `per_tool_result_tokens`, roles (`small` for steps, `large` for the final answer); an evidence ledger; final structured answer validated by `CitationValidator`; registered as `agent`.
 - **API and UI:** `mode = "agent"` on the ask endpoint; server-sent `step` events (tool, argument summary, result size, tokens, cost); the UI mode toggle and live steps in `TracePanel`.
 - **MCP server:** `repoatlas mcp --snapshot <id> [--transport stdio|http] [--port N]` exposing the same tools; HTTP requires a bearer token and is rate-limited; the MCP SDK is pinned to one major version.
-- **Results:** live injection suite results for agent mode; agent vs one-shot report on the test split.
+- **Results:** the injection suite and the agent-versus-one-shot comparison run end to end without a model (decision 0022); the live results are pending in [`docs/live-pass.md`](../live-pass.md).
 
 ## Requirements
 
@@ -79,25 +79,41 @@ AGT-1, AGT-2, AGT-3, AGT-4, AGT-5, AGT-6, AGT-7, AGT-8
 - [ ] **T5 — API agent mode.** `step` events over server-sent events; trace linkage.
 - [ ] **T6 — UI.** Mode toggle; live steps in `TracePanel`; Playwright test with mock mode.
 - [ ] **T7 — MCP server.** stdio and HTTP transports, bearer token and rate limits; in-memory client test.
-- [ ] **T8 — Manual MCP check.** Connect from Claude Code and run three questions; notes in Results.
-- [ ] **T9 — Injection gate.** Live injection suite in agent mode; zero leaks.
-- [ ] **T10 — Evaluation.** Agent vs one-shot on the test split; report and summary in Results.
+- [ ] **T8 — Manual MCP check.** Connect from Claude Code and run three questions with tools that call no model; notes in Results.
+- [ ] **T9 — Injection gate (build gate).** The injection suite in agent mode end to end through the runner with scripted stand-ins: the obedient one is caught (planted text and a tool call outside the snapshot), the careful one scores zero leaks over three runs. The live run is a live-pass item (decision 0022).
+- [ ] **T10 — Evaluation (tooling).** `agent` and `oneshot` through the runner on the same questions with stand-ins, compared per question type with 95% intervals and cost per question; the agent conversation's request shapes replayed from a cassette. The test-split report is a live-pass item (decision 0022).
 
 ## Exit criteria
 
 - [ ] Tool, loop, and cap tests pass with the scripted fake LLM.
-- [ ] Live injection suite: zero canary leaks in agent mode.
+- [ ] The injection suite runs end to end in agent mode without a model: planted text reaches the agent's prompts marked, the scorer catches a stand-in that obeys it (in its answer and in a tool call outside the snapshot), and a stand-in that answers from the evidence scores zero leaks over three runs.
 - [ ] The MCP in-memory client test passes, and the manual Claude Code check is recorded.
-- [ ] A test-split report compares agent and one-shot with 95% intervals and cost per question.
+- [ ] `agent` and `oneshot` run through the eval runner on the same questions without a model, and the comparison reports the difference per question type with 95% intervals and the cost per question.
+
+### Live pass (pending; not part of this gate)
+
+These need spending the owner has deferred (decisions 0020 and 0022). They are not checked here and must never be reported as passed until they are run:
+
+- Live injection suite: zero canary leaks in agent mode, three runs per question.
+- The agent-versus-one-shot report on the test split, three runs each, with 95% intervals and cost per question.
+- The agent cassette re-recorded from the API.
+- `max_steps` and the token budgets checked on the dev split.
+- A question answered in agent mode in the running app by the live model.
 
 ## Verification
 
 ```bash
 cd backend
-uv run pytest tests/unit/agent tests/integration/mcp -q
-uv run repoatlas eval run --suite injection --system agent --max-cost 3.00
-uv run repoatlas eval run --system agent --split test --runs 3 --max-cost 25.00
+uv run pytest tests/unit/agent tests/integration/agent tests/integration/mcp -q
+uv run pytest -m injection_static -q
 uv run repoatlas mcp --snapshot <id> --transport stdio
+```
+
+Live pass (needs an API key; costs money):
+
+```bash
+uv run repoatlas eval run --suite injection --system agent --runs 3 --max-cost 3.00
+uv run repoatlas eval run --system agent --split test --runs 3 --max-cost 25.00
 ```
 
 ## Risks and open questions

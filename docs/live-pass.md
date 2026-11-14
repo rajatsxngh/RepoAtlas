@@ -2,8 +2,9 @@
 
 Checks that need spending (Anthropic API calls or hosting) and are deferred until the build is
 finished and the owner approves it (decisions
-[0020](decisions/0020-build-without-spend-live-pass.md) and
-[0021](decisions/0021-m13-build-gate-injection-live-pass.md)). Each item is **pending** until it is
+[0020](decisions/0020-build-without-spend-live-pass.md),
+[0021](decisions/0021-m13-build-gate-injection-live-pass.md), and
+[0022](decisions/0022-m14-agent-build-gate-live-pass.md)). Each item is **pending** until it is
 run and its result is written here and in its milestone's Results. Nothing on this list may be
 reported as passed before then.
 
@@ -21,6 +22,11 @@ configuration plus one run per item.
 | 7 | M13 | Live injection suite for impact explanations, three runs per question: zero canary leaks | API key; capped at $2.00 | Pending |
 | 8 | M13 | Re-record the answer cassette against the hardened prompt (its request was rebased, its response is from 2026-11-11) | API key, about a cent | Pending |
 | 9 | M13 | Spans arrive in a real Langfuse project over OTLP/HTTP | Langfuse account (free tier or self-hosted) | Pending |
+| 10 | M14 | Re-record the agent cassette from the API (it is hand-written from the documented shapes) | API key, a few cents | Pending |
+| 11 | M14 | `agent_max_steps` and the token budgets checked on the dev split | API key; capped at $5.00 | Pending |
+| 12 | M14 | Live injection suite in agent mode, three runs per question: zero canary leaks | API key; capped at $3.00 | Pending |
+| 13 | M14 | Agent versus one-shot on the test split, three runs each: report with 95% intervals and cost per question | API key; capped at $25.00 (agent) plus $10.00 (one-shot, on the hardened prompt) | Pending |
+| 14 | M14 | In the running app, a question in agent mode is answered by the live model with steps in the trace panel | API key, a few cents | Pending |
 
 ## How to run them
 
@@ -64,6 +70,47 @@ cassette's `note`.
 **Item 9 (Langfuse export).** Set `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`
 as [observability.md](observability.md) describes, ask one question, and check that the trace
 appears in the Langfuse project.
+
+**Item 10 (agent cassette).** `uv run poe record-cassettes` also records
+`tests/llm_cassettes/agent/`; review the diff. If the recorded conversation differs in shape
+from the hand-written one (for example in how thinking blocks come back between tool calls),
+fix the loop before running items 11 to 14.
+
+**Item 11 (agent budgets on dev).** In `backend/`:
+
+```bash
+uv run repoatlas eval run --system agent --split dev --runs 1 --max-cost 5.00
+```
+
+Read the report's refusals: `budget` refusals and answers that stopped at the step cap say the
+defaults of decision 0022 are too tight. Change `REPOATLAS_AGENT_MAX_STEPS`,
+`REPOATLAS_AGENT_MAX_INPUT_TOKENS`, or `REPOATLAS_AGENT_PER_TOOL_RESULT_TOKENS`, record the
+choice in a decision record, and only then run item 13. Nothing is tuned on the test split.
+
+**Item 12 (live injection suite, agent mode).**
+
+```bash
+uv run repoatlas eval run --suite injection --system agent --runs 3 --max-cost 3.00
+```
+
+It must end with `complete` and a score of 1.000. A leak in the answer or a tool call outside
+the snapshot fails the gate for agent mode; agent mode is not deployed until this passes.
+
+**Item 13 (agent versus one-shot).**
+
+```bash
+uv run repoatlas eval run --system oneshot --split test --runs 3 --max-cost 10.00
+uv run repoatlas eval run --system agent --split test --runs 3 --max-cost 25.00
+uv run repoatlas eval compare <oneshot report>.json <agent report>.json
+```
+
+Write the per-type table, the intervals, and the cost per question into M14's Results. If the
+agent does not win on the multi-hop question types, say so and explain where it fails, from
+the traces.
+
+**Item 14 (agent mode in the app).** With a key set, start the stack (`node scripts/dev.mjs`),
+ask a question with the mode set to Agent, and check that steps appear while it runs and that
+the answer's citations open the cited code.
 
 ## Results
 
