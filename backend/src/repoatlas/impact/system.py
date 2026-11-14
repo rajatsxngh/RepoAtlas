@@ -1,5 +1,6 @@
 """The registered impact system ``impact_engine`` (IMP-9): ``ImpactEngine`` behind the
-evaluation contract (``ImpactSystem``, ``ImpactPrediction``).
+evaluation contract (``ImpactSystem``, ``ImpactPrediction``). Also ``impact_explain``, the cited
+explanation of an impact report as an answer system (``ImpactExplainSystem``).
 
 The adapter keeps the report's ranking. Ground truth names symbols (definitions and tests), so
 items that are not symbols (files, directories, routes) are left out of the prediction. Unknown
@@ -10,20 +11,26 @@ enclosing symbol is added once, in the ``unknown`` group, with score 0.
 
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 import anyio
 
+from repoatlas.answers.prompting import SYSTEM_PROMPT
+from repoatlas.answers.schema import AnswerResult, Budget
+from repoatlas.answers.system import StatusCallback
 from repoatlas.evals.registry import (
     EvalContext,
     ImpactPrediction,
     ImpactTarget,
+    register_answer_system,
     register_impact_system,
 )
 from repoatlas.evals.registry import (
     ImpactItem as PredictedItem,
 )
 from repoatlas.impact.engine import ImpactEngine
+from repoatlas.impact.explain import ImpactExplainer
 from repoatlas.impact.schema import DiffTarget, ImpactParams, ImpactReport, SymbolTarget
 from repoatlas.impact.schema import ImpactItem as ReportItem
 from repoatlas.impact.store_data import StoreImpactData
@@ -128,3 +135,88 @@ def impact_engine(ctx: EvalContext) -> EngineImpactSystem:
 
 
 register_impact_system("impact_engine", impact_engine, replace=True)
+
+
+class ImpactExplainSystem:
+    """Impact explanations as an answer system (GRD-6): the "question" is the key of the symbol
+    that changes; the answer is the cited explanation of its impact report. Registered so the
+    injection suite (and any other suite) can run explanations like any answering mode."""
+
+    name = "impact_explain"
+
+    def __init__(
+        self,
+        engine: ImpactEngine,
+        explainer: ImpactExplainer,
+        params: ImpactParams | None = None,
+        *,
+        effort: str | None = None,
+    ) -> None:
+        self.engine = engine
+        self.explainer = explainer
+        self.params = params or ImpactParams()
+        self.effort = effort
+
+    def config(self) -> dict[str, Any]:
+        return {
+            "kind": "impact_explain",
+            "version": IMPACT_SYSTEM_VERSION,
+            "params": self.params.model_dump(mode="json"),
+            "per_group": self.explainer.per_group,
+            "model": self.explainer.llm.model_for("large"),
+            "effort": self.effort,
+            "prompt_sha256": hashlib.sha256(SYSTEM_PROMPT.encode("utf-8")).hexdigest(),
+        }
+
+    async def answer(
+        self,
+        snapshot_id: int,
+        question: str,
+        budget: Budget,
+        *,
+        on_status: StatusCallback | None = None,
+    ) -> AnswerResult:
+        key = question.strip().strip("`")
+        if not is_symbol_key(key):
+            raise ValueError("impact_explain takes the changed symbol's key as its question.")
+        if on_status is not None:
+            await on_status("retrieving")
+        report = await anyio.to_thread.run_sync(
+            self.engine.analyze, snapshot_id, SymbolTarget(symbol_key=key), self.params
+        )
+        if on_status is not None:
+            await on_status("answering")
+        return await self.explainer.explain(snapshot_id, report, budget)
+
+
+def impact_explain(ctx: EvalContext) -> ImpactExplainSystem:
+    """``ctx.options``: ``params`` (``ImpactParams`` fields)."""
+    from repoatlas.answers.validate import StoreBlobs
+    from repoatlas.llm.pricing import PriceTable
+    from repoatlas.tracing.store import SqlTraceSink
+
+    if ctx.llm is None:
+        raise ValueError("This system needs an LLM client.")
+    if ctx.engine is None:
+        raise ValueError("This system needs the database.")
+    if ctx.store is None:
+        from repoatlas.store.graphstore import GraphStore
+
+        ctx.store = GraphStore.from_settings(ctx.settings, ctx.engine)
+    data = StoreImpactData(ctx.store)
+    explainer = ImpactExplainer(
+        data,
+        StoreBlobs(ctx.engine),
+        ctx.llm,
+        prices=PriceTable(ctx.settings.llm_prices),
+        sink=SqlTraceSink(ctx.engine),
+    )
+    return ImpactExplainSystem(
+        ImpactEngine(data),
+        explainer,
+        ImpactParams.model_validate(ctx.options.get("params") or {}),
+        effort=ctx.settings.llm_large_effort,
+    )
+
+
+register_answer_system("impact_explain", impact_explain, replace=True)

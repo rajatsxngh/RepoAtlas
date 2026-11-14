@@ -336,6 +336,9 @@ def _factory(name: str, mode: Mode) -> Callable[[EvalContext], RetrievalBaseline
 
 def _register() -> None:
     register_answer_system("closed_book", closed_book, replace=True)
+    # The product's own answering mode (hybrid retrieval, the settings' refusal threshold),
+    # under the name the API uses, so suites can run it as ``--system oneshot``.
+    register_answer_system("oneshot", _factory("oneshot", "hybrid"), replace=True)
     for name, mode in BASELINES.items():
         if mode is not None:
             register_answer_system(name, _factory(name, mode), replace=True)

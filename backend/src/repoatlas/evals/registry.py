@@ -12,6 +12,11 @@ Suites are named sets of questions with their own scorers: ``register_suite(name
 scorers)``. ``loader(split)`` returns the questions (``EvalItem``) of a split; ``scorers`` maps a
 question type to the function that scores one output for one question (``"*"`` matches any
 type). The default suite, ``benchmark``, is registered by ``repoatlas.evals.suites``.
+
+A suite may bring its own snapshots instead of the benchmark repositories' (``prepare``): given
+the run's context, the system's name, and the split's questions, it returns the questions this
+system answers and the snapshot of each repository (``SuitePlan``). It may also switch off the
+claim checker and the flow judge (``enrichers=False``).
 """
 
 from __future__ import annotations
@@ -30,6 +35,7 @@ if TYPE_CHECKING:
     from repoatlas.answers.system import AnswerSystem
     from repoatlas.config import Settings
     from repoatlas.evals.outputs import ItemScore, SystemOutput
+    from repoatlas.evals.report import SnapshotUsed
     from repoatlas.llm.client import LLM
     from repoatlas.store.graphstore import GraphStore
 
@@ -196,11 +202,25 @@ SuiteLoader = Callable[[str], list[EvalItem]]
 
 
 @dataclass(frozen=True)
+class SuitePlan:
+    """What a suite's ``prepare`` returns: the questions this system answers, and the snapshot
+    each repository is answered on (by repo ID)."""
+
+    items: list[EvalItem]
+    snapshots: dict[str, SnapshotUsed]
+
+
+SuitePrepare = Callable[[EvalContext, str, list[EvalItem]], SuitePlan]
+
+
+@dataclass(frozen=True)
 class Suite:
     name: str
     loader: SuiteLoader
     scorers: Mapping[str, ItemScorer]
     info: Callable[[], dict[str, Any]] | None = None  # version, digests: recorded in reports
+    prepare: SuitePrepare | None = None  # the suite's own snapshots and per-system questions
+    enrichers: bool = True  # whether the claim checker and the flow judge run on it
 
     def scorer_for(self, item_type: str) -> ItemScorer:
         scorer = self.scorers.get(item_type) or self.scorers.get("*")
@@ -221,13 +241,22 @@ def register_suite(
     scorers: Mapping[str, ItemScorer],
     *,
     info: Callable[[], dict[str, Any]] | None = None,
+    prepare: SuitePrepare | None = None,
+    enrichers: bool = True,
     replace: bool = False,
 ) -> Suite:
     if name in _suites and not replace:
         raise RegistryError(f"A suite named {name!r} is already registered.")
     if not scorers:
         raise ValueError("A suite needs at least one scorer.")
-    suite = Suite(name=name, loader=loader, scorers=dict(scorers), info=info)
+    suite = Suite(
+        name=name,
+        loader=loader,
+        scorers=dict(scorers),
+        info=info,
+        prepare=prepare,
+        enrichers=enrichers,
+    )
     _suites[name] = suite
     return suite
 
@@ -259,6 +288,7 @@ def _load_builtins() -> None:
 
     for module in (
         "repoatlas.evals.suites",
+        "repoatlas.evals.injection",
         "repoatlas.evals.baselines",
         "repoatlas.impact.system",
     ):

@@ -88,7 +88,7 @@ Each variant has its own canary string so a leak can be traced to its source.
 - [x] **T5 — Injection detector.** Rules, severity, tests; false-positive rate on benchmark repos recorded.
 - [x] **T6 — Hardened prompts.** Flagged spans in evidence, system message update, UI warning icon; prompt layout tests; the recorded answer cassette's request rebased (decision 0021).
 - [x] **T7 — Planted-injection fixture.** At least 15 variants, canaries, questions.
-- [ ] **T8 — Injection suite.** `injection` suite and `canary_leak` scorer registered with the eval runner; systems `oneshot` and `impact_explain`; the suite builds its fixture snapshot.
+- [x] **T8 — Injection suite.** `injection` suite and `canary_leak` scorer registered with the eval runner; systems `oneshot` and `impact_explain`; the suite builds its fixture snapshot.
 - [ ] **T9 — Allowlists.** Helpers applied to every code read; tests.
 - [ ] **T10 — Security checklist and tests.** One test per checklist item.
 - [ ] **T11 — Gate run (build gate).** The injection suite end to end through the runner for one-shot answers and impact explanations with scripted stand-ins: the obedient one is caught on every variant, the careful one scores zero leaks; results in Results. The live run is a live-pass item.

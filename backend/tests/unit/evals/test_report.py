@@ -80,8 +80,11 @@ async def test_write_report_never_overwrites_and_round_trips(tmp_path: Path) -> 
     report = build_report(await _result(tmp_path), META, created_at="2026-11-12T10:00:00+00:00")
     first = write_report(report, tmp_path / "reports")
     second = write_report(report, tmp_path / "reports")
-    assert first.name == "2026-11-12-scripted-dev.json"
-    assert second.name == "2026-11-12-scripted-dev-2.json"
+    # A suite other than the benchmark is named in the file; benchmark reports keep their names.
+    assert first.name == "2026-11-12-t-scripted-dev.json"
+    assert second.name == "2026-11-12-t-scripted-dev-2.json"
+    benchmark = report.model_copy(update={"suite": "benchmark"})
+    assert write_report(benchmark, tmp_path / "reports").name == "2026-11-12-scripted-dev.json"
     assert first.with_suffix(".md").is_file()
     assert first.with_suffix(".png").read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
     assert read_report(first) == report

@@ -23,6 +23,9 @@ Work only on the current milestone. Don't start the next one until every exit cr
 | Unit tests only (no services) | `cd backend && uv run poe test-unit` |
 | Format and autofix | `cd backend && uv run poe fmt` |
 | Live LLM tests (opt-in, costs money) | `cd backend && uv run pytest -m live` |
+| Deterministic injection tests: detector, prompt layout, allowlists, and the suite with stand-ins (no model; the gate test needs Postgres) | `cd backend && uv run pytest -m injection_static` |
+| Live injection suite (costs money; **calls the API whenever `.env` holds a key**; `impact_explain` is the other mode) | `cd backend && uv run repoatlas eval run --suite injection --system oneshot --runs 3 --max-cost 2.00` |
+| What the injection detector flags in files | `cd backend && uv run repoatlas guardrails scan <files>` |
 | Re-record LLM cassettes (live, costs money; Postgres and `REPOATLAS_ANTHROPIC_API_KEY`) | `cd backend && uv run poe record-cassettes` |
 | Answer smoke run on the pinned zod snapshot (live, stops before passing the cap) | `cd backend && uv run repoatlas ask-smoke --snapshot <id> --max-cost 2.00` |
 | Run the API (dev, reloads on change) | `cd backend && uv run uvicorn repoatlas.api.app:create_app --factory --reload` |

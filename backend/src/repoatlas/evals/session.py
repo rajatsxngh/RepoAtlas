@@ -107,13 +107,24 @@ def prepare_run(
         get_answer_system(options.system) if kind == "answer" else get_impact_system(options.system)
     )
     system = factory(ctx)
-    repos = {item.repo_id: item.commit for item in items}
-    snapshots = resolve_snapshots(
-        ctx.engine,
-        repos,
-        fingerprint=config_fingerprint(ctx.settings),
-        overrides=parse_overrides(options.snapshots),
-    )
+    if suite.prepare is not None:
+        # The suite brings its own snapshots and picks this system's questions.
+        if options.snapshots:
+            raise ValueError(f"Suite {suite.name!r} builds its own snapshot; drop --snapshot.")
+        plan = suite.prepare(ctx, options.system, items)
+        items, snapshots = plan.items, plan.snapshots
+        if not items:
+            raise LookupError(
+                f"Suite {suite.name!r} has no questions for system {options.system!r}."
+            )
+    else:
+        repos = {item.repo_id: item.commit for item in items}
+        snapshots = resolve_snapshots(
+            ctx.engine,
+            repos,
+            fingerprint=config_fingerprint(ctx.settings),
+            overrides=parse_overrides(options.snapshots),
+        )
     from repoatlas.answers.schema import Budget
 
     budget = Budget(
@@ -131,7 +142,7 @@ def prepare_run(
     import repoatlas.evals.support  # noqa: F401  (they register their enrichers)
 
     enrichers = []
-    if kind == "answer":
+    if kind == "answer" and suite.enrichers:
         for name, enabled in (("support", options.support), ("judge", options.judge)):
             if enabled and name in ENRICHERS:
                 enrichers.append(ENRICHERS[name](ctx))

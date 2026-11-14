@@ -17,6 +17,7 @@ Score any answering or impact system on the benchmark with honest statistics, an
 
 ## Provides
 
+- **Added later by decision 0021** (backward compatible): `register_suite(…, prepare=None, enrichers=True)` — a suite may bring its own snapshots and pick its questions per system (`prepare(context, system, items) -> SuitePlan(items, snapshots)`), and may switch off the claim checker and the judge; `SystemOutput` gains `evidence_flagged` and `tool_calls: list[ToolCallRecord(name, arguments, allowed)]` (empty for modes without tools); answer systems `oneshot` (the product's configuration) and `impact_explain` are registered; the report of a suite other than `benchmark` has the suite's name in its file name (`<date>-<suite>-<system>-<split>`); `repoatlas.pipeline.local.build_local_snapshot(directory, settings, engine)` builds a snapshot of a local fixture directory through the registered stages.
 - **Registry** (`repoatlas.evals.registry`)
   - `register_answer_system(name, factory)` / `get_answer_system(name)` — systems registered here can be evaluated by name.
   - `ImpactTarget(symbol_key | diff)`, `ImpactPrediction(target, items: [ImpactItem(symbol_key, group: "test"|"public_api"|"caller"|"unknown", score, path?, evidence?)])`, `ImpactSystem` protocol `predict(snapshot_id, target) -> ImpactPrediction`, `register_impact_system(name, factory)`.

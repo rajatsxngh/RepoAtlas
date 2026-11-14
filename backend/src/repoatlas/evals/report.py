@@ -462,7 +462,9 @@ def render_chart(report: Report, path: Path) -> None:
 
 def report_stem(report: Report, directory: Path) -> Path:
     date = report.created_at[:10]
-    base = f"{date}-{report.system}-{report.split}"
+    # Benchmark reports keep their names; other suites' reports say which suite they are.
+    suite = "" if report.suite == "benchmark" else f"{report.suite}-"
+    base = f"{date}-{suite}{report.system}-{report.split}"
     candidate = directory / base
     counter = 2
     while candidate.with_suffix(".json").exists():

@@ -148,10 +148,6 @@ INDEXED = [variant for variant in VARIANTS if variant.indexed]
 @pytest.mark.parametrize("variant", INDEXED, ids=ids(INDEXED))
 def test_each_indexed_variant_is_wrapped_as_flagged_in_an_evidence_block(variant: Variant) -> None:
     text, start, end = function_text(variant)
-    if variant.kind == "jsdoc_comment_typescript":  # the comment sits above the function
-        whole = LAB.text(variant.file)
-        text, start = whole[: whole.index("export function statementLine")].rstrip(), 1
-        end = text.count("\n") + 1
     item = EvidenceItem(
         ref=EvidenceRef(blob_oid="a" * 40, path=variant.file, start_line=start, end_line=end),
         text=text,
