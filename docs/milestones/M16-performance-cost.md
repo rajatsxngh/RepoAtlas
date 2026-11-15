@@ -1,6 +1,6 @@
 # M16 — Performance & cost
 
-**Type of work:** Optimization · **Size:** M (8 tasks) · **Status:** Not started
+**Type of work:** Optimization · **Size:** M (8 tasks) · **Status:** In progress
 
 ## Goal
 
@@ -61,30 +61,42 @@ PRF-1, PRF-2, PRF-3, PRF-4, PRF-5, PRF-6
 
 ## Tasks
 
-- [ ] **T1 — Baseline measurement.** Cost and latency per mode on dev and test; report saved.
+- [ ] **T1 — Baseline measurement (tooling and what exists).** `repoatlas eval cost-report --before …` prints cost and latency per question for each report; a baseline is written from the reports measured so far, labelled with what they measured. The per-mode baseline on dev and test is a live-pass item (decision 0024).
 - [ ] **T2 — Change detection.** Inventory diff with the five change classes; tests.
-- [ ] **T3 — Incremental parse and re-resolve.** Invalidation rules above; tests per rule.
-- [ ] **T4 — Reuse and equality checks.** Chunk and embedding reuse; scripted change sets with digest equality against full rebuilds.
+- [ ] **T3 — Incremental parse and re-resolve.** Parse cache by content; per-file records; call resolution reused per file under the invalidation rules of decision 0024; a test per rule, each showing the graph is wrong without the rule.
+- [ ] **T4 — Reuse and equality checks.** Builds find their previous snapshot; `build_incremental`; chunk reuse; embedding reuse counted; scripted and generated change sets with digest equality against full rebuilds, through the store.
 - [ ] **T5 — Freshness.** Endpoint with caching; banner and rebuild button; Playwright test with mock mode.
-- [ ] **T6 — Prompt caching and tuning.** Verify cache hits; tune routing and caps on dev; decision record.
-- [ ] **T7 — After measurement and report.** Re-run per mode; `eval cost-report`; check the tolerance rule.
+- [ ] **T6 — Prompt caching and tuning (build gate).** Cache breakpoints on tool definitions, the system prompt, and the growing conversation, checked in every mode's requests with `FakeLLM` and the cassettes; the tolerance rule as code. Cache reads in live traces and settings tried on dev are live-pass items (decision 0024).
+- [ ] **T7 — After measurement and report (tooling).** `repoatlas eval cost-report --before … --after …` with paired intervals and a verdict per mode, run end to end on stand-in reports. The live before/after report is a live-pass item (decision 0024).
 - [ ] **T8 — Documentation.** Performance notes in the docs; Results filled in.
 
 ## Exit criteria
 
-- [ ] For every scripted change set, the incremental graph's digest equals a full rebuild's digest.
-- [ ] Embedding reuse is verified (cache hits counted in stage stats).
-- [ ] The cost report shows before/after cost per question for every mode, with accuracy within the stated tolerance for every kept change.
+- [ ] For every scripted change set, the incremental graph's digest equals a full rebuild's digest (fixture repositories, generated edits, and two real commits of a real repository).
+- [ ] Embedding reuse is verified (cache hits counted in stage stats), and the chunks of an incremental build equal a full rebuild's.
+- [ ] The cost report prints before/after cost per question for every mode it is given, the paired accuracy difference with its 95% interval, and the tolerance verdict; every answering mode's requests carry the cache breakpoints (checked without a model).
 - [ ] The freshness banner shows on a stale snapshot and the rebuild button produces a fresh snapshot.
+
+### Live pass (pending; not part of this gate)
+
+These need spending the owner has deferred (decisions 0020 and 0024). They are not checked here and must never be reported as passed until they are run:
+
+- Cost and latency per answering mode on dev and test before any change.
+- Cache reads confirmed in traces (cache-read tokens above zero on repeated static prefixes and on an agent's steps after the first).
+- Cheaper routing, step caps, and evidence budgets tried on dev; a setting is kept only inside the tolerance.
+- The before/after cost report per mode, with accuracy within the tolerance for every kept change.
 
 ## Verification
 
 ```bash
 cd backend
 uv run pytest tests/unit/pipeline/test_incremental.py tests/integration/pipeline -q
-uv run repoatlas eval cost-report --before eval/reports/<before>/ --after eval/reports/<after>/
+uv run pytest tests/unit/evals/test_cost_report.py tests/unit/llm/test_cache_breakpoints.py -q
+uv run repoatlas eval cost-report --before eval/reports/<before>.json --after eval/reports/<after>.json
 cd ../frontend && npx playwright test freshness
 ```
+
+Live pass (needs an API key; costs money): see [`docs/live-pass.md`](../live-pass.md), items 20 to 23.
 
 ## Risks and open questions
 

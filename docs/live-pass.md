@@ -4,8 +4,9 @@ Checks that need spending (Anthropic API calls or hosting) and are deferred unti
 finished and the owner approves it (decisions
 [0020](decisions/0020-build-without-spend-live-pass.md),
 [0021](decisions/0021-m13-build-gate-injection-live-pass.md),
-[0022](decisions/0022-m14-agent-build-gate-live-pass.md), and
-[0023](decisions/0023-m15-multi-agent-build-gate-live-pass.md)). Each item is **pending** until it is
+[0022](decisions/0022-m14-agent-build-gate-live-pass.md),
+[0023](decisions/0023-m15-multi-agent-build-gate-live-pass.md), and
+[0024](decisions/0024-m16-incremental-builds-cost-build-gate.md)). Each item is **pending** until it is
 run and its result is written here and in its milestone's Results. Nothing on this list may be
 reported as passed before then.
 
@@ -33,6 +34,10 @@ configuration plus one run per item.
 | 17 | M15 | Multi-agent versus agent versus one-shot on the test split, three runs each: report with 95% intervals, cost per question, and cost per stage | API key; capped at $40.00 (multi-agent), reusing the reports of item 13 | Pending |
 | 18 | M15 | The verifier's labels spot-checked against human labels on dev | Item 15's report; an hour of labeling; no extra calls | Pending |
 | 19 | M15 | In the running app, a question in multi-agent mode is answered by the live model, with branches in the trace panel | API key, a few cents | Pending |
+| 20 | M16 | Cost and latency per answering mode before any change: one-shot, agent, and multi-agent on dev and on test | The reports of items 11, 13, 15, and 17, plus one-shot on dev; capped at $5.00 for that run | Pending |
+| 21 | M16 | Cache reads confirmed: cache-read tokens above zero on a repeated static prefix with tools, and on an agent conversation's second step | API key, a few cents | Pending |
+| 22 | M16 | Cheaper routing, step caps, and evidence budgets tried on dev, each kept only inside the tolerance (lower bound of the 95% interval above −0.02 for every question type) | API key; capped at $20.00 | Pending |
+| 23 | M16 | The before/after cost report per mode on test, for every setting item 22 kept | API key; capped at the caps of items 13 and 17, and only for modes whose settings changed | Pending |
 
 ## How to run them
 
@@ -175,6 +180,57 @@ person did not.
 (`node scripts/dev.mjs`), ask a question that has two independent parts with the mode set to
 Multi-agent, and check that the plan and each branch's steps appear while it runs, that the
 trace panel groups the spans by branch, and that the answer's citations open the cited code.
+
+**Item 20 (cost baseline).** Items 11, 13, 15, and 17 already produce the dev and test
+reports of the agent and the pipeline, and the test report of one-shot answers, with the
+settings as built. Add one-shot on dev, then print the baseline:
+
+```bash
+uv run repoatlas eval run --system oneshot --split dev --runs 1 --max-cost 5.00
+uv run repoatlas eval cost-report --before <oneshot>.json --before <agent>.json --before <multiagent>.json
+```
+
+Run it once for the dev reports and once for the test reports, and write the tables into M16's
+Results. These reports are the "before" of items 22 and 23, so keep them.
+
+**Item 21 (cache reads).** Run it right after item 10, before any evaluation run:
+
+```bash
+uv run pytest -m live tests/live/test_prompt_cache_live.py -q
+```
+
+It sends a request with tools twice and a two-step tool conversation, and passes when the
+second call of each reports cache-read tokens. If the API rejects a `cache_control` field, set
+`REPOATLAS_LLM_CACHE_CONVERSATION=false`, fix `repoatlas.llm.compat`, and run it again before
+anything else. The reports of items 11 and 15 then show the saving: `eval cost-report` prints
+the share of input tokens read from the cache when a report records it.
+
+**Item 22 (cheaper settings on dev).** One candidate at a time, each as environment variables
+in front of the same command, compared with item 20's dev report of that mode:
+
+```bash
+REPOATLAS_AGENT_MAX_STEPS=8 uv run repoatlas eval run --system agent --split dev --runs 3 --max-cost 5.00
+uv run repoatlas eval cost-report --before <agent dev before>.json --after <agent dev candidate>.json
+```
+
+Candidates worth trying, from [performance.md](performance.md): fewer agent steps
+(`REPOATLAS_AGENT_MAX_STEPS`), smaller tool results (`REPOATLAS_AGENT_PER_TOOL_RESULT_TOKENS`),
+a smaller evidence budget for one-shot answers and the writer
+(`REPOATLAS_ANSWER_EVIDENCE_TOKENS`), fewer pipeline steps
+(`REPOATLAS_MULTIAGENT_TOTAL_STEPS`), and a lower effort for the `large` role
+(`REPOATLAS_LLM_LARGE_EFFORT`). The report's verdict line says `kept` or `rejected` under the
+tolerance rule; it needs three runs per question on both sides to mean much. Record every
+candidate tried, kept or not, in a decision record. Nothing is tuned on the test split.
+
+**Item 23 (before/after on test).** For each mode with a kept setting, run the test split
+with it and compare with the reports of items 13 and 17:
+
+```bash
+uv run repoatlas eval cost-report --before <before reports> --after <after reports> --out eval/reports/<date>-cost-report.md
+```
+
+Write the tables and the verdicts into M16's Results. If no candidate was kept, say so: the
+report then shows prompt caching alone, from item 21's dev comparison.
 
 ## Results
 
