@@ -105,6 +105,14 @@ class Settings(BaseSettings):
     agent_per_tool_result_tokens: int = Field(default=2_000, ge=200)
     agent_max_cost_usd: float = Field(default=0.25, gt=0)  # per answer
 
+    # Multi-agent mode (decision 0023). The defaults are reasoned, not tuned.
+    multiagent_max_branches: int = Field(default=4, ge=1, le=4)
+    multiagent_concurrency: int = Field(default=3, ge=1, le=4)  # branches running at once
+    multiagent_total_steps: int = Field(default=24, ge=2, le=200)  # all branches together
+    multiagent_max_input_tokens: int = Field(default=400_000, ge=1_000)  # all branches together
+    multiagent_branch_timeout_s: float = Field(default=180.0, gt=0)
+    multiagent_max_cost_usd: float = Field(default=0.75, gt=0)  # per answer
+
     # MCP server (repoatlas mcp). The HTTP transport refuses to start without a token.
     mcp_token: SecretStr | None = None  # the bearer token HTTP clients must send
     mcp_calls_per_minute: int = Field(default=120, ge=1)  # per client address (HTTP)

@@ -200,6 +200,7 @@ class BranchResult:
     status: BranchStatus
     stop: str | None = None  # why exploring stopped (an agent stop reason), when it ran
     error: str | None = None  # the kind of failure, for a failed branch
+    exception: Exception | None = None  # what a failed branch raised (never shown)
     steps: int = 0
     tool_uses: list[ToolUse] = field(default_factory=list)
     usage: Usage = field(default_factory=Usage)

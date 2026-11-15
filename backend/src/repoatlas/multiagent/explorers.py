@@ -261,6 +261,7 @@ class Explorers:
 
         status: BranchStatus = "failed"
         error: str | None = None
+        raised: Exception | None = None
         with trace_span(
             "multiagent.branch", "agent", branch=branch.id, max_steps=branch.budget.max_steps
         ) as span:
@@ -273,7 +274,7 @@ class Explorers:
             except SpendCapReached:
                 status, error = "partial", "daily_cap"
             except Exception as exc:  # a branch never fails the answer
-                status, error = "failed", _describe(exc)
+                status, error, raised = "failed", _describe(exc), exc
             # Why exploring stopped, when it stopped by itself (a cancelled or failed branch has
             # no stop reason).
             stop = state.stop if status in ("complete", "partial") else None
@@ -292,6 +293,7 @@ class Explorers:
             status=status,
             stop=stop,
             error=error,
+            exception=raised,
             steps=state.steps,
             tool_uses=[use.model_copy(update={"branch": branch.id}) for use in state.tool_uses],
             usage=usage,

@@ -343,9 +343,19 @@ def _agent(ctx: EvalContext) -> AnswerSystem:
     return agent_system(ctx.settings, engine, llm, ctx.store)
 
 
+def _multiagent(ctx: EvalContext) -> AnswerSystem:
+    """The product's multi-agent mode (plan, explore, write, verify), as ``--system
+    multiagent``."""
+    from repoatlas.multiagent.factory import multiagent_system
+
+    llm, engine = _needs(ctx)
+    return multiagent_system(ctx.settings, engine, llm, ctx.store)
+
+
 def _register() -> None:
     register_answer_system("closed_book", closed_book, replace=True)
     register_answer_system("agent", _agent, replace=True)
+    register_answer_system("multiagent", _multiagent, replace=True)
     # The product's own answering mode (hybrid retrieval, the settings' refusal threshold),
     # under the name the API uses, so suites can run it as ``--system oneshot``.
     register_answer_system("oneshot", _factory("oneshot", "hybrid"), replace=True)

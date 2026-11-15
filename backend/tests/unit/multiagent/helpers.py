@@ -6,12 +6,21 @@ import re
 from collections.abc import Callable
 from typing import Any, cast
 
+import anyio
+from pydantic import BaseModel
+
 from repoatlas.agent.tools import Toolbox
+from repoatlas.answers.policy import RefusalPolicy
+from repoatlas.answers.schema import AnswerDraft
+from repoatlas.answers.validate import CitationValidator
 from repoatlas.llm.fake import FakeCall, FakeLLM, Script
 from repoatlas.llm.pricing import DEFAULT_PRICES, PriceTable
+from repoatlas.llm.types import LLMResult, Message, Role
 from repoatlas.multiagent.explorers import Explorers
-from repoatlas.multiagent.models import Branch, BranchBudget, MultiAgentConfig
-from tests.unit.agent.helpers import FakeToolbox
+from repoatlas.multiagent.models import Branch, BranchBudget, MultiAgentConfig, PlanDraft
+from repoatlas.multiagent.system import MultiAgentAnswerSystem
+from repoatlas.multiagent.verifier import RepairSet, VerdictSet
+from tests.unit.agent.helpers import FakeToolbox, Sink
 from tests.unit.answers.helpers import FakeBlobs
 
 QUESTION = "How is the app created, and what does slugify do?"
@@ -85,3 +94,112 @@ def explorers(
         config=MultiAgentConfig(**config),
     )
     return made, model, box
+
+
+# ---------------------------------------------------------------------------
+# The whole pipeline
+# ---------------------------------------------------------------------------
+
+
+def plan(*branches: tuple[str, list[str], int]) -> dict[str, Any]:
+    """A scripted planner reply: (sub-question, seed symbols, steps) per branch."""
+    return {
+        "branches": [
+            {"sub_question": text, "seed_symbols": seeds, "steps": steps}
+            for text, seeds, steps in branches
+        ]
+    }
+
+
+def verdicts(**labels: str) -> dict[str, Any]:
+    return {
+        "verdicts": [
+            {"claim_id": claim_id, "label": label, "reason": f"{claim_id} is {label}."}
+            for claim_id, label in labels.items()
+        ]
+    }
+
+
+def pipeline(
+    planned: Script,
+    branches: dict[str, list[Script]],
+    draft: Script | None = None,
+    checks: list[Script] | None = None,
+    repair: Script | None = None,
+) -> Callable[[FakeCall], Script]:
+    """A model that plays every stage: the planner's reply, each branch's script, the
+    writer's draft, the verifier's replies in order, and the repair."""
+    explore = by_branch(branches)
+    remaining = list(checks or [])
+
+    def pick(call: FakeCall) -> Script:
+        if call.schema is PlanDraft:
+            return planned
+        if branch_of(call) is not None:
+            return explore(call)
+        if call.schema is AnswerDraft:
+            assert draft is not None, "no draft was scripted"
+            return draft
+        if call.schema is VerdictSet:
+            assert remaining, "no further verification reply was scripted"
+            return remaining.pop(0)
+        if call.schema is RepairSet:
+            assert repair is not None, "no repair was scripted"
+            return repair
+        raise AssertionError(f"unexpected call with schema {call.schema}")
+
+    return pick
+
+
+class TimedLLM(FakeLLM):
+    """A scripted model whose calls can take time: ``delay(call)`` seconds each."""
+
+    def __init__(self, script: Any, delay: Callable[[FakeCall], float]) -> None:
+        super().__init__(script)
+        self.delay = delay
+
+    async def complete(
+        self,
+        role: Role,
+        messages: list[Message],
+        *,
+        schema: type[BaseModel] | None = None,
+        tools: list[dict[str, Any]] | None = None,
+        max_tokens: int,
+        cache_static: bool = True,
+        tool_choice: str | None = None,
+    ) -> LLMResult:
+        wait = self.delay(FakeCall(role, messages, schema, tools, max_tokens, tool_choice))
+        if wait:
+            await anyio.sleep(wait)
+        return await super().complete(
+            role,
+            messages,
+            schema=schema,
+            tools=tools,
+            max_tokens=max_tokens,
+            tool_choice=tool_choice,
+        )
+
+
+def system(
+    script: Any,
+    toolbox: FakeToolbox | None = None,
+    llm: FakeLLM | None = None,
+    **limits: Any,
+) -> tuple[MultiAgentAnswerSystem, FakeLLM, FakeToolbox, Sink]:
+    model = llm or FakeLLM(script)
+    box = toolbox or FakeToolbox()
+    blobs = FakeBlobs()
+    sink = Sink()
+    made = MultiAgentAnswerSystem(
+        model,
+        lambda snapshot_id: cast(Toolbox, box),
+        CitationValidator(blobs),
+        RefusalPolicy(),
+        blobs=blobs,
+        prices=PriceTable(DEFAULT_PRICES),
+        sink=sink,
+        limits=MultiAgentConfig(**limits),
+    )
+    return made, model, box, sink

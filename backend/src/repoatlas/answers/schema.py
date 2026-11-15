@@ -124,6 +124,30 @@ class ClaimVerdict(BaseModel):
     kept: bool = False
 
 
+BranchState = Literal["complete", "partial", "timeout", "failed"]
+
+
+class BranchSummary(BaseModel):
+    """One branch of a multi-agent answer (decision 0023): what it was asked, how it ended
+    (``complete``; ``partial`` when a limit stopped it; ``timeout``; ``failed``), and what it
+    found and cost. ``stop`` is the reason exploring stopped by itself, ``error`` the kind of
+    failure."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: str
+    sub_question: str
+    seed_symbols: list[str] = Field(default_factory=list)
+    status: BranchState
+    stop: str | None = None
+    error: str | None = None
+    max_steps: int = 0
+    steps: int = 0
+    evidence: int = 0  # entries in the branch's ledger
+    findings: int = 0
+    cost_usd: float = 0.0
+
+
 class AnswerResult(BaseModel):
     answer_markdown: str
     claims: list[Claim]
@@ -137,6 +161,12 @@ class AnswerResult(BaseModel):
     metrics: AnswerMetrics = Field(default_factory=AnswerMetrics)
     draft: AnswerDraft | None = None  # what the model returned, before validation
     tool_uses: list[ToolUse] = Field(default_factory=list)  # modes with tools only
+    # Multi-agent answers only (decision 0023): the plan's branches and how each ended, what
+    # the verifier decided about each claim of the draft, and the cost of each stage
+    # (``planner``, ``explorers``, ``writer``, ``verifier``).
+    branches: list[BranchSummary] = Field(default_factory=list)
+    verification: list[ClaimVerdict] = Field(default_factory=list)
+    stage_costs: dict[str, float] = Field(default_factory=dict)
 
 
 class Budget(BaseModel):

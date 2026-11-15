@@ -20,6 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from html import unescape
 
+from repoatlas.agent.loop import ToolCache
 from repoatlas.agent.results import ToolError
 from repoatlas.agent.tools import Toolbox
 from repoatlas.answers.prompting import estimate_message_tokens
@@ -44,11 +45,18 @@ from repoatlas.tracing import trace_span
 REPAIR_FACTOR = 2  # the client may repeat a structured call once to repair invalid output
 
 
-def plan_context(toolbox: Toolbox, question: str, k: int) -> PlanContext:
+def plan_context(
+    toolbox: Toolbox, question: str, k: int, cache: ToolCache | None = None
+) -> PlanContext:
     """Where one search for the question finds something. A search that fails (a question the
-    search can't take) gives an empty context, and the plan falls back to one branch."""
+    search can't take) gives an empty context, and the plan falls back to one branch. With the
+    answer's ``cache``, an explorer that makes the same search gets this result."""
+    arguments = {"query": question, "k": k}
     try:
-        result = toolbox.call("search_code", {"query": question, "k": k})
+        if cache is None:
+            result = toolbox.call("search_code", arguments)
+        else:
+            result, _ = cache.call(toolbox, "search_code", arguments)
     except ToolError:
         return PlanContext()
     return PlanContext.from_refs(result.evidence)

@@ -3980,6 +3980,17 @@
             "minimum": 1.0,
             "title": "Step"
           },
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -4041,7 +4052,7 @@
           "name"
         ],
         "title": "ToolUse",
-        "description": "One tool call an answering mode with tools made (decision 0022). ``allowed`` is False\nwhen the call was refused for reaching outside the snapshot (an unknown tool, a path that\nis not one of its files); ``error`` is set when the call did not return a result;\n``cached`` marks a repeated call that was not run again."
+        "description": "One tool call an answering mode with tools made (decision 0022). ``allowed`` is False\nwhen the call was refused for reaching outside the snapshot (an unknown tool, a path that\nis not one of its files); ``error`` is set when the call did not return a result;\n``cached`` marks a call that was not run again: a repeat of the call before it, or, in a\nmulti-agent answer, a call another branch had already made. ``branch`` is the branch of a\nmulti-agent answer that made the call (decision 0023)."
       },
       "TraceView": {
         "properties": {

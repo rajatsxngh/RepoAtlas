@@ -1290,11 +1290,15 @@ export interface components {
          * @description One tool call an answering mode with tools made (decision 0022). ``allowed`` is False
          *     when the call was refused for reaching outside the snapshot (an unknown tool, a path that
          *     is not one of its files); ``error`` is set when the call did not return a result;
-         *     ``cached`` marks a repeated call that was not run again.
+         *     ``cached`` marks a call that was not run again: a repeat of the call before it, or, in a
+         *     multi-agent answer, a call another branch had already made. ``branch`` is the branch of a
+         *     multi-agent answer that made the call (decision 0023).
          */
         ToolUse: {
             /** Step */
             step: number;
+            /** Branch */
+            branch?: string | null;
             /** Name */
             name: string;
             /** Arguments */
