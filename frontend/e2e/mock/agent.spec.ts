@@ -16,7 +16,7 @@ test("agent mode shows its tool calls, a cited answer, and a trace with the tool
   await expect(modes.getByRole("radio", { name: "Quick" })).toBeChecked();
   // The radio itself is visually hidden; its label is what a person clicks.
   await modes.getByText("Agent", { exact: true }).click();
-  await expect(modes.getByRole("radio", { name: "Agent" })).toBeChecked();
+  await expect(modes.getByRole("radio", { name: "Agent", exact: true })).toBeChecked();
   await expect(panel.getByTestId("ask-mode-hint")).toContainText("Explores the code with tools");
 
   await panel.getByRole("textbox", { name: "Question" }).fill("How does create_app work?");
@@ -102,7 +102,10 @@ test("a question the agent finds nothing for is refused, with its one search sho
   await waitForMap(page);
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   const panel = page.getByRole("complementary", { name: "Ask" });
-  await panel.getByRole("radiogroup", { name: "Answer mode" }).getByText("Agent").click();
+  await panel
+    .getByRole("radiogroup", { name: "Answer mode" })
+    .getByText("Agent", { exact: true })
+    .click();
   await panel.getByRole("textbox", { name: "Question" }).fill("How are refunds sent to the bank?");
   await panel.getByRole("button", { name: "Ask", exact: true }).click();
   const answer = panel.getByRole("region", { name: "Answer" });

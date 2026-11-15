@@ -497,6 +497,14 @@ export interface components {
             metrics: components["schemas"]["AnswerMetrics"];
             /** Tool Uses */
             tool_uses?: components["schemas"]["ToolUse"][];
+            /** Branches */
+            branches?: components["schemas"]["BranchSummary"][];
+            /** Verification */
+            verification?: components["schemas"]["ClaimVerdict"][];
+            /** Stage Costs */
+            stage_costs?: {
+                [key: string]: number;
+            };
         };
         /** AskRequest */
         AskRequest: {
@@ -507,11 +515,60 @@ export interface components {
             question: string;
             /**
              * Mode
-             * @description The answering mode: `oneshot` retrieves once and answers; `agent` explores the code with tools first (slower, for questions one search can't answer).
+             * @description The answering mode: `oneshot` retrieves once and answers; `agent` explores the code with tools first (slower, for questions one search can't answer); `multiagent` splits the question across explorers that work side by side and checks every claim of the answer against the code it cites (slowest, for questions with independent parts).
              * @default oneshot
              * @enum {string}
              */
-            mode: "oneshot" | "agent";
+            mode: "oneshot" | "agent" | "multiagent";
+        };
+        /**
+         * BranchSummary
+         * @description One branch of a multi-agent answer (decision 0023): what it was asked, how it ended
+         *     (``complete``; ``partial`` when a limit stopped it; ``timeout``; ``failed``), and what it
+         *     found and cost. ``stop`` is the reason exploring stopped by itself, ``error`` the kind of
+         *     failure.
+         */
+        BranchSummary: {
+            /** Id */
+            id: string;
+            /** Sub Question */
+            sub_question: string;
+            /** Seed Symbols */
+            seed_symbols?: string[];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "complete" | "partial" | "timeout" | "failed";
+            /** Stop */
+            stop?: string | null;
+            /** Error */
+            error?: string | null;
+            /**
+             * Max Steps
+             * @default 0
+             */
+            max_steps: number;
+            /**
+             * Steps
+             * @default 0
+             */
+            steps: number;
+            /**
+             * Evidence
+             * @default 0
+             */
+            evidence: number;
+            /**
+             * Findings
+             * @default 0
+             */
+            findings: number;
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd: number;
         };
         /**
          * BuildAccepted
@@ -574,6 +631,39 @@ export interface components {
             evidence_ids: string[];
             /** Symbol */
             symbol?: string | null;
+        };
+        /**
+         * ClaimVerdict
+         * @description What the verifier of a multi-agent answer decided about one claim of the draft (decision
+         *     0023). ``label`` is its first reading of the claim against the cited lines. A ``partial``
+         *     claim may have been rewritten (``repaired``) and read again (``relabel``). ``kept`` says
+         *     whether the claim, as written or as rewritten, is in the answer.
+         */
+        ClaimVerdict: {
+            /** Claim Id */
+            claim_id: string;
+            /**
+             * Label
+             * @enum {string}
+             */
+            label: "supported" | "partial" | "unsupported";
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /**
+             * Repaired
+             * @default false
+             */
+            repaired: boolean;
+            /** Relabel */
+            relabel?: ("supported" | "partial" | "unsupported") | null;
+            /**
+             * Kept
+             * @default false
+             */
+            kept: boolean;
         };
         /**
          * CodeSlice
@@ -2309,7 +2399,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Server-sent events: `status` (`{step}`), in agent mode `step` (one per tool call and one for the final answer call), `answer` (an `AnswerView`), `done` (`{run_id, trace_id}`), or `error` (the error model). */
+            /** @description Server-sent events: `status` (`{step}`), in agent and multi-agent mode `step` (one per tool call and one per model stage; in multi-agent mode with the `branch` it belongs to), in multi-agent mode `plan` (`{branches}`), `answer` (an `AnswerView`), `done` (`{run_id, trace_id}`), or `error` (the error model). */
             200: {
                 headers: {
                     [name: string]: unknown;

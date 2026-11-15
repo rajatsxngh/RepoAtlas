@@ -528,7 +528,7 @@ Lines are 1-based and inclusive. The compact string form is `src/app/routes.py#L
 | `GET /snapshots/{id}/search` | `q=&kinds=&limit=` | Ranked nodes |
 | `GET /snapshots/{id}/path` | `from=&to=&kinds=` | Ordered nodes and edges, or 404 |
 | `GET /snapshots/{id}/code` | `path=&start=&end=` | `{ path, blob_oid, start, end, text }` (line cap) |
-| `POST /snapshots/{id}/ask` | `{ question, mode: "oneshot"\|"agent"\|"multiagent" }` | SSE: `status`, `step`, `answer`, `done`, `error` |
+| `POST /snapshots/{id}/ask` | `{ question, mode: "oneshot"\|"agent"\|"multiagent" }` | SSE: `status`, `plan`, `step`, `answer`, `done`, `error` |
 | `GET /qa/{run_id}` | — | Stored answer with citations and metrics |
 | `POST /snapshots/{id}/impact` | `{ symbol_key }` or `{ diff }` | `ImpactReport` |
 | `GET /traces/{trace_id}` | — | Trace with spans |

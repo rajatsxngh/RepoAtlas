@@ -24,10 +24,10 @@ import {
   fixtureByName,
   type MockFixture,
 } from "./fixtures";
-import { mockAgentRun, mockAnswer, sseBody } from "./ask";
+import { mockAgentRun, mockAnswer, mockMultiAgentRun, sseBody } from "./ask";
 import { mockExplanation, mockImpact } from "./impact";
 import { MockApiError, MockGraph } from "./graph";
-import { mockAgentTrace, mockAnswerTrace, mockImpactTrace } from "./trace";
+import { mockAgentTrace, mockAnswerTrace, mockImpactTrace, mockMultiAgentTrace } from "./trace";
 
 export interface MockResponse {
   status: number;
@@ -365,7 +365,8 @@ export class MockBackend {
 
   /**
    * `POST /snapshots/{id}/ask`: the status steps, then a mock answer (see `./ask`). In agent mode
-   * the stream also has a `step` event per tool call, in the order the API sends them.
+   * the stream also has a `step` event per tool call, in the order the API sends them. In
+   * multi-agent mode it has the `plan` and the steps of every branch and stage.
    */
   private async ask(snapshotId: number, body: unknown): Promise<MockResponse> {
     const graph = await this.ready(snapshotId);
@@ -381,10 +382,46 @@ export class MockBackend {
       );
     }
     const mode = body && typeof body === "object" && "mode" in body ? body.mode : "oneshot";
-    if (mode !== "oneshot" && mode !== "agent") {
-      throw new MockApiError(422, "invalid_request", "The mode must be oneshot or agent.");
+    if (mode !== "oneshot" && mode !== "agent" && mode !== "multiagent") {
+      throw new MockApiError(
+        422,
+        "invalid_request",
+        "The mode must be oneshot, agent, or multiagent.",
+      );
     }
     this.askRuns += 1;
+    if (mode === "multiagent") {
+      const run = mockMultiAgentRun(graph, question, this.askRuns);
+      const { trace, steps: linked } = mockMultiAgentTrace(run.answer, snapshotId, run.steps);
+      this.traces.set(run.answer.trace_id!, trace);
+      // The API's order: planning, the plan, exploring, each branch's steps, then a status
+      // before the writing call, before the first verification call, and before validating.
+      const events: (readonly [string, unknown])[] = [["status", { step: "planning" }]];
+      let verifying = false;
+      for (const event of linked) {
+        if (event.kind === "write") events.push(["status", { step: "writing" }]);
+        if (event.kind === "verify" && !verifying) {
+          verifying = true;
+          events.push(["status", { step: "verifying" }]);
+        }
+        events.push(["step", event]);
+        if (event.kind === "plan") {
+          events.push(["plan", run.plan]);
+          events.push(["status", { step: "exploring" }]);
+        }
+      }
+      if (verifying) events.push(["status", { step: "validating" }]);
+      return {
+        status: 200,
+        body: null,
+        headers: { "Content-Type": "text/event-stream" },
+        raw: sseBody([
+          ...events,
+          ["answer", run.answer],
+          ["done", { run_id: run.answer.run_id, trace_id: run.answer.trace_id }],
+        ]),
+      };
+    }
     if (mode === "agent") {
       const run = mockAgentRun(graph, question, this.askRuns);
       const { trace, steps: linked } = mockAgentTrace(run.answer, snapshotId, run.steps);

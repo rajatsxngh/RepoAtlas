@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ApiClient } from "@/lib/api/client";
 import type { AnswerView, Citation } from "@/lib/api/types";
-import { renderWithApi } from "@/test/render";
+import { mockApi, renderWithApi } from "@/test/render";
 import { AskPanel, citationLabel, citationLayer } from "./AskPanel";
 
 function streamOf(events: [string, unknown][]): Response {
@@ -157,7 +157,7 @@ describe("AskPanel", () => {
 });
 
 describe("AskPanel in agent mode", () => {
-  it("offers two modes and asks in the chosen one", async () => {
+  it("offers three modes and asks in the chosen one", async () => {
     const bodies: unknown[] = [];
     const api = new ApiClient({
       baseUrl: "http://x/api/v1",
@@ -169,6 +169,11 @@ describe("AskPanel in agent mode", () => {
     const user = userEvent.setup();
     renderWithApi(<AskPanel snapshotId={1} />, { api });
     const modes = screen.getByRole("radiogroup", { name: "Answer mode" });
+    expect(
+      within(modes)
+        .getAllByRole("radio")
+        .map((radio) => (radio as HTMLInputElement).value),
+    ).toEqual(["oneshot", "agent", "multiagent"]);
     expect(within(modes).getByRole("radio", { name: "Quick" })).toBeChecked();
     expect(screen.getByTestId("ask-mode-hint")).toHaveTextContent("One search of the code");
     await user.type(screen.getByLabelText("Question"), "q");
@@ -287,5 +292,100 @@ describe("citations", () => {
     });
     const noSymbol = { ...CITATION, ref: { ...CITATION.ref, symbol_key: null } };
     expect(citationLayer(noSymbol).nodeKeys).toEqual(["file:src/shop/cart.py"]);
+  });
+});
+
+describe("AskPanel in multi-agent mode", () => {
+  it("asks in multi-agent mode and shows the branches, the answer, and what was verified", async () => {
+    const bodies: unknown[] = [];
+    const { api } = mockApi();
+    const ask = api.ask.bind(api);
+    vi.spyOn(api, "ask").mockImplementation((snapshotId, request, options) => {
+      bodies.push(request);
+      return ask(snapshotId, request, options);
+    });
+    const user = userEvent.setup();
+    renderWithApi(<AskPanel snapshotId={1} />, { api });
+    await user.click(screen.getByRole("radio", { name: "Multi-agent" }));
+    expect(screen.getByTestId("ask-mode-hint")).toHaveTextContent("checks every claim");
+    await user.type(screen.getByLabelText("Question"), "How does create_app work?");
+    await user.click(screen.getByRole("button", { name: "Ask" }));
+    const answer = await screen.findByRole("region", { name: "Answer" });
+    expect(bodies).toEqual([{ question: "How does create_app work?", mode: "multiagent" }]);
+
+    const steps = screen.getByRole("region", { name: "Agent steps" });
+    expect(within(steps).getByTestId("steps-summary")).toHaveTextContent(
+      "2 branches · 3 tool calls",
+    );
+    const first = within(steps).getByRole("region", { name: "Branch b1" });
+    expect(first).toHaveTextContent("Where is `create_app` defined, and what does it do?");
+    expect(within(first).getAllByRole("listitem")).toHaveLength(4);
+    expect(within(first).getByTestId("branch-state")).toHaveTextContent("explored");
+    const second = within(steps).getByRole("region", { name: "Branch b2" });
+    expect(second).toHaveTextContent("find_callers");
+    expect(within(steps).getByRole("list", { name: "After the branches" })).toHaveTextContent(
+      "Checked the claims against the code",
+    );
+    expect(steps).toHaveAttribute("aria-busy", "false");
+
+    // The verified answer: one claim kept, one left out with the verifier's reason.
+    const verification = within(answer).getByRole("group", { name: "Verification" });
+    expect(verification).toHaveTextContent("1 of 2 claims verified against the code they cite");
+    expect(verification).toHaveTextContent("1 left out");
+    expect(within(verification).getByRole("list", { name: "Claims left out" })).toHaveTextContent(
+      "not supported: The cited lines define the symbol",
+    );
+    await user.click(within(answer).getByRole("button", { name: "app.py:22–23" }));
+    expect(await screen.findByRole("figure")).toHaveTextContent("def create_app");
+  });
+
+  it("shows the plan while branches are still being explored", async () => {
+    let finish: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const encoder = new TextEncoder();
+    const chunk = (event: string, data: unknown) =>
+      encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    const api = new ApiClient({
+      baseUrl: "http://x/api/v1",
+      fetch: async () =>
+        new Response(
+          new ReadableStream({
+            async start(controller) {
+              controller.enqueue(chunk("status", { step: "planning" }));
+              controller.enqueue(
+                chunk("plan", {
+                  branches: [
+                    { id: "b1", sub_question: "Part one?", seed_symbols: [], max_steps: 3 },
+                    { id: "b2", sub_question: "Part two?", seed_symbols: [], max_steps: 3 },
+                  ],
+                }),
+              );
+              controller.enqueue(chunk("status", { step: "exploring" }));
+              await gate;
+              controller.enqueue(chunk("answer", HOSTILE));
+              controller.close();
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "text/event-stream" } },
+        ),
+    });
+    const user = userEvent.setup();
+    renderWithApi(<AskPanel snapshotId={1} />, { api });
+    await user.click(screen.getByRole("radio", { name: "Multi-agent" }));
+    await user.type(screen.getByLabelText("Question"), "q");
+    await user.click(screen.getByRole("button", { name: "Ask" }));
+    expect(await screen.findByRole("region", { name: "Branch b2" })).toHaveTextContent("Part two?");
+    expect(screen.getByRole("status")).toHaveTextContent("Exploring the code…");
+    expect(screen.getByRole("region", { name: "Agent steps" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    expect(screen.getAllByTestId("branch-state")[0]).toHaveTextContent("waiting…");
+    finish();
+    await screen.findByRole("region", { name: "Answer" });
+    // An answer without verification (not a multi-agent one) shows no verification box.
+    expect(screen.queryByRole("group", { name: "Verification" })).toBeNull();
   });
 });

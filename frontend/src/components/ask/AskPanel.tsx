@@ -7,8 +7,10 @@
  * rendered as text. Each citation is a chip: clicking it opens the cited lines in the code
  * viewer and tells the workspace to highlight the cited symbol on the map.
  *
- * Two modes (AGT-6): "Quick" retrieves once and answers; "Agent" explores the code with tools
- * first, and its tool calls appear one by one while it works (`LiveSteps`).
+ * Three modes (AGT-6, MAS-6): "Quick" retrieves once and answers; "Agent" explores the code
+ * with tools first, and its tool calls appear one by one while it works (`LiveSteps`);
+ * "Multi-agent" plans branches that are explored side by side, shows each branch's steps under
+ * its sub-question, and checks every claim against the code it cites before showing it.
  */
 
 import { MessageSquareText, X } from "lucide-react";
@@ -19,7 +21,14 @@ import { Spinner } from "@/components/ui/Spinner";
 import { useApi } from "@/lib/api/context";
 import { describeError } from "@/lib/api/errors";
 import { LiveSteps } from "@/components/trace/TracePanel";
-import type { AnswerView, AskMode, AskStep, AskStepEvent, Citation } from "@/lib/api/types";
+import type {
+  AnswerView,
+  AskMode,
+  AskPlan,
+  AskStep,
+  AskStepEvent,
+  Citation,
+} from "@/lib/api/types";
 import { AnswerBody, citationLabel } from "./AnswerBody";
 
 export interface AskPanelProps {
@@ -32,9 +41,18 @@ export interface AskPanelProps {
 
 const STEP_TEXT: Record<AskStep, string> = {
   retrieving: "Finding the relevant code…",
+  planning: "Planning what to look into…",
   exploring: "Exploring the code…",
   answering: "Writing the answer…",
+  writing: "Writing the answer…",
+  verifying: "Checking every claim against the code…",
   validating: "Checking every citation…",
+};
+
+const FIRST_STEP: Record<AskMode, AskStep> = {
+  oneshot: "retrieving",
+  agent: "exploring",
+  multiagent: "planning",
 };
 
 const MODES: readonly { mode: AskMode; label: string; hint: string }[] = [
@@ -43,6 +61,11 @@ const MODES: readonly { mode: AskMode; label: string; hint: string }[] = [
     mode: "agent",
     label: "Agent",
     hint: "Explores the code with tools first. Slower, for questions one search can't answer.",
+  },
+  {
+    mode: "multiagent",
+    label: "Multi-agent",
+    hint: "Splits the question across explorers and checks every claim. Slowest, for questions with several parts.",
   },
 ];
 
@@ -57,6 +80,8 @@ export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPan
   const [mode, setMode] = useState<AskMode>("oneshot");
   // The tool calls of the agent answer being made or shown (empty for quick answers).
   const [steps, setSteps] = useState<AskStepEvent[]>([]);
+  // The branches of the multi-agent answer being made or shown.
+  const [plan, setPlan] = useState<AskPlan | null>(null);
   const [step, setStep] = useState<AskStep | null>(null);
   const [answer, setAnswer] = useState<AnswerView | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -78,7 +103,8 @@ export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPan
       setError(null);
       setCited(null);
       setSteps([]);
-      setStep(mode === "agent" ? "exploring" : "retrieving");
+      setPlan(null);
+      setStep(FIRST_STEP[mode]);
       try {
         const outcome = await api.ask(
           snapshotId,
@@ -87,6 +113,7 @@ export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPan
             signal: current.signal,
             onStatus: setStep,
             onStep: (event) => setSteps((known) => [...known, event]),
+            onPlan: setPlan,
           },
         );
         setAnswer(outcome.answer);
@@ -146,12 +173,16 @@ export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPan
             placeholder="How does checkout compute the total?"
             className="w-full resize-y rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint focus:ring-2 focus:ring-focus focus:outline-none"
           />
-          <div role="radiogroup" aria-label="Answer mode" className="flex items-center gap-1.5">
+          <div
+            role="radiogroup"
+            aria-label="Answer mode"
+            className="flex flex-wrap items-center gap-1.5"
+          >
             {MODES.map((option) => (
               <label
                 key={option.mode}
                 title={option.hint}
-                className={`cursor-pointer rounded-md border px-2 py-1 text-xs has-focus-visible:ring-2 has-focus-visible:ring-focus ${
+                className={`cursor-pointer rounded-md border px-2 py-1 text-xs whitespace-nowrap has-focus-visible:ring-2 has-focus-visible:ring-focus ${
                   mode === option.mode
                     ? "border-focus bg-focus/10 text-fg"
                     : "border-line bg-surface-2 text-fg-muted hover:text-fg"
@@ -169,7 +200,7 @@ export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPan
                 {option.label}
               </label>
             ))}
-            <span className="text-[11px] text-fg-faint" data-testid="ask-mode-hint">
+            <span className="basis-full text-[11px] text-fg-faint" data-testid="ask-mode-hint">
               {MODES.find((option) => option.mode === mode)?.hint}
             </span>
           </div>
@@ -194,7 +225,9 @@ export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPan
           </p>
         ) : null}
 
-        {steps.length > 0 ? <LiveSteps steps={steps} running={busy} /> : null}
+        {steps.length > 0 || plan ? (
+          <LiveSteps steps={steps} plan={plan} branches={answer?.branches} running={busy} />
+        ) : null}
 
         {failure ? (
           <div role="alert" className="rounded-lg border border-line px-3 py-2 text-sm">

@@ -28,7 +28,7 @@ from html import escape
 
 from pydantic import BaseModel, Field
 
-from repoatlas.answers.prompting import estimate_message_tokens, evidence_block
+from repoatlas.answers.prompting import estimate_message_tokens
 from repoatlas.answers.schema import (
     MAX_CITATIONS_PER_CLAIM,
     MAX_CLAIM_CHARS,
@@ -45,7 +45,7 @@ from repoatlas.llm.client import LLM
 from repoatlas.llm.pricing import PriceTable
 from repoatlas.llm.types import LLMResult, Message, Usage
 from repoatlas.multiagent.models import MultiAgentConfig
-from repoatlas.multiagent.prompting import UNTRUSTED_RULE, defuse, shield
+from repoatlas.multiagent.prompting import UNTRUSTED_RULE, defuse, evidence_text, shield
 from repoatlas.store.blobs import split_lines
 from repoatlas.tracing import trace_span
 
@@ -180,7 +180,7 @@ def claim_block(claim: Claim, verdict: Verdict | None = None) -> str:
 
 def _evidence_text(claims: list[Claim], evidence: dict[str, NumberedEvidence]) -> str:
     cited = [eid for claim in claims for eid in claim.evidence_ids]
-    blocks = [evidence_block(evidence[eid]) for eid in dict.fromkeys(cited) if eid in evidence]
+    blocks = [evidence_text(evidence[eid]) for eid in dict.fromkeys(cited) if eid in evidence]
     return "Cited code:\n\n" + "\n\n".join(blocks)
 
 

@@ -19,7 +19,10 @@ test("an agent answer from the API streams its steps and stores them in its trac
   await openShop(page);
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   const panel = page.getByRole("complementary", { name: "Ask" });
-  await panel.getByRole("radiogroup", { name: "Answer mode" }).getByText("Agent").click();
+  await panel
+    .getByRole("radiogroup", { name: "Answer mode" })
+    .getByText("Agent", { exact: true })
+    .click();
   await panel.getByRole("textbox", { name: "Question" }).fill("How does the cart add an item?");
   await panel.getByRole("button", { name: "Ask", exact: true }).click();
 

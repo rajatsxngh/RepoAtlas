@@ -14,8 +14,10 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, JsonValue
 from repoatlas.answers.schema import (
     AnswerMetrics,
     AnswerResult,
+    BranchSummary,
     Citation,
     Claim,
+    ClaimVerdict,
     RefusalKind,
     ToolUse,
 )
@@ -264,6 +266,11 @@ class AnswerView(BaseModel):
     metrics: AnswerMetrics
     # The tool calls an agent answer made, in order (empty for other modes).
     tool_uses: list[ToolUse] = Field(default_factory=list)
+    # Multi-agent answers only: the plan's branches and how each ended, what the verifier
+    # decided about each claim of the draft, and the cost of each stage.
+    branches: list[BranchSummary] = Field(default_factory=list)
+    verification: list[ClaimVerdict] = Field(default_factory=list)
+    stage_costs: dict[str, float] = Field(default_factory=dict)
 
 
 def answer_view(result: AnswerResult, *, run_id: int | None = None) -> AnswerView:

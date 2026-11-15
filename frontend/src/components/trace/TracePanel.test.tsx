@@ -1,18 +1,19 @@
-import { screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { ApiClient } from "@/lib/api/client";
 import type { AskStepEvent, SpanView, TraceView } from "@/lib/api/types";
 import { renderWithApi } from "@/test/render";
 import {
-  LiveSteps,
-  TracePanel,
-  TraceToggle,
   formatCost,
   formatDuration,
   formatTokens,
+  groupSteps,
+  LiveSteps,
   spanTree,
   traceDurationMs,
+  TracePanel,
+  TraceToggle,
 } from "./TracePanel";
 
 const TRACE_ID = "11111111-1111-4111-8111-111111111111";
@@ -180,6 +181,7 @@ function stepEvent(seq: number, fields: Partial<AskStepEvent> = {}): AskStepEven
     seq,
     step: seq,
     kind: "tool",
+    branch: null,
     tool: "search_code",
     arguments: 'query="cart total"',
     result_tokens: 1240,
@@ -319,5 +321,161 @@ describe("TraceToggle", () => {
     const badge = screen.getByTestId("cost-badge");
     expect(badge.tagName).toBe("SPAN");
     expect(badge).toHaveTextContent("$0.0100");
+  });
+});
+
+describe("LiveSteps of a multi-agent answer", () => {
+  const PLAN = {
+    branches: [
+      { id: "b1", sub_question: "How is the total computed?", seed_symbols: [], max_steps: 4 },
+      { id: "b2", sub_question: "<b>What rounds money?</b>", seed_symbols: [], max_steps: 3 },
+    ],
+  };
+  // As a server sends them: the plan, then the two branches' steps mixed, then the stages.
+  const EVENTS: AskStepEvent[] = [
+    stepEvent(1, {
+      kind: "plan",
+      tool: "plan",
+      arguments: "2 branches",
+      model: "claude-sonnet-5-5",
+    }),
+    stepEvent(2, { branch: "b1", tool: "find_definition", arguments: 'name="total"' }),
+    stepEvent(3, { branch: "b2", tool: "search_code", cached: true }),
+    stepEvent(4, { branch: "b1", kind: "finish", tool: "final_answer" }),
+    stepEvent(5, { branch: "b2", kind: "finish", tool: "final_answer" }),
+    stepEvent(6, { branch: "b1", kind: "notes", tool: "notes" }),
+    stepEvent(7, { kind: "write", tool: "write", model: "claude-sonnet-5-5", cost_usd: 0.01 }),
+    stepEvent(8, { kind: "verify", tool: "verify", model: "claude-sonnet-5-5", cost_usd: 0.005 }),
+    stepEvent(9, { kind: "repair", tool: "repair", model: "claude-sonnet-5-5", cost_usd: 0.005 }),
+  ];
+
+  it("groups mixed events by branch, in the plan's order, between the stages", () => {
+    const groups = groupSteps(EVENTS, PLAN);
+    expect(groups.map((group) => [group.branch, group.steps.map((event) => event.seq)])).toEqual([
+      [null, [1]],
+      ["b1", [2, 4, 6]],
+      ["b2", [3, 5]],
+      [null, [7, 8, 9]],
+    ]);
+    // Without a plan, branches appear in the order their first event arrived.
+    expect(groupSteps(EVENTS.slice(2, 4)).map((group) => group.branch)).toEqual(["b2", "b1"]);
+    // A planned branch that hasn't started yet still has its (empty) group.
+    expect(groupSteps(EVENTS.slice(0, 2), PLAN).map((group) => group.steps.length)).toEqual([
+      1, 1, 0,
+    ]);
+    // An agent answer has no branches: one flat group.
+    const flat = [stepEvent(1), stepEvent(2, { kind: "answer", tool: "answer" })];
+    expect(groupSteps(flat)).toEqual([{ branch: null, steps: flat }]);
+  });
+
+  it("shows each branch under its sub-question with its own steps", () => {
+    render(<LiveSteps steps={EVENTS} plan={PLAN} running />);
+    const region = screen.getByRole("region", { name: "Agent steps" });
+    expect(within(region).getByTestId("steps-summary")).toHaveTextContent(
+      "2 branches · 2 tool calls",
+    );
+    const first = within(region).getByRole("region", { name: "Branch b1" });
+    expect(first).toHaveTextContent("How is the total computed?");
+    expect(within(first).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(first).getByText("find_definition")).toBeInTheDocument();
+    expect(within(first).getByText("Reported its findings")).toBeInTheDocument();
+    expect(within(first).getByTestId("branch-state")).toHaveTextContent("explored");
+    const second = within(region).getByRole("region", { name: "Branch b2" });
+    expect(within(second).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(second).getByTestId("branch-state")).toHaveTextContent("exploring…");
+    expect(second).toHaveTextContent("already run for this answer, not run again");
+    // The sub-question is model text: shown as text.
+    expect(second).toHaveTextContent("<b>What rounds money?</b>");
+    expect(second.querySelector("b")).toBeNull();
+    // The stages around the branches.
+    const before = within(region).getByRole("list", { name: "Before the branches" });
+    expect(before).toHaveTextContent("Planned the exploration");
+    expect(before).toHaveTextContent("2 branches");
+    const after = within(region).getByRole("list", { name: "After the branches" });
+    expect(
+      within(after)
+        .getAllByRole("listitem")
+        .map((row) => row.dataset.stepKind),
+    ).toEqual(["write", "verify", "repair"]);
+    expect(after).toHaveTextContent("Checked the claims against the code");
+    expect(after).toHaveTextContent("Rewrote partly supported claims");
+  });
+
+  it("says how each branch ended once the answer is there", () => {
+    const summary = (id: string, status: "complete" | "partial" | "timeout" | "failed") => ({
+      id,
+      sub_question: `Part ${id}?`,
+      seed_symbols: [],
+      status,
+      stop: null,
+      error: null,
+      max_steps: 4,
+      steps: 2,
+      evidence: 1,
+      findings: 1,
+      cost_usd: 0.001,
+    });
+    render(
+      <LiveSteps
+        steps={EVENTS}
+        plan={PLAN}
+        branches={[summary("b1", "complete"), summary("b2", "timeout")]}
+      />,
+    );
+    const first = screen.getByRole("region", { name: "Branch b1" });
+    const second = screen.getByRole("region", { name: "Branch b2" });
+    expect(within(first).getByTestId("branch-state")).toHaveTextContent("explored");
+    expect(within(second).getByTestId("branch-state")).toHaveTextContent("ran out of time");
+    expect(second).toHaveAttribute("data-branch-status", "timeout");
+  });
+
+  it("waits with the plan alone before any branch has taken a step", () => {
+    render(<LiveSteps steps={[EVENTS[0]!]} plan={PLAN} running />);
+    expect(screen.getAllByTestId("branch-state").map((node) => node.textContent)).toEqual([
+      "waiting…",
+      "waiting…",
+    ]);
+  });
+});
+
+describe("TracePanel with branches", () => {
+  it("labels each branch's span and keeps the branch's steps under it", async () => {
+    const trace: TraceView = {
+      ...TRACE,
+      spans: [
+        span(1, null, { name: "answer", kind: "answer" }),
+        span(2, 1, { name: "multiagent.plan", kind: "agent" }),
+        span(3, 1, {
+          name: "multiagent.branch",
+          kind: "agent",
+          attrs: { branch: "b1", status: "complete" },
+        }),
+        span(4, 3, { name: "agent.step", kind: "agent" }),
+        span(5, 4, { name: "tool.read_file", kind: "tool" }),
+        span(6, 1, {
+          name: "multiagent.branch",
+          kind: "agent",
+          attrs: { branch: "b2", status: "timeout" },
+        }),
+        span(7, 6, { name: "agent.step", kind: "agent" }),
+      ],
+    };
+    const user = userEvent.setup();
+    renderWithApi(<TracePanel traceId={TRACE_ID} />, { api: apiFor(trace) });
+    const tree = await screen.findByRole("tree", { name: "Steps" });
+    const branches = within(tree)
+      .getAllByRole("treeitem")
+      .filter((item) => item.dataset.branch !== undefined);
+    expect(branches.map((item) => item.dataset.branch)).toEqual(["b1", "b2"]);
+    expect(within(branches[0]!).getByText("branch b1")).toBeInTheDocument();
+    expect(within(branches[0]!).getByTestId("branch-status")).toHaveTextContent("complete");
+    expect(within(branches[1]!).getByTestId("branch-status")).toHaveTextContent("timeout");
+    // The tool call sits inside its branch, two levels down.
+    expect(within(branches[0]!).getByText("tool.read_file")).toBeInTheDocument();
+    expect(within(branches[1]!).queryByText("tool.read_file")).toBeNull();
+    // A branch folds away as one group.
+    await user.click(within(tree).getByRole("button", { name: "Collapse branch b1" }));
+    expect(within(tree).queryByText("tool.read_file")).toBeNull();
+    expect(within(tree).getAllByRole("treeitem")).toHaveLength(5);
   });
 });

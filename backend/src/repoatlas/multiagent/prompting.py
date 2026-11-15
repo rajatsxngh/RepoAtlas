@@ -19,7 +19,8 @@ import re
 from html import escape
 
 from repoatlas.agent.guard import mark_text
-from repoatlas.answers.prompting import neutralize
+from repoatlas.answers.prompting import evidence_block, neutralize
+from repoatlas.answers.schema import NumberedEvidence
 from repoatlas.guardrails.detector import kinds, marked, scan, scan_path
 from repoatlas.llm.types import Message
 from repoatlas.multiagent.models import MAX_BRANCHES, MIN_BRANCH_STEPS, ContextEntry, PlanContext
@@ -56,6 +57,13 @@ def shield(text: str) -> tuple[str, list[str]]:
     block markers are defused. Also returns the kinds that were marked."""
     body, found = mark_text(text)
     return _BLOCKS.sub(lambda match: f"<​{match[1]}{match[2]}", body), found
+
+
+def evidence_text(entry: NumberedEvidence) -> str:
+    """An evidence block as the writer and the verifier see it: the block one-shot answers
+    use, with the pipeline's own block names defused too, so code can't forge a finding, a
+    claim, or a verdict."""
+    return _BLOCKS.sub(lambda match: f"<\u200b{match[1]}{match[2]}", evidence_block(entry))
 
 
 def question_block(question: str) -> dict[str, str]:

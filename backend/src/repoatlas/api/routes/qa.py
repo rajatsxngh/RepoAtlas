@@ -4,11 +4,17 @@
 
 - ``status`` — ``{"step": …}`` as each step starts: ``retrieving``, ``answering``,
   ``validating`` for one-shot answers; ``exploring``, ``answering``, ``validating`` in agent
+  mode; ``planning``, ``exploring``, ``writing``, ``verifying``, ``validating`` in multi-agent
   mode;
-- ``step`` — agent mode only (AGT-6): one event per tool call, one when the model ends the
-  exploration, and one for the final answer call, as they finish (``StepEvent``: the tool, a
-  summary of its arguments, the size of its result, the evidence it listed, and the tokens
-  and cost of the model turn behind it). ``span_id`` is the step's span in the answer's trace;
+- ``plan`` — multi-agent mode only (MAS-6): once, the plan's branches (``{"branches": [{id,
+  sub_question, seed_symbols, max_steps}]}``), before they are explored;
+- ``step`` — agent and multi-agent mode (AGT-6, MAS-6): one event per tool call, one when the
+  model ends the exploration, and one for the final answer call, as they finish
+  (``StepEvent``: the tool, a summary of its arguments, the size of its result, the evidence
+  it listed, and the tokens and cost of the model turn behind it). ``span_id`` is the step's
+  span in the answer's trace. In multi-agent mode the events of a branch carry its ID in
+  ``branch`` (branches run at the same time, so their events arrive mixed), and the plan, each
+  branch's notes, the writing call, and each verification and repair call are events too;
 - ``answer`` — the validated answer (``AnswerView``), refused or not;
 - ``done`` — ``{"run_id", "trace_id"}`` once the run is stored;
 - ``error`` — ``{"error": {"code", "message", "details"}}`` if answering failed.
@@ -48,6 +54,9 @@ from repoatlas.api.errors import ApiError, ErrorCode, documented, from_store_err
 from repoatlas.api.schemas import QaRunView, answer_view
 from repoatlas.llm.client import LLMNotConfigured
 from repoatlas.llm.types import LLMError, TransientLLMError
+from repoatlas.multiagent.factory import multiagent_budget, multiagent_from_settings
+from repoatlas.multiagent.models import Plan
+from repoatlas.multiagent.system import MultiAgentAnswerSystem
 from repoatlas.store.errors import StoreError
 from repoatlas.tracing.store import TraceView, load_trace
 
@@ -63,7 +72,7 @@ Question = Annotated[
 ]
 
 
-AskMode = Literal["oneshot", "agent"]
+AskMode = Literal["oneshot", "agent", "multiagent"]
 
 
 class AskRequest(BaseModel):
@@ -74,7 +83,10 @@ class AskRequest(BaseModel):
         default="oneshot",
         description=(
             "The answering mode: `oneshot` retrieves once and answers; `agent` explores the "
-            "code with tools first (slower, for questions one search can't answer)."
+            "code with tools first (slower, for questions one search can't answer); "
+            "`multiagent` splits the question across explorers that work side by side and "
+            "checks every claim of the answer against the code it cites (slowest, for "
+            "questions with independent parts)."
         ),
     )
 
@@ -93,6 +105,8 @@ def _build(state: Any, mode: str) -> AnswerSystem:
     try:
         if mode == "agent":
             return agent_from_settings(state.settings, state.engine, state.store)
+        if mode == "multiagent":
+            return multiagent_from_settings(state.settings, state.engine, state.store)
         return oneshot_from_settings(state.settings, state.engine, state.store)
     except LLMNotConfigured:
         raise ApiError(
@@ -100,6 +114,22 @@ def _build(state: Any, mode: str) -> AnswerSystem:
             ErrorCode.LLM_UNAVAILABLE,
             "Answers are not set up on this server: it has no Anthropic API key.",
         ) from None
+
+
+def plan_view(plan: Plan) -> dict[str, Any]:
+    """A plan as the ``plan`` event shows it: what each branch will look into, and for how
+    many steps (its token and money shares stay on the server)."""
+    return {
+        "branches": [
+            {
+                "id": branch.id,
+                "sub_question": branch.sub_question,
+                "seed_symbols": branch.seed_symbols,
+                "max_steps": branch.budget.max_steps,
+            }
+            for branch in plan.branches
+        ]
+    }
 
 
 def sse(event: str, data: Any) -> str:
@@ -121,8 +151,9 @@ def _error_event(exc: Exception) -> dict[str, Any]:
 
 
 ASK_DESCRIPTION = (
-    "Server-sent events: `status` (`{step}`), in agent mode `step` (one per tool call and "
-    "one for the final answer call), `answer` (an `AnswerView`), `done` "
+    "Server-sent events: `status` (`{step}`), in agent and multi-agent mode `step` (one per "
+    "tool call and one per model stage; in multi-agent mode with the `branch` it belongs to), "
+    "in multi-agent mode `plan` (`{branches}`), `answer` (an `AnswerView`), `done` "
     "(`{run_id, trace_id}`), or `error` (the error model)."
 )
 
@@ -146,6 +177,8 @@ async def ask(
     system = await anyio.to_thread.run_sync(answer_system, request, body.mode)
     if body.mode == "agent":
         budget = agent_budget(settings)
+    elif body.mode == "multiagent":
+        budget = multiagent_budget(settings)
     else:
         budget = Budget(
             max_cost_usd=settings.answer_max_cost_usd,
@@ -163,8 +196,20 @@ async def ask(
                 async def on_step(event: StepEvent) -> None:
                     await send.send(sse("step", event.model_dump(mode="json")))
 
+                async def on_plan(plan: Plan) -> None:
+                    await send.send(sse("plan", plan_view(plan)))
+
                 result: AnswerResult
-                if isinstance(system, AgentAnswerSystem):
+                if isinstance(system, MultiAgentAnswerSystem):
+                    result = await system.answer(
+                        snapshot_id,
+                        body.question,
+                        budget,
+                        on_status=on_status,
+                        on_step=on_step,
+                        on_plan=on_plan,
+                    )
+                elif isinstance(system, AgentAnswerSystem):
                     result = await system.answer(
                         snapshot_id, body.question, budget, on_status=on_status, on_step=on_step
                     )

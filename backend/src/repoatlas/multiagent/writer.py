@@ -21,13 +21,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from repoatlas.answers.prompting import estimate_message_tokens, estimate_tokens, evidence_block
+from repoatlas.answers.prompting import estimate_message_tokens, estimate_tokens
 from repoatlas.answers.schema import MAX_CLAIMS, AnswerDraft, NumberedEvidence
 from repoatlas.llm.client import LLM
 from repoatlas.llm.pricing import PriceTable
 from repoatlas.llm.types import LLMResult, Message
 from repoatlas.multiagent.models import BranchResult, MultiAgentConfig
-from repoatlas.multiagent.prompting import UNTRUSTED_RULE, question_block, shield
+from repoatlas.multiagent.prompting import (
+    UNTRUSTED_RULE,
+    evidence_text,
+    question_block,
+    shield,
+)
 from repoatlas.tracing import trace_span
 
 REPAIR_FACTOR = 2  # the client may repeat a structured call once to repair invalid output
@@ -144,7 +149,7 @@ def select_evidence(
     chosen: list[str] = []
     used = 0
     for evidence_id in order:
-        cost = estimate_tokens(evidence_block(merged.evidence[evidence_id]))
+        cost = estimate_tokens(evidence_text(merged.evidence[evidence_id]))
         if chosen and used + cost > max_tokens:
             continue  # a smaller entry further on may still fit
         chosen.append(evidence_id)
@@ -177,7 +182,7 @@ def build_writer_messages(
     merged: Merged,
     shown: dict[str, NumberedEvidence],
 ) -> list[Message]:
-    blocks = "\n\n".join(evidence_block(entry) for entry in shown.values())
+    blocks = "\n\n".join(evidence_text(entry) for entry in shown.values())
     left_out = len(merged.evidence) - len(shown)
     if left_out:
         blocks += f"\n\n({left_out} more pieces of evidence were found and did not fit here.)"

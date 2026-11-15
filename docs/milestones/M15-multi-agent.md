@@ -15,12 +15,12 @@ Split hard questions across parallel explorers, then verify every claim against 
 ## Provides
 
 - **`repoatlas.multiagent`**
-  - `planner.plan(question, context) -> Plan(branches: [Branch(id, sub_question, seed_symbols, budget)])` — structured output on the `large` role; at most 4 branches.
-  - `explorers.run(branches) -> [BranchResult(ledger, notes, status)]` — each branch is an agent loop on the `small` role with its own step and token budget; branches run concurrently (at most 3 at a time) and share a tool-result cache.
-  - `writer.write(question, branch_results) -> AnswerDraft` — merges ledgers into one evidence set and drafts claims.
-  - `verifier.verify(draft, evidence) -> VerifiedDraft` — re-reads each cited range and labels each claim `supported | unsupported | partial`; unsupported claims are dropped; partial claims get one repair attempt and are re-verified.
-  - `MultiAgentAnswerSystem` — registered as `multiagent`.
-- **API and UI:** `mode = "multiagent"` on the ask endpoint; server-sent events carry branch IDs; `TracePanel` groups spans by branch.
+  - `planner.Planner.plan(question, context) -> Planned(plan: Plan(branches: [Branch(id, sub_question, seed_symbols, budget: BranchBudget(max_steps, max_input_tokens, max_cost_usd))]), result)` — structured output on the `large` role; at most 4 branches; `planner.plan_context(toolbox, question, k, cache)` builds the context (places one search found, no code); `Plan.funded(explore_usd)` divides the exploration money by steps.
+  - `explorers.Explorers.run(snapshot_id, question, branches, on_step=None, cache=None) -> [BranchResult(branch, ledger, notes, status, stop, error, steps, tool_uses, usage, cost_usd)]` — each branch is an agent loop on the `small` role with its own step, token, and cost budget and a time limit; branches run concurrently (at most 3 at a time) and share a tool-result cache; `status` is `complete`, `partial`, `timeout`, or `failed`.
+  - `writer.Writer.prepare(question, branch_results) -> WriterInput` and `write(prepared, max_output_tokens) -> Written(draft, result, evidence)` — `merge_ledgers` makes one evidence set with stable IDs; the draft is the `AnswerDraft` every mode fills.
+  - `verifier.Verifier.verify(claims, evidence, can_spend=None, on_call=None) -> Verified(claims, verdicts, usage, cost_usd, refusal)` — re-reads each cited range and labels each claim `supported | unsupported | partial`; unsupported claims are dropped; partial claims get one repair attempt and are re-verified; `verified_draft(draft, verified)` builds the draft that goes to `CitationValidator`.
+  - `system.MultiAgentAnswerSystem` — registered as `multiagent`; `answer(snapshot_id, question, budget, on_status=None, on_step=None, on_plan=None)`; built from settings by `repoatlas.multiagent.factory` (`multiagent_from_settings`, `multiagent_system`, `multiagent_budget`, `multiagent_limits`); limits in `MultiAgentConfig`.
+- **API and UI:** `mode = "multiagent"` on the ask endpoint; a `plan` server-sent event with the branches; `step` events carry branch IDs and report the plan, each branch's notes, the writing call, and each verification and repair call; `AnswerView` carries `branches`, `verification`, and `stage_costs`; the ask panel has a Multi-agent mode whose steps are grouped by branch; `TracePanel` shows each branch's span as a labeled group with the branch's spans inside it.
 - **Results:** the injection suite and the three-way comparison run end to end without a model (decision 0023); the live results are pending in [`docs/live-pass.md`](../live-pass.md).
 
 ## Requirements
@@ -49,7 +49,7 @@ MAS-1, MAS-2, MAS-3, MAS-4, MAS-5, MAS-6, MAS-7
 - [x] **T3 — Writer.** Ledger merging with stable evidence IDs; draft generation.
 - [x] **T4 — Verifier.** Support labels, drop and repair; test with a seeded unsupported claim (must be dropped) and a seeded partial claim (repaired or dropped).
 - [x] **T5 — Failure handling.** Branch errors and timeouts produce partial answers with explicit gaps.
-- [ ] **T6 — API and UI mode.** Branch-aware events; `TracePanel` grouping; Playwright test with mock mode.
+- [x] **T6 — API and UI mode.** Branch-aware events; `TracePanel` grouping; Playwright test with mock mode.
 - [ ] **T7 — Injection gate (build gate).** The injection suite in multi-agent mode end to end through the runner with scripted stand-ins for all four roles: the obedient one is caught (planted text at every stage and a tool call outside the snapshot), the careful one scores zero leaks over three runs. The live run is a live-pass item (decision 0023).
 - [ ] **T8 — Evaluation (tooling).** `multiagent`, `agent`, and `oneshot` through the runner on the same questions with stand-ins; `repoatlas eval compare` on the three reports, with 95% intervals, cost per question, and cost per stage. The test-split report is a live-pass item (decision 0023).
 

@@ -64,6 +64,44 @@ function Metrics({ answer }: { answer: AnswerView }) {
   );
 }
 
+/**
+ * What the verifier of a multi-agent answer decided: how many claims held against the code
+ * they cite, and which were left out and why. The reasons are model text, rendered as text.
+ */
+function Verification({ answer }: { answer: AnswerView }) {
+  const verdicts = answer.verification ?? [];
+  if (verdicts.length === 0) return null;
+  const kept = verdicts.filter((verdict) => verdict.kept).length;
+  const rewritten = verdicts.filter((verdict) => verdict.kept && verdict.repaired).length;
+  const dropped = verdicts.filter((verdict) => !verdict.kept);
+  return (
+    <div
+      role="group"
+      aria-label="Verification"
+      data-testid="answer-verification"
+      className="rounded-lg border border-line bg-surface-2 px-3 py-2 text-[11px] text-fg-muted"
+    >
+      <p>
+        {kept} of {verdicts.length} {verdicts.length === 1 ? "claim" : "claims"} verified against
+        the code {verdicts.length === 1 ? "it cites" : "they cite"}
+        {rewritten > 0 ? ` · ${rewritten} rewritten to say only what the code shows` : ""}
+        {dropped.length > 0 ? ` · ${dropped.length} left out` : ""}
+      </p>
+      {dropped.length > 0 ? (
+        <ul aria-label="Claims left out" className="mt-1 space-y-0.5">
+          {dropped.map((verdict) => (
+            <li key={verdict.claim_id} className="break-words">
+              <span className="mr-1 font-mono text-fg-faint">[{verdict.claim_id}]</span>
+              {verdict.label === "partial" ? "only partly supported" : "not supported"}
+              {verdict.reason ? `: ${verdict.reason}` : ""}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 export interface AnswerBodyProps {
   answer: AnswerView;
   /** The citation whose code is open. */
@@ -140,6 +178,7 @@ export function AnswerBody({
           ))}
         </ol>
       ) : null}
+      <Verification answer={answer} />
       <Metrics answer={answer} />
       <TraceToggle
         traceId={answer.trace_id}

@@ -51,27 +51,57 @@ export type UnknownSite = Schemas["UnknownSite"];
 export type PathStep = Schemas["PathStep"];
 export type ImpactParams = Schemas["ImpactParams"];
 
-/** The answering modes: one retrieval pass, or an agent that explores with tools first. */
+/**
+ * The answering modes: one retrieval pass, an agent that explores with tools first, or several
+ * explorers side by side whose answer is verified claim by claim.
+ */
 export type AskMode = NonNullable<AskRequest["mode"]>;
 export type ToolUse = Schemas["ToolUse"];
+export type BranchSummary = Schemas["BranchSummary"];
+export type ClaimVerdict = Schemas["ClaimVerdict"];
 
 /**
  * The steps `POST /snapshots/{id}/ask` reports in its `status` events, in order: one-shot
- * answers retrieve, answer, validate; agent answers explore, answer, validate.
+ * answers retrieve, answer, validate; agent answers explore, answer, validate; multi-agent
+ * answers plan, explore, write, verify, validate.
  */
-export type AskStep = "retrieving" | "exploring" | "answering" | "validating";
+export type AskStep =
+  "retrieving" | "planning" | "exploring" | "answering" | "writing" | "verifying" | "validating";
 export const ASK_STEPS: readonly AskStep[] = ["retrieving", "answering", "validating"];
 export const AGENT_STEPS: readonly AskStep[] = ["exploring", "answering", "validating"];
+export const MULTIAGENT_STEPS: readonly AskStep[] = [
+  "planning",
+  "exploring",
+  "writing",
+  "verifying",
+  "validating",
+];
+
+/** One branch of a multi-agent answer's plan, as the `plan` event of the ask stream lists it. */
+export interface AskPlanBranch {
+  id: string;
+  sub_question: string;
+  seed_symbols: string[];
+  max_steps: number;
+}
+
+/** The `plan` event of a multi-agent answer: the branches that will be explored. */
+export interface AskPlan {
+  branches: AskPlanBranch[];
+}
 
 /**
- * A `step` event of an agent answer (the API's `StepEvent`): a tool call, the model ending the
- * exploration (`finish`), or the final answer call (`answer`). The tokens and cost are those of
- * the model turn behind the event; a turn that called several tools reports them once.
+ * A `step` event of an agent or multi-agent answer (the API's `StepEvent`): a tool call, the
+ * model ending the exploration (`finish`), or the final answer call (`answer`); in a
+ * multi-agent answer also the `plan`, a branch's `notes`, the `write` call, and each `verify`
+ * and `repair` call. `branch` is the branch an event belongs to. The tokens and cost are those
+ * of the model turn behind the event; a turn that called several tools reports them once.
  */
 export interface AskStepEvent {
   seq: number;
   step: number;
-  kind: "tool" | "finish" | "answer";
+  kind: "tool" | "finish" | "answer" | "plan" | "notes" | "write" | "verify" | "repair";
+  branch: string | null;
   tool: string;
   arguments: string;
   result_tokens: number;

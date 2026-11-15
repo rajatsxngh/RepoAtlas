@@ -18,6 +18,13 @@ final structured request, it fills the draft from the evidence lists of the tool
 (``<evidence id="E1" path="…" lines="10-24"/>``; tool output can't forge one either, see
 ``repoatlas.agent.guard``).
 
+And it can play the multi-agent pipeline (decision 0023). Asked for a plan, it returns one
+branch with the question. A branch explores like the agent above; asked for its notes, it
+reports one finding per evidence entry of its tool results, for the first few. The writer's
+request is an answer draft like any other. Asked to verify claims, it labels every claim
+``supported`` with a reason that says no model checked it; asked to repair, it rewrites
+nothing. A stand-in "verdict" verifies nothing: it only lets the plumbing run.
+
 Turn it on with ``REPOATLAS_LLM_TRANSPORT=offline``. ``LLMClient.from_settings`` refuses it
 when an API key is set.
 """
@@ -50,6 +57,14 @@ _LISTED = re.compile(
 _QUESTION = re.compile(r"<question>\n(.*?)\n</question>", re.DOTALL)
 _DRAFT_FIELDS = frozenset({"answer_markdown", "claims", "refused", "refusal_reason"})
 _AGENT_TOOLS = frozenset({"search_code", "final_answer"})
+# The structured requests of the multi-agent pipeline, by the fields of their schemas.
+_PLAN_FIELDS = frozenset({"branches"})
+_NOTES_FIELDS = frozenset({"findings", "unanswered"})
+_VERDICT_FIELDS = frozenset({"verdicts"})
+_REPAIR_FIELDS = frozenset({"claims"})
+_CLAIM = re.compile(r'^<claim id="(c\d+)" evidence="[E\d,]*"', re.MULTILINE)
+OFFLINE_VERDICT = "Offline stand-in: no model checked this claim."
+OFFLINE_STEPS = 2  # a search and the end of the exploration
 MAX_OFFLINE_QUERY_CHARS = 300
 
 
@@ -61,9 +76,18 @@ class OfflineTransport:
         tools = {tool.get("name") for tool in request.get("tools") or []}
         if schema is None and tools >= _AGENT_TOOLS:
             return _message([_explore(request)], "tool_use")
+        fields = frozenset(schema.get("properties", {})) if schema is not None else frozenset()
         if schema is None:
             text = "Offline stand-in: no model was called."
-        elif set(schema.get("properties", {})) == _DRAFT_FIELDS:
+        elif fields == _PLAN_FIELDS:
+            text = json.dumps(_plan(request))
+        elif fields == _NOTES_FIELDS:
+            text = json.dumps(_notes(_LISTED.findall(_tool_results(request))))
+        elif fields == _VERDICT_FIELDS:
+            text = json.dumps(_verdicts(request))
+        elif fields == _REPAIR_FIELDS:
+            text = json.dumps({"claims": []})
+        elif fields == _DRAFT_FIELDS:
             results = _tool_results(request)
             found = _LISTED.findall(results) if tools else _EVIDENCE.findall(_user_text(request))
             text = json.dumps(_draft(found))
@@ -109,13 +133,60 @@ def _explore(request: dict[str, Any]) -> dict[str, Any]:
             "name": "final_answer",
             "input": {},
         }
-    asked = _QUESTION.search(_user_text(request))
-    query = " ".join((asked[1] if asked else "").split())[:MAX_OFFLINE_QUERY_CHARS]
+    query = _question(request)
     return {
         "type": "tool_use",
         "id": "toolu_offline_1",
         "name": "search_code",
         "input": {"query": query or "main entry point", "k": 5},
+    }
+
+
+def _question(request: dict[str, Any]) -> str:
+    asked = _QUESTION.search(_user_text(request))
+    return " ".join((asked[1] if asked else "").split())[:MAX_OFFLINE_QUERY_CHARS]
+
+
+def _plan(request: dict[str, Any]) -> dict[str, Any]:
+    """The stand-in's plan: one branch, the question itself."""
+    question = _question(request) or "What does this repository do?"
+    return {"branches": [{"sub_question": question, "seed_symbols": [], "steps": OFFLINE_STEPS}]}
+
+
+def _notes(evidence: list[tuple[str, str, str]]) -> dict[str, Any]:
+    """A branch's notes: one finding per evidence entry (id, first line, last line), for the
+    first few."""
+    return {
+        "findings": [
+            {
+                "text": (
+                    f"Evidence {evidence_id} (lines {start} to {end} of the cited file) was "
+                    "found for this branch."
+                ),
+                "evidence_ids": [evidence_id],
+            }
+            for evidence_id, start, end in evidence[:MAX_OFFLINE_CLAIMS]
+        ],
+        "unanswered": None,
+    }
+
+
+def _verdicts(request: dict[str, Any]) -> dict[str, Any]:
+    """Every claim of the request's last block labeled ``supported``: nothing was checked."""
+    listed = ""
+    for message in request.get("messages", []):
+        content = message.get("content")
+        if message.get("role") == "user" and not isinstance(content, str):
+            texts = [
+                block.get("text", "") for block in content or [] if block.get("type") == "text"
+            ]
+            listed = texts[-1] if texts else ""
+            break
+    return {
+        "verdicts": [
+            {"claim_id": claim_id, "label": "supported", "reason": OFFLINE_VERDICT}
+            for claim_id in dict.fromkeys(_CLAIM.findall(listed))
+        ]
     }
 
 

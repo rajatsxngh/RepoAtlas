@@ -1411,7 +1411,7 @@
         },
         "responses": {
           "200": {
-            "description": "Server-sent events: `status` (`{step}`), in agent mode `step` (one per tool call and one for the final answer call), `answer` (an `AnswerView`), `done` (`{run_id, trace_id}`), or `error` (the error model).",
+            "description": "Server-sent events: `status` (`{step}`), in agent and multi-agent mode `step` (one per tool call and one per model stage; in multi-agent mode with the `branch` it belongs to), in multi-agent mode `plan` (`{branches}`), `answer` (an `AnswerView`), `done` (`{run_id, trace_id}`), or `error` (the error model).",
             "content": {
               "text/event-stream": {}
             }
@@ -2103,6 +2103,27 @@
             },
             "type": "array",
             "title": "Tool Uses"
+          },
+          "branches": {
+            "items": {
+              "$ref": "#/components/schemas/BranchSummary"
+            },
+            "type": "array",
+            "title": "Branches"
+          },
+          "verification": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimVerdict"
+            },
+            "type": "array",
+            "title": "Verification"
+          },
+          "stage_costs": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Stage Costs"
           }
         },
         "type": "object",
@@ -2134,10 +2155,11 @@
             "type": "string",
             "enum": [
               "oneshot",
-              "agent"
+              "agent",
+              "multiagent"
             ],
             "title": "Mode",
-            "description": "The answering mode: `oneshot` retrieves once and answers; `agent` explores the code with tools first (slower, for questions one search can't answer).",
+            "description": "The answering mode: `oneshot` retrieves once and answers; `agent` explores the code with tools first (slower, for questions one search can't answer); `multiagent` splits the question across explorers that work side by side and checks every claim of the answer against the code it cites (slowest, for questions with independent parts).",
             "default": "oneshot"
           }
         },
@@ -2147,6 +2169,90 @@
           "question"
         ],
         "title": "AskRequest"
+      },
+      "BranchSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "sub_question": {
+            "type": "string",
+            "title": "Sub Question"
+          },
+          "seed_symbols": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Seed Symbols"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "partial",
+              "timeout",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "stop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "max_steps": {
+            "type": "integer",
+            "title": "Max Steps",
+            "default": 0
+          },
+          "steps": {
+            "type": "integer",
+            "title": "Steps",
+            "default": 0
+          },
+          "evidence": {
+            "type": "integer",
+            "title": "Evidence",
+            "default": 0
+          },
+          "findings": {
+            "type": "integer",
+            "title": "Findings",
+            "default": 0
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sub_question",
+          "status"
+        ],
+        "title": "BranchSummary",
+        "description": "One branch of a multi-agent answer (decision 0023): what it was asked, how it ended\n(``complete``; ``partial`` when a limit stopped it; ``timeout``; ``failed``), and what it\nfound and cost. ``stop`` is the reason exploring stopped by itself, ``error`` the kind of\nfailure."
       },
       "BuildAccepted": {
         "properties": {
@@ -2287,6 +2393,61 @@
         ],
         "title": "Claim",
         "description": "One statement in the answer, citing the evidence that supports it. ``symbol`` names the\nidentifier the claim is about, when there is one (it must appear in a cited range)."
+      },
+      "ClaimVerdict": {
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "label": {
+            "type": "string",
+            "enum": [
+              "supported",
+              "partial",
+              "unsupported"
+            ],
+            "title": "Label"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "repaired": {
+            "type": "boolean",
+            "title": "Repaired",
+            "default": false
+          },
+          "relabel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "supported",
+                  "partial",
+                  "unsupported"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relabel"
+          },
+          "kept": {
+            "type": "boolean",
+            "title": "Kept",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "claim_id",
+          "label"
+        ],
+        "title": "ClaimVerdict",
+        "description": "What the verifier of a multi-agent answer decided about one claim of the draft (decision\n0023). ``label`` is its first reading of the claim against the cited lines. A ``partial``\nclaim may have been rewritten (``repaired``) and read again (``relabel``). ``kept`` says\nwhether the claim, as written or as rewritten, is in the answer."
       },
       "CodeSlice": {
         "properties": {

@@ -210,6 +210,179 @@ export function mockAgentTrace(
   return { trace: build(answer.trace_id!, "answer", snapshotId, steps), steps: linked };
 }
 
+/**
+ * The trace of a mock multi-agent answer, built from its `step` events: the plan, one
+ * `multiagent.branch` span per branch with that branch's turns, tool calls, and notes under it,
+ * then the writing, the verification, and the validations. Returns the events with `span_id`
+ * set to their span.
+ */
+export function mockMultiAgentTrace(
+  answer: AnswerView,
+  snapshotId: number,
+  events: readonly AskStepEvent[],
+): { trace: TraceView; steps: AskStepEvent[] } {
+  const traceId = answer.trace_id!;
+  const steps: Step[] = [
+    { name: "answer", kind: "answer", parent: null, start: 0, end: 0 },
+    { name: "multiagent.context", kind: "retrieval", parent: 0, start: 1, end: 40 },
+  ];
+  const linked = new Map<number, string>(); // event seq → span ID
+  const llmOf = (event: AskStepEvent) =>
+    event.model
+      ? {
+          tokensIn: event.tokens_in,
+          tokensOut: event.tokens_out,
+          cacheRead: 0,
+          cost: event.cost_usd,
+          model: event.model,
+        }
+      : undefined;
+  const stage = (event: AskStepEvent, name: string, start: number, length: number): number => {
+    const index = steps.length;
+    steps.push({ name, kind: "agent", parent: 0, start, end: start + length });
+    const llm = llmOf(event);
+    if (llm) {
+      steps.push({
+        name: "llm.call",
+        kind: "llm",
+        parent: index,
+        start: start + 1,
+        end: start + length - 1,
+        llm,
+      });
+    }
+    linked.set(event.seq, spanId(traceId, index + 1));
+    return start + length + 2;
+  };
+  let clock = 42;
+  for (const event of events) {
+    if (event.kind === "plan") clock = stage(event, "multiagent.plan", clock, 900);
+  }
+  // Branches run side by side: each starts when the plan is done.
+  const exploreStart = clock;
+  let exploreEnd = clock;
+  const branchIds = [...new Set(events.map((event) => event.branch).filter((id) => id !== null))];
+  for (const id of branchIds) {
+    const summary = answer.branches?.find((branch) => branch.id === id);
+    const branchIndex = steps.length;
+    steps.push({
+      name: "multiagent.branch",
+      kind: "agent",
+      parent: 0,
+      start: exploreStart,
+      end: exploreStart,
+      attrs: { branch: id, status: summary?.status ?? "complete", steps: summary?.steps ?? 0 },
+    });
+    let at = exploreStart + 1;
+    const turns = new Map<number, number>();
+    for (const event of events.filter((candidate) => candidate.branch === id)) {
+      const llm = llmOf(event);
+      if (event.kind === "notes") {
+        const index = steps.length;
+        steps.push({
+          name: "multiagent.notes",
+          kind: "agent",
+          parent: branchIndex,
+          start: at,
+          end: at + 380,
+        });
+        if (llm) {
+          steps.push({
+            name: "llm.call",
+            kind: "llm",
+            parent: index,
+            start: at + 1,
+            end: at + 379,
+            llm,
+          });
+        }
+        at += 382;
+        linked.set(event.seq, spanId(traceId, index + 1));
+        continue;
+      }
+      let turn = turns.get(event.step);
+      if (turn === undefined) {
+        turn = steps.length;
+        turns.set(event.step, turn);
+        steps.push({
+          name: "agent.step",
+          kind: "agent",
+          parent: branchIndex,
+          start: at,
+          end: at + 420,
+          attrs: { step: event.step },
+        });
+        if (llm) {
+          steps.push({
+            name: "llm.call",
+            kind: "llm",
+            parent: turn,
+            start: at + 1,
+            end: at + 400,
+            llm,
+          });
+        }
+        at += 402;
+      }
+      if (event.kind === "tool") {
+        const index = steps.length;
+        steps.push({
+          name: `tool.${event.tool}`,
+          kind: "tool",
+          parent: turn,
+          start: at,
+          end: at + 8,
+          attrs: { arguments: event.arguments, evidence: event.evidence, allowed: event.allowed },
+        });
+        at += 9;
+        steps[turn]!.end = at;
+        linked.set(event.seq, spanId(traceId, index + 1));
+      } else {
+        linked.set(event.seq, spanId(traceId, turn + 1));
+      }
+    }
+    steps[branchIndex]!.end = at;
+    exploreEnd = Math.max(exploreEnd, at);
+  }
+  clock = exploreEnd + 2;
+  for (const event of events) {
+    if (event.kind === "write") {
+      clock = stage(event, "multiagent.write", clock, 1500);
+      steps.push({
+        name: "validate",
+        kind: "validation",
+        parent: 0,
+        start: clock,
+        end: clock + 20,
+        attrs: { stage: "draft" },
+      });
+      clock += 22;
+    } else if (event.kind === "verify" || event.kind === "repair") {
+      clock = stage(event, `multiagent.${event.kind}`, clock, 800);
+    }
+  }
+  if (events.some((event) => event.kind === "verify")) {
+    steps.push({
+      name: "validate",
+      kind: "validation",
+      parent: 0,
+      start: clock,
+      end: clock + 20,
+      attrs: {
+        stage: "verified",
+        citations: answer.citations.length,
+        valid: answer.citations.length,
+      },
+    });
+    clock += 22;
+  }
+  steps[0]!.end = clock;
+  return {
+    trace: build(traceId, "answer", snapshotId, steps),
+    steps: events.map((event) => ({ ...event, span_id: linked.get(event.seq) ?? null })),
+  };
+}
+
 /** The trace of a mock impact analysis: one step, no model. */
 export function mockImpactTrace(traceId: string, snapshotId: number, items: number): TraceView {
   return build(traceId, "impact", snapshotId, [

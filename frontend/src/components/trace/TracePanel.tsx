@@ -9,6 +9,9 @@
  * `LiveSteps` shows an agent answer's tool calls while it is being made (AGT-6): one row per
  * `step` event of the ask stream, as it arrives. Tool names, arguments, and errors are model
  * or repo text, rendered as text.
+ *
+ * A multi-agent answer has branches (MAS-6). `LiveSteps` groups its steps by branch, and the
+ * trace's tree shows each branch's span as a labeled group with the branch's steps under it.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -17,7 +20,7 @@ import { useMemo, useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import { useApi } from "@/lib/api/context";
 import { describeError } from "@/lib/api/errors";
-import type { AskStepEvent, SpanView, TraceView } from "@/lib/api/types";
+import type { AskPlan, AskStepEvent, BranchSummary, SpanView, TraceView } from "@/lib/api/types";
 
 export interface SpanNode {
   span: SpanView;
@@ -105,6 +108,14 @@ function SpanRow({
     total > 0 ? Math.max(1.5, Math.min(100 - left, (node.durationMs / total) * 100)) : 100;
   const failed = span.status === "error";
   const error = failed && typeof span.attrs.error === "string" ? span.attrs.error : null;
+  // A multi-agent answer's branch: its spans are this span's children, so the branch is one
+  // group of the tree. The label says which branch and how it ended.
+  const branch =
+    span.name === "multiagent.branch" && typeof span.attrs.branch === "string"
+      ? span.attrs.branch
+      : null;
+  const branchStatus = branch && typeof span.attrs.status === "string" ? span.attrs.status : null;
+  const label = branch ? `branch ${branch}` : span.name;
   const tokens =
     span.tokens_in !== null || span.tokens_out !== null
       ? `${formatTokens(span.tokens_in ?? 0)} in · ${formatTokens(span.tokens_out ?? 0)} out`
@@ -116,6 +127,7 @@ function SpanRow({
       aria-expanded={hasChildren ? !collapsed : undefined}
       aria-selected={false}
       data-span-kind={span.kind}
+      data-branch={branch ?? undefined}
       className="py-1"
     >
       <div className="flex items-center gap-1.5" style={{ paddingLeft: `${node.depth * 14}px` }}>
@@ -123,7 +135,7 @@ function SpanRow({
           <button
             type="button"
             onClick={() => onToggle(span.id)}
-            aria-label={`${collapsed ? "Expand" : "Collapse"} ${span.name}`}
+            aria-label={`${collapsed ? "Expand" : "Collapse"} ${label}`}
             className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-fg-muted hover:bg-surface-2 hover:text-fg"
           >
             {collapsed ? (
@@ -139,8 +151,16 @@ function SpanRow({
           className={`min-w-0 flex-1 truncate font-mono text-xs ${failed ? "text-danger" : "text-fg"}`}
           title={span.name}
         >
-          {span.name}
+          {label}
         </span>
+        {branchStatus ? (
+          <span
+            data-testid="branch-status"
+            className={`shrink-0 text-[10px] ${branchStatus === "complete" ? "text-fg-muted" : "text-danger"}`}
+          >
+            {branchStatus}
+          </span>
+        ) : null}
         <span className="shrink-0 rounded border border-line bg-surface-2 px-1 text-[10px] text-fg-muted">
           {span.kind}
         </span>
@@ -281,12 +301,24 @@ const STEP_TITLE: Record<AskStepEvent["kind"], string | null> = {
   tool: null,
   finish: "Finished exploring",
   answer: "Wrote the answer",
+  plan: "Planned the exploration",
+  notes: "Reported its findings",
+  write: "Wrote the answer",
+  verify: "Checked the claims against the code",
+  repair: "Rewrote partly supported claims",
 };
 
 function stepNotes(event: AskStepEvent): string[] {
   const notes: string[] = [];
+  if (event.kind === "plan" && event.arguments) notes.push(event.arguments);
   if (event.kind !== "tool") return notes;
-  if (event.cached) notes.push("same call as before, not run again");
+  if (event.cached) {
+    notes.push(
+      event.branch
+        ? "already run for this answer, not run again"
+        : "same call as before, not run again",
+    );
+  }
   if (!event.error) {
     notes.push(`${event.evidence} ${event.evidence === 1 ? "piece" : "pieces"} of evidence`);
     notes.push(`about ${formatTokens(event.result_tokens)} tokens returned`);
@@ -296,18 +328,118 @@ function stepNotes(event: AskStepEvent): string[] {
   return notes;
 }
 
+function StepRow({ event }: { event: AskStepEvent }) {
+  const refused = !event.allowed;
+  const notes = stepNotes(event);
+  const usage = event.model
+    ? [
+        event.model,
+        `${formatTokens(event.tokens_in)} in · ${formatTokens(event.tokens_out)} out`,
+        formatCost(event.cost_usd),
+      ].join(" · ")
+    : null;
+  return (
+    <li data-step-kind={event.kind} data-refused={refused ? "true" : undefined} className="py-1.5">
+      <p className="flex items-baseline gap-1.5 text-xs">
+        <span className="w-4 shrink-0 text-right font-mono text-[10px] text-fg-faint tabular-nums">
+          {event.seq}
+        </span>
+        {STEP_TITLE[event.kind] ? (
+          <span className="text-fg">{STEP_TITLE[event.kind]}</span>
+        ) : (
+          <>
+            <span className={`shrink-0 font-mono ${event.error ? "text-danger" : "text-fg"}`}>
+              {event.tool}
+            </span>
+            <span className="min-w-0 truncate font-mono text-fg-muted" title={event.arguments}>
+              {event.arguments}
+            </span>
+          </>
+        )}
+      </p>
+      <div className="pl-[22px]">
+        {event.error ? (
+          <p className="text-[11px] break-words text-danger">
+            {refused ? "Refused: " : "Failed: "}
+            {event.error}
+          </p>
+        ) : null}
+        {notes.length > 0 ? <p className="text-[11px] text-fg-muted">{notes.join(" · ")}</p> : null}
+        {usage ? <p className="truncate text-[11px] text-fg-faint">{usage}</p> : null}
+      </div>
+    </li>
+  );
+}
+
+const BRANCH_STATUS: Record<BranchSummary["status"], string> = {
+  complete: "explored",
+  partial: "stopped at a limit",
+  timeout: "ran out of time",
+  failed: "failed",
+};
+
+export interface StepGroup {
+  /** The branch's ID, or `null` for steps of the whole answer (plan, write, verify). */
+  branch: string | null;
+  steps: AskStepEvent[];
+}
+
+/**
+ * The steps of an answer in the order to show them: the steps before any branch, one group per
+ * branch (in the plan's order, then any branch the plan didn't list, by first appearance), and
+ * the steps after the branches. Branches run at the same time, so their events arrive mixed;
+ * grouping keeps each branch's steps together.
+ */
+export function groupSteps(steps: readonly AskStepEvent[], plan?: AskPlan | null): StepGroup[] {
+  const order: string[] = (plan?.branches ?? []).map((branch) => branch.id);
+  for (const event of steps) {
+    if (event.branch && !order.includes(event.branch)) order.push(event.branch);
+  }
+  if (order.length === 0) return [{ branch: null, steps: [...steps] }];
+  const firstBranch = steps.findIndex((event) => event.branch !== null);
+  const before = steps.filter(
+    (event, index) => event.branch === null && (firstBranch < 0 || index < firstBranch),
+  );
+  const after = steps.filter(
+    (event, index) => event.branch === null && firstBranch >= 0 && index > firstBranch,
+  );
+  const groups: StepGroup[] = [];
+  if (before.length > 0) groups.push({ branch: null, steps: before });
+  for (const branch of order) {
+    groups.push({ branch, steps: steps.filter((event) => event.branch === branch) });
+  }
+  if (after.length > 0) groups.push({ branch: null, steps: after });
+  return groups;
+}
+
 export interface LiveStepsProps {
   /** The `step` events received so far, in order. */
   steps: readonly AskStepEvent[];
+  /** Multi-agent mode: the plan's branches, once known. */
+  plan?: AskPlan | null;
+  /** Multi-agent mode: how each branch ended, once the answer is there. */
+  branches?: readonly BranchSummary[];
   /** The answer is still being made. */
   running?: boolean;
   className?: string;
 }
 
-/** An agent answer's steps as they happen: each tool call, then the final answer call. */
-export function LiveSteps({ steps, running = false, className = "" }: LiveStepsProps) {
+/**
+ * An answer's steps as they happen: each tool call, then the final answer call. A multi-agent
+ * answer's steps are grouped by branch, each under its sub-question (model text, rendered as
+ * text).
+ */
+export function LiveSteps({
+  steps,
+  plan = null,
+  branches = [],
+  running = false,
+  className = "",
+}: LiveStepsProps) {
   const calls = steps.filter((event) => event.kind === "tool").length;
   const cost = steps.reduce((sum, event) => sum + event.cost_usd, 0);
+  const groups = groupSteps(steps, plan);
+  const branchCount = groups.filter((group) => group.branch !== null).length;
   return (
     <section
       aria-label="Agent steps"
@@ -321,65 +453,85 @@ export function LiveSteps({ steps, running = false, className = "" }: LiveStepsP
           data-testid="steps-summary"
           className="ml-auto font-mono text-[11px] font-normal tracking-normal normal-case"
         >
+          {branchCount > 0 ? `${branchCount} ${branchCount === 1 ? "branch" : "branches"} · ` : ""}
           {calls} {calls === 1 ? "tool call" : "tool calls"} · {formatCost(cost)}
         </span>
       </h3>
-      <ol aria-label="Agent steps" className="mt-1 divide-y divide-line">
-        {steps.map((event) => {
-          const refused = !event.allowed;
-          const notes = stepNotes(event);
-          const usage = event.model
-            ? [
-                event.model,
-                `${formatTokens(event.tokens_in)} in · ${formatTokens(event.tokens_out)} out`,
-                formatCost(event.cost_usd),
-              ].join(" · ")
-            : null;
-          return (
-            <li
-              key={event.seq}
-              data-step-kind={event.kind}
-              data-refused={refused ? "true" : undefined}
-              className="py-1.5"
-            >
-              <p className="flex items-baseline gap-1.5 text-xs">
-                <span className="w-4 shrink-0 text-right font-mono text-[10px] text-fg-faint tabular-nums">
-                  {event.seq}
-                </span>
-                {STEP_TITLE[event.kind] ? (
-                  <span className="text-fg">{STEP_TITLE[event.kind]}</span>
-                ) : (
-                  <>
+      {branchCount > 0 ? (
+        <div className="mt-1 space-y-1.5">
+          {groups.map((group, index) => {
+            if (group.branch === null) {
+              return (
+                <ol
+                  key={`stage-${index}`}
+                  aria-label={index === 0 ? "Before the branches" : "After the branches"}
+                  className="divide-y divide-line"
+                >
+                  {group.steps.map((event) => (
+                    <StepRow key={event.seq} event={event} />
+                  ))}
+                </ol>
+              );
+            }
+            const planned = plan?.branches.find((branch) => branch.id === group.branch);
+            const ended = branches.find((branch) => branch.id === group.branch);
+            const reported = group.steps.some((event) => event.kind === "notes");
+            const state = ended
+              ? BRANCH_STATUS[ended.status]
+              : running
+                ? reported
+                  ? "explored"
+                  : group.steps.length > 0
+                    ? "exploring…"
+                    : "waiting…"
+                : null;
+            return (
+              <section
+                key={group.branch}
+                aria-label={`Branch ${group.branch}`}
+                data-branch={group.branch}
+                data-branch-status={ended?.status}
+                className="rounded-md border border-line bg-surface-2/50 px-2 py-1"
+              >
+                <h4 className="flex items-baseline gap-1.5 text-xs">
+                  <span className="shrink-0 rounded border border-line bg-surface px-1 font-mono text-[10px] text-fg-muted">
+                    {group.branch}
+                  </span>
+                  <span className="min-w-0 flex-1 break-words text-fg">
+                    {planned?.sub_question ?? ended?.sub_question ?? "Branch"}
+                  </span>
+                  {state ? (
                     <span
-                      className={`shrink-0 font-mono ${event.error ? "text-danger" : "text-fg"}`}
+                      data-testid="branch-state"
+                      className={`shrink-0 text-[11px] ${
+                        ended && ended.status !== "complete" ? "text-danger" : "text-fg-muted"
+                      }`}
                     >
-                      {event.tool}
+                      {state}
                     </span>
-                    <span
-                      className="min-w-0 truncate font-mono text-fg-muted"
-                      title={event.arguments}
-                    >
-                      {event.arguments}
-                    </span>
-                  </>
-                )}
-              </p>
-              <div className="pl-[22px]">
-                {event.error ? (
-                  <p className="text-[11px] break-words text-danger">
-                    {refused ? "Refused: " : "Failed: "}
-                    {event.error}
-                  </p>
+                  ) : null}
+                </h4>
+                {group.steps.length > 0 ? (
+                  <ol
+                    aria-label={`Steps of branch ${group.branch}`}
+                    className="divide-y divide-line"
+                  >
+                    {group.steps.map((event) => (
+                      <StepRow key={event.seq} event={event} />
+                    ))}
+                  </ol>
                 ) : null}
-                {notes.length > 0 ? (
-                  <p className="text-[11px] text-fg-muted">{notes.join(" · ")}</p>
-                ) : null}
-                {usage ? <p className="truncate text-[11px] text-fg-faint">{usage}</p> : null}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
+              </section>
+            );
+          })}
+        </div>
+      ) : (
+        <ol aria-label="Agent steps" className="mt-1 divide-y divide-line">
+          {steps.map((event) => (
+            <StepRow key={event.seq} event={event} />
+          ))}
+        </ol>
+      )}
     </section>
   );
 }

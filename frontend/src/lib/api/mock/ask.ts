@@ -5,13 +5,19 @@
  *
  * In agent mode the same answer comes with the `step` events of a short exploration: a search,
  * a lookup and a read in one turn, the end of the exploration, and the final answer call.
+ *
+ * In multi-agent mode it comes with a plan of two branches, each branch's steps (mixed, as
+ * branches run side by side), the writing call, and a verification that leaves one drafted
+ * claim out.
  */
 
 import type {
   AnswerView,
   ApiNode,
+  AskPlan,
   AskStep,
   AskStepEvent,
+  BranchSummary,
   Citation,
   Claim,
   ToolUse,
@@ -130,6 +136,7 @@ function stepEvent(seq: number, step: number, fields: Partial<AskStepEvent>): As
     seq,
     step,
     kind: "tool",
+    branch: null,
     tool: "",
     arguments: "",
     result_tokens: 0,
@@ -151,6 +158,7 @@ function stepEvent(seq: number, step: number, fields: Partial<AskStepEvent>): As
 function toolUse(event: AskStepEvent, args: Record<string, unknown>, ids: string[]): ToolUse {
   return {
     step: event.step,
+    branch: event.branch,
     name: event.tool,
     arguments: args,
     allowed: event.allowed,
@@ -247,6 +255,203 @@ export function mockAgentRun(graph: MockGraph, question: string, runId: number):
     ],
   };
   return { answer, steps, statuses: ["exploring", "answering", "validating"] };
+}
+
+export interface MockMultiAgentRun extends MockAgentRun {
+  plan: AskPlan;
+}
+
+/** The claim the mock verifier leaves out (it never reaches the answer). */
+export const MOCK_DROPPED_REASON =
+  "The cited lines define the symbol; they don't show that it is called on every request.";
+
+/**
+ * A mock multi-agent answer: the answer `mockAnswer` gives, planned as two branches, explored,
+ * written, and verified. The steps' tokens and costs add up to the answer's; the events are in
+ * the order a server would send them, with the two branches' steps mixed.
+ */
+export function mockMultiAgentRun(
+  graph: MockGraph,
+  question: string,
+  runId: number,
+): MockMultiAgentRun {
+  const base = mockAnswer(graph, question, runId);
+  const node = citedSymbol(graph, question);
+  const turn = { model: EXPLORE_MODEL, tokens_in: 2900, tokens_out: 60, cost_usd: 0.0003 };
+  const large = { model: ANSWER_MODEL, tokens_in: 1800, tokens_out: 140, cost_usd: 0.005 };
+  const usage = (events: AskStepEvent[]) => ({
+    input_tokens: events.reduce((sum, event) => sum + event.tokens_in, 0),
+    output_tokens: events.reduce((sum, event) => sum + event.tokens_out, 0),
+    cache_read_tokens: 0,
+    cache_write_tokens: 0,
+  });
+  const total = (events: AskStepEvent[]) =>
+    Number(events.reduce((sum, event) => sum + event.cost_usd, 0).toFixed(6));
+  const query = JSON.stringify(question.length > 60 ? `${question.slice(0, 57)}...` : question);
+  if (!node) {
+    // The planner found nothing to split: one branch with the question, which finds nothing.
+    const plan: AskPlan = {
+      branches: [{ id: "b1", sub_question: question, seed_symbols: [], max_steps: 12 }],
+    };
+    const steps = [
+      stepEvent(1, 1, { kind: "plan", tool: "plan", arguments: "1 branch", ...large }),
+      stepEvent(2, 1, {
+        branch: "b1",
+        tool: "search_code",
+        arguments: `query=${query}`,
+        result_tokens: 12,
+        ...turn,
+      }),
+      stepEvent(3, 2, { branch: "b1", kind: "finish", tool: "final_answer", ...turn }),
+    ];
+    const branches: BranchSummary[] = [
+      {
+        id: "b1",
+        sub_question: question,
+        seed_symbols: [],
+        status: "complete",
+        stop: "final_answer",
+        error: null,
+        max_steps: 12,
+        steps: 2,
+        evidence: 0,
+        findings: 0,
+        cost_usd: 0.0006,
+      },
+    ];
+    const answer: AnswerView = {
+      ...base,
+      refusal_reason: "The tools found no code in the snapshot for this question.",
+      usage: usage(steps),
+      cost_usd: total(steps),
+      tool_uses: [toolUse(steps[1]!, { query: question }, [])],
+      branches,
+      verification: [],
+      stage_costs: { planner: 0.005, explorers: 0.0006 },
+    };
+    return { answer, steps, plan, statuses: ["planning", "exploring"] };
+  }
+  const span = node.span!;
+  const plan: AskPlan = {
+    branches: [
+      {
+        id: "b1",
+        sub_question: `Where is \`${node.name}\` defined, and what does it do?`,
+        seed_symbols: [node.key],
+        max_steps: 4,
+      },
+      { id: "b2", sub_question: `What calls \`${node.name}\`?`, seed_symbols: [], max_steps: 3 },
+    ],
+  };
+  const planned = stepEvent(1, 1, {
+    kind: "plan",
+    tool: "plan",
+    arguments: "2 branches",
+    ...large,
+  });
+  const lookup = stepEvent(2, 1, {
+    branch: "b1",
+    tool: "find_definition",
+    arguments: `name=${JSON.stringify(node.name)}`,
+    result_tokens: 90,
+    evidence: 1,
+    ...turn,
+  });
+  const callers = stepEvent(3, 1, {
+    branch: "b2",
+    tool: "find_callers",
+    arguments: `symbol_key=${JSON.stringify(node.key)}, depth=1`,
+    result_tokens: 160,
+    evidence: 2,
+    ...turn,
+  });
+  const read = stepEvent(4, 2, {
+    branch: "b1",
+    tool: "read_file",
+    arguments: `path=${JSON.stringify(node.path)}, start=${span.start_line}, end=${span.end_line}`,
+    result_tokens: 210,
+    evidence: 1,
+    ...turn,
+  });
+  const done2 = stepEvent(5, 2, { branch: "b2", kind: "finish", tool: "final_answer", ...turn });
+  const notes2 = stepEvent(6, 3, { branch: "b2", kind: "notes", tool: "notes", ...turn });
+  const done1 = stepEvent(7, 3, { branch: "b1", kind: "finish", tool: "final_answer", ...turn });
+  const notes1 = stepEvent(8, 4, { branch: "b1", kind: "notes", tool: "notes", ...turn });
+  const write = stepEvent(9, 1, {
+    kind: "write",
+    tool: "write",
+    ...large,
+    tokens_in: 4200,
+    tokens_out: 330,
+    cost_usd: 0.0117,
+  });
+  const verify = stepEvent(10, 1, { kind: "verify", tool: "verify", ...large, tokens_in: 2100 });
+  const steps = [planned, lookup, callers, read, done2, notes2, done1, notes1, write, verify];
+  const branchCost = (id: string) => total(steps.filter((event) => event.branch === id));
+  const branches: BranchSummary[] = plan.branches.map((branch) => ({
+    id: branch.id,
+    sub_question: branch.sub_question,
+    seed_symbols: branch.seed_symbols,
+    status: "complete",
+    stop: "final_answer",
+    error: null,
+    max_steps: branch.max_steps,
+    steps: branch.id === "b1" ? 3 : 2,
+    evidence: branch.id === "b1" ? 2 : 2,
+    findings: 1,
+    cost_usd: branchCost(branch.id),
+  }));
+  const claim = base.claims[0]!;
+  const answer: AnswerView = {
+    ...base,
+    answer_markdown: `Verified statements about the code:\n\n- ${claim.text} [c1]\n\nThis is a mock answer: mock mode has no model, and the steps above are made up.`,
+    usage: usage(steps),
+    cost_usd: total(steps),
+    metrics: {
+      ...base.metrics,
+      citations_total: 2,
+      citations_valid: 2,
+      claims_total: 2,
+      evidence_count: 4,
+      retrieval_top_score: null,
+    },
+    tool_uses: [
+      toolUse(lookup, { name: node.name }, ["E1"]),
+      toolUse(callers, { symbol_key: node.key, depth: 1 }, ["E1", "E2"]),
+      toolUse(read, { path: node.path, start: span.start_line, end: span.end_line }, ["E2"]),
+    ],
+    branches,
+    verification: [
+      {
+        claim_id: "c1",
+        label: "supported",
+        reason: "The cited lines define it.",
+        repaired: false,
+        relabel: null,
+        kept: true,
+      },
+      {
+        claim_id: "c2",
+        label: "unsupported",
+        reason: MOCK_DROPPED_REASON,
+        repaired: false,
+        relabel: null,
+        kept: false,
+      },
+    ],
+    stage_costs: {
+      planner: planned.cost_usd,
+      explorers: Number((branchCost("b1") + branchCost("b2")).toFixed(6)),
+      writer: write.cost_usd,
+      verifier: verify.cost_usd,
+    },
+  };
+  return {
+    answer,
+    steps,
+    plan,
+    statuses: ["planning", "exploring", "writing", "verifying", "validating"],
+  };
 }
 
 /** A server-sent event stream body. */
