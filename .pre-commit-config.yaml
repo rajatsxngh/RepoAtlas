@@ -13,7 +13,8 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=1024]
         # Mutation ground truth is text that later milestones read; it stays in git (~2 MB).
-        exclude: ^eval/artifacts/[^/]+/[0-9a-f]{40}/mutations\.jsonl$
+        # The README's demo recording is a GIF of about 3 MB.
+        exclude: ^(eval/artifacts/[^/]+/[0-9a-f]{40}/mutations\.jsonl|docs/launch/demo\.gif)$
 
   # Ruff runs from the backend environment so its version always matches uv.lock.
   - repo: local
