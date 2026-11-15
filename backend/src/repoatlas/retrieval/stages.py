@@ -1,15 +1,15 @@
 """The retrieval stages of a build, registered between ``store`` and ``publish``.
 
 ``chunk`` cuts the stored snapshot into chunks (read from ``blobs``) and saves them with their
-keyword index. ``embed`` gives every chunk a vector for the configured model, through the
-shared ``embeddings`` cache; the model name is one of its settings, so changing the model
-changes the config fingerprint and snapshots never mix models. Each stage is idempotent (it
-replaces or completes its own rows), so a retried build gives the same result.
+keyword index; in an incremental build it copies the chunks of unchanged files from the
+previous snapshot instead of cutting them again. ``embed`` gives every chunk a vector for the
+configured model, through the shared ``embeddings`` cache; the model name is one of its
+settings, so changing the model changes the config fingerprint and snapshots never mix models.
+Each stage is idempotent (it replaces or completes its own rows), so a retried build gives the
+same result.
 """
 
 from __future__ import annotations
-
-from collections import Counter
 
 from pydantic import JsonValue
 
@@ -20,20 +20,30 @@ from repoatlas.retrieval import chunker
 from repoatlas.retrieval.chunkstore import save_chunks
 from repoatlas.retrieval.embed import EMBED_VERSION, embed_chunks, embedder_for
 from repoatlas.retrieval.keyword import KEYWORD_VERSION
+from repoatlas.retrieval.reuse import chunk_stats, reusable_paths, save_chunks_reusing
 
 
 def chunk(ctx: BuildContext) -> None:
+    """Cut the snapshot into chunks. With a previous snapshot of the repository (an incremental
+    build, decision 0024), the chunks of files that did not change are copied from it."""
     snapshot_id = ctx.need(ctx.snapshot_id, "snapshot")
-    chunks = chunker.chunk_snapshot(snapshot_id, engine=ctx.engine)
+    previous = ctx.previous_snapshot_id
+    reused: set[str] = set()
+    if previous is not None:
+        reused = reusable_paths(snapshot_id, previous, engine=ctx.engine)
+    chunks = chunker.chunk_snapshot(snapshot_id, engine=ctx.engine, skip_paths=reused)
     ctx.progress(0.5)
-    save_chunks(snapshot_id, chunks, engine=ctx.engine)
-    counts = Counter(item.kind for item in chunks)
-    by_kind: dict[str, JsonValue] = {kind: counts[kind] for kind in sorted(counts)}
+    copied = 0
+    if previous is not None and reused:
+        copied = save_chunks_reusing(snapshot_id, previous, reused, chunks, engine=ctx.engine)
+    else:
+        save_chunks(snapshot_id, chunks, engine=ctx.engine)
+    stats: dict[str, JsonValue] = chunk_stats(snapshot_id, engine=ctx.engine)
     ctx.stats["chunks"] = {
-        "count": len(chunks),
-        "by_kind": by_kind,
-        "split_parts": sum(1 for item in chunks if item.part),
-        "tokens": sum(item.tokens for item in chunks),
+        **stats,
+        "reused": copied,
+        "rebuilt": len(chunks),
+        "files_reused": len(reused),
     }
 
 

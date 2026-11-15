@@ -27,11 +27,19 @@ from repoatlas.pipeline import build as build_module
 from repoatlas.pipeline import parse as parse_module
 from repoatlas.pipeline.build import build_dir, resolve_target, run_build
 from repoatlas.pipeline.context import BuildContext
-from repoatlas.pipeline.stages import Stage, register_stage, registered_stages, unregister_stage
+from repoatlas.pipeline.stages import (
+    Stage,
+    register_stage,
+    registered_stages,
+    run_stages,
+    unregister_stage,
+)
 from repoatlas.store.graphstore import GraphStore
 from repoatlas.store.loader import begin_snapshot
+from repoatlas.store.models import SnapshotId
 from tests.conftest import TEST_EMBEDDING_MODEL
 from tests.integration.origin import URL, Origin, serve_origin
+from tests.unit.ingest.gitrepo import Spec
 
 pytestmark = pytest.mark.usefixtures("clean_store", "jobs_engine")
 
@@ -313,3 +321,56 @@ def test_registering_a_stage_gives_new_builds_a_new_snapshot(
     finally:
         unregister_stage("extra")
     assert run_build(URL, settings, engine=pg_engine).snapshot_id == before.snapshot_id
+
+
+def test_a_build_job_for_a_new_commit_reuses_the_previous_snapshot(
+    origin: Origin, settings: Settings, pg_engine: Engine
+) -> None:
+    first_id, _job, _payload = request(settings, pg_engine)
+    assert worker(settings, pg_engine, "w1").run_once()
+    assert "incremental" not in snapshot(pg_engine, first_id).stats
+
+    origin.commit([Spec("src/shop/extra.py", b"def extra():\n    return 3\n")])
+    second_id, job, _payload = request(settings, pg_engine)
+    assert second_id != first_id
+    assert worker(settings, pg_engine, "w2").run_once()
+    assert job_now(pg_engine, job.id).status == "succeeded"
+    stats = snapshot(pg_engine, second_id).stats
+    assert stats["incremental"]["previous_snapshot_id"] == first_id
+    assert stats["incremental"]["changes"]["added"] == 1
+    assert stats["parse_cache"] == {"hits": 4, "misses": 1}
+    assert stats["link"]["files_reused"] == 4
+    assert stats["chunks"]["rebuilt"] == 1 and stats["chunks"]["reused"] > 0
+
+    # A retried attempt resumes from the graph checkpoint and keeps what it was linked on.
+    origin.commit([Spec("src/shop/extra.py", b"def extra():\n    return 4\n")])
+    third_id, job, _payload = request(settings, pg_engine)
+
+    def failing_chunk(_ctx: BuildContext) -> None:
+        raise RuntimeError("chunking failed once")
+
+    stages = [
+        Stage(stage.name, stage.version, stage.settings_keys, failing_chunk, weight=stage.weight)
+        if stage.name == "chunk"
+        else stage
+        for stage in registered_stages()
+    ]
+    build = BuildContext(
+        url=URL,
+        settings=settings,
+        engine=pg_engine,
+        commit=origin.head,
+        repo=resolve_target(URL, settings).repo,
+        fingerprint=resolve_target(URL, settings).fingerprint,
+        snapshot_id=SnapshotId(third_id),
+    )
+    build_module.use_previous(build)
+    build.workdir = build_module.open_build_dir(build)
+    with pytest.raises(RuntimeError, match="chunking failed once"), build.resources:
+        run_stages(build, stages)
+    assert worker(settings, pg_engine, "w3").run_once()
+    resumed = snapshot(pg_engine, third_id)
+    assert resumed.status == "ready"
+    assert "graph" in resumed.stats["resumed"]
+    assert resumed.stats["incremental"]["previous_snapshot_id"] == second_id
+    assert resumed.stats["link"]["files_reused"] == 4

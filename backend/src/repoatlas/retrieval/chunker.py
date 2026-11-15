@@ -22,7 +22,7 @@ snapshots keeps its hash (and its cached embeddings). File text is read from the
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Collection, Iterable, Sequence
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
@@ -445,20 +445,24 @@ def chunk_graph(graph: CodeGraph, read_text: Callable[[str], str | None]) -> lis
     return chunks
 
 
-def chunk_snapshot(snapshot_id: int, *, engine: Engine | None = None) -> list[Chunk]:
+def chunk_snapshot(
+    snapshot_id: int, *, engine: Engine | None = None, skip_paths: Collection[str] = ()
+) -> list[Chunk]:
     """Chunk every indexed file of a stored snapshot, reading file text from ``blobs``.
 
     The snapshot need not be ``ready``: the build chunks it right after storing it. Chunks
-    come in path order, then in the order ``chunk_file`` makes them."""
+    come in path order, then in the order ``chunk_file`` makes them. Files in ``skip_paths``
+    (those whose chunks an incremental build copies) are left out."""
     engine = engine or get_engine()
     with engine.connect() as connection:
         files = connection.execute(
             text(
                 "SELECT f.id, f.path, f.blob_oid, b.text FROM files f "
                 "JOIN blobs b ON b.oid = f.blob_oid "
-                "WHERE f.snapshot_id = :s AND f.skip_reason IS NULL ORDER BY f.path"
+                "WHERE f.snapshot_id = :s AND f.skip_reason IS NULL "
+                "AND NOT (f.path = ANY(:skip)) ORDER BY f.path"
             ),
-            {"s": snapshot_id},
+            {"s": snapshot_id, "skip": sorted(skip_paths)},
         ).all()
         rows = connection.execute(
             text(

@@ -33,7 +33,13 @@ from repoatlas.jobs import queue
 from repoatlas.jobs.queue import Job
 from repoatlas.jobs.worker import JobContext, JobHandler, register_job_handler
 from repoatlas.logging import get_logger
-from repoatlas.pipeline.build import Target, build_dir, open_build_dir, resolve_target
+from repoatlas.pipeline.build import (
+    Target,
+    build_dir,
+    open_build_dir,
+    resolve_target,
+    use_previous,
+)
 from repoatlas.pipeline.context import BuildContext
 from repoatlas.pipeline.stages import (
     config_fingerprint,
@@ -187,6 +193,7 @@ def run_build_job(ctx: JobContext) -> None:
         fingerprint_parts=fingerprint_parts(settings, stages),
         snapshot_id=SnapshotId(payload.snapshot_id),
     )
+    use_previous(build)
     build.workdir = open_build_dir(build)
     with build.resources:
         run_stages(build, stages, report=ctx.report, check=ctx.check)

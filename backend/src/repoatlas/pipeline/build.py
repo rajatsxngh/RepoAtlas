@@ -35,7 +35,7 @@ from repoatlas.canonical import digest, pretty_json, write_text_lf
 from repoatlas.config import Settings
 from repoatlas.db.engine import create_db_engine
 from repoatlas.graph.build import GraphSettings, component_versions, link_graph
-from repoatlas.graph.incremental import FileRecord
+from repoatlas.graph.incremental import FileRecord, Previous
 from repoatlas.graph.model import CodeGraph
 from repoatlas.graph.owners import CommitLog, read_commit_log
 from repoatlas.graph.project import ProjectFiles
@@ -50,6 +50,7 @@ from repoatlas.parsing import EXTRACTOR_VERSION
 from repoatlas.parsing.models import ParsedFile
 from repoatlas.parsing.ts_runtime import grammar_versions
 from repoatlas.pipeline import fingerprint
+from repoatlas.pipeline.changes import ChangeSet, diff_files, snapshot_files
 from repoatlas.pipeline.context import BuildContext
 from repoatlas.pipeline.graph import read_project_files
 from repoatlas.pipeline.parse import CacheUse, parse_files
@@ -63,6 +64,7 @@ from repoatlas.pipeline.stages import (
 from repoatlas.store import parsecache
 from repoatlas.store.loader import begin_snapshot, mark_failed, mark_ready, save_snapshot
 from repoatlas.store.models import SnapshotId
+from repoatlas.store.previous import find_previous, is_reusable, load_previous
 
 __all__ = [
     "BUILTIN_STAGES",
@@ -82,6 +84,7 @@ __all__ = [
     "resolve_target",
     "run_build",
     "store",
+    "use_previous",
 ]
 
 _FULL_SHA = re.compile(r"[0-9a-f]{40}")
@@ -157,6 +160,8 @@ class GraphCheckpoint(BaseModel):
     graph: CodeGraph
     records: dict[str, FileRecord]
     link: dict[str, JsonValue] = {}
+    previous_snapshot_id: int | None = None  # the snapshot linking reused, if any
+    changes: ChangeSet | None = None
 
 
 class IncrementalMismatch(RuntimeError):
@@ -388,23 +393,66 @@ def graph(ctx: BuildContext) -> None:
     saved = _load(ctx, "graph", GraphCheckpoint)
     if saved is not None:
         ctx.graph, ctx.records = saved.graph, saved.records
-        ctx.stats["link"] = saved.link
+        ctx.changes = saved.changes
+        if saved.previous_snapshot_id is not None:  # keep what the stored graph was linked on
+            ctx.previous_snapshot_id = SnapshotId(saved.previous_snapshot_id)
+        _link_stats(ctx, saved.link)
         ctx.resumed.append("graph")
         return
-    result = link_graph(
-        ctx.need(ctx.inventory, "inventory"),
-        ctx.need(ctx.parsed, "parse results"),
-        ctx.history,
-        GraphSettings.from_settings(ctx.settings),
-        project=ctx.project,
-    )
+    files = ctx.need(ctx.inventory, "inventory")
+    parsed = ctx.need(ctx.parsed, "parse results")
+    options = GraphSettings.from_settings(ctx.settings)
+    previous = _previous_link(ctx, files)
+    result = link_graph(files, parsed, ctx.history, options, project=ctx.project, previous=previous)
+    if previous is not None and ctx.settings.incremental_verify:
+        full = link_graph(files, parsed, ctx.history, options, project=ctx.project)
+        if full.graph.digest() != result.graph.digest():
+            raise IncrementalMismatch(
+                f"The graph linked on snapshot {ctx.previous_snapshot_id} "
+                f"({result.graph.digest()[:12]}) differs from a full link "
+                f"({full.graph.digest()[:12]})."
+            )
     ctx.graph, ctx.records = result.graph, result.records
-    ctx.stats["link"] = result.stats()
+    _link_stats(ctx, result.stats())
     _save(
         ctx,
         "graph",
-        GraphCheckpoint(graph=result.graph, records=result.records, link=result.stats()),
+        GraphCheckpoint(
+            graph=result.graph,
+            records=result.records,
+            link=result.stats(),
+            previous_snapshot_id=ctx.previous_snapshot_id,
+            changes=ctx.changes,
+        ),
     )
+
+
+def _previous_link(ctx: BuildContext, files: Inventory) -> Previous | None:
+    """What linking reuses from the build's previous snapshot. Sets ``ctx.changes``; a
+    previous snapshot without per-file records (built before they existed) is still used for
+    its chunks, but not for linking."""
+    previous_id = ctx.previous_snapshot_id
+    if previous_id is None:
+        return None
+    changes = diff_files(snapshot_files(previous_id, engine=ctx.engine), files)
+    ctx.changes = changes
+    return load_previous(
+        previous_id,
+        arrived=changes.arrived,
+        gone=changes.gone,
+        modified=changes.modified,
+        engine=ctx.engine,
+    )
+
+
+def _link_stats(ctx: BuildContext, link: dict[str, JsonValue]) -> None:
+    ctx.stats["link"] = link
+    if ctx.previous_snapshot_id is not None and ctx.changes is not None:
+        counts: dict[str, JsonValue] = dict(ctx.changes.counts())
+        ctx.stats["incremental"] = {
+            "previous_snapshot_id": ctx.previous_snapshot_id,
+            "changes": counts,
+        }
 
 
 def store(ctx: BuildContext) -> None:
@@ -472,6 +520,22 @@ for _stage in BUILTIN_STAGES:
 # --- in-process builds --------------------------------------------------------------------
 
 
+def use_previous(ctx: BuildContext, previous: int | None = None) -> None:
+    """Choose the snapshot the build reuses (decision 0024): ``previous`` when given, else the
+    newest ready snapshot of the same repository and config fingerprint; none when incremental
+    builds are switched off. ``previous`` must be such a snapshot."""
+    snapshot_id = ctx.need(ctx.snapshot_id, "snapshot")
+    if previous is not None:
+        if not is_reusable(previous, snapshot_id, engine=ctx.engine):
+            raise ValueError(
+                f"Snapshot {previous} is not a ready snapshot of the same repository and "
+                "configuration, so the build can't reuse it."
+            )
+        ctx.previous_snapshot_id = SnapshotId(previous)
+    elif ctx.settings.incremental_builds:
+        ctx.previous_snapshot_id = find_previous(snapshot_id, engine=ctx.engine)
+
+
 def run_build(
     url: str,
     settings: Settings,
@@ -480,9 +544,12 @@ def run_build(
     commit: str | None = None,
     keep_workdir: bool = False,
     stages: Sequence[Stage] | None = None,
+    previous: int | None = None,
 ) -> BuildResult:
     """Resolve, then run ``stages`` (default: the registered ones) in this process. A snapshot
-    that is already ready is returned without fetching; a failure marks the snapshot failed."""
+    that is already ready is returned without fetching; a failure marks the snapshot failed.
+    The build reuses ``previous`` (default: the repository's newest ready snapshot with this
+    configuration) for everything that did not change."""
     chosen = tuple(registered_stages() if stages is None else stages)
     owned = engine is None
     ctx = BuildContext(
@@ -497,6 +564,7 @@ def run_build(
         resolve(ctx, chosen)
         ctx.timings["resolve"] = round(time.perf_counter() - started, 3)
         if not ctx.reused:
+            use_previous(ctx, previous)
             ctx.workdir = open_build_dir(ctx)
             try:
                 with ctx.resources:
