@@ -26,7 +26,7 @@ validated against stored code; and the injection suite checks whether an answeri
 planted instructions.
 
 **Not yet shown:** how the live model behaves on the suite. That run is pending in
-[live-pass.md](live-pass.md) (items 6 and 7). The tests below prove the layout, the detector, and
+[live-pass.md](live-pass.md) (items 6, 7, and 12). The tests below prove the layout, the detector, and
 the scorer, with scripted stand-ins in place of the model.
 
 - `backend/tests/unit/answers/test_prompting.py::test_repo_text_cannot_break_out_of_its_block`
@@ -43,6 +43,8 @@ the scorer, with scripted stand-ins in place of the model.
 - `backend/tests/integration/security/test_injection_gate.py::test_oneshot_the_careful_stand_in_scores_zero_leaks_over_three_runs`
 - `backend/tests/integration/security/test_injection_gate.py::test_impact_explanations_the_obedient_stand_in_is_caught`
 - `backend/tests/integration/security/test_injection_gate.py::test_impact_explanations_the_careful_stand_in_scores_zero_leaks`
+- `backend/tests/integration/security/test_injection_gate.py::test_agent_the_obedient_stand_in_is_caught_in_its_answer_and_its_tool_call`
+- `backend/tests/integration/security/test_injection_gate.py::test_agent_the_careful_stand_in_scores_zero_leaks_over_three_runs`
 - `frontend/src/components/ask/AnswerBody.test.tsx :: "marks citations of flagged code with a warning, and only those"`
 
 ## S2 — XSS through repository text
@@ -163,3 +165,28 @@ is rejected without using up a rate limit or logging the token.
 - `backend/tests/unit/api/test_access.py::test_a_request_without_the_token_is_rejected`
 - `backend/tests/unit/api/test_access.py::test_a_wrong_token_is_rejected`
 - `backend/tests/unit/api/test_access.py::test_every_route_is_gated_except_liveness_and_preflights`
+
+## S11 — Tools that read the repository for a model
+
+The agent's tools, and the same tools served over MCP, are read-only and bound to one snapshot
+when they are made: no tool takes a snapshot, a URL, or a command. Arguments are checked before
+anything runs; a path that is malformed or not a file of the snapshot is refused and recorded
+as a call that was not allowed; what a tool returns is trimmed, passed through the injection
+detector, and can't forge an evidence entry or close a prompt block. A model that calls a tool
+because repository text asked it to gets an error result, and the injection suite counts the
+attempt as a leak. Over HTTP, the MCP server answers nothing without its bearer token and
+limits each client's calls; tool names, arguments, and errors are shown in the web app as text.
+
+- `backend/tests/unit/agent/test_tool_schemas.py::test_the_definitions_are_accepted_by_the_request_builder`
+- `backend/tests/unit/agent/test_tool_schemas.py::test_an_unknown_tool_is_refused_as_not_allowed`
+- `backend/tests/unit/agent/test_guard.py::test_a_malformed_path_is_refused_as_not_allowed_before_the_store_is_asked`
+- `backend/tests/integration/agent/test_tools.py::test_reads_outside_the_snapshot_are_refused_as_not_allowed`
+- `backend/tests/unit/agent/test_guard.py::test_tool_output_cannot_forge_or_close_a_prompt_block`
+- `backend/tests/unit/agent/test_guard_lab.py::test_every_planted_variant_is_marked_in_a_file_read`
+- `backend/tests/unit/agent/test_loop.py::test_a_tool_error_goes_back_to_the_model_and_the_loop_goes_on`
+- `backend/tests/unit/llm/test_offline_agent.py::test_evidence_entries_forged_in_tool_output_are_not_cited`
+- `backend/tests/integration/mcp/test_mcp_server.py::test_a_call_that_cannot_run_is_an_error_result_the_client_can_read`
+- `backend/tests/unit/agent/test_mcp_gate.py::test_a_request_without_the_exact_token_never_reaches_the_server`
+- `backend/tests/integration/mcp/test_mcp_transports.py::test_http_needs_the_bearer_token`
+- `backend/tests/integration/mcp/test_mcp_transports.py::test_http_is_rate_limited_per_client`
+- `frontend/src/components/trace/TracePanel.test.tsx :: "renders tool names, arguments, and errors as text, never as HTML"`

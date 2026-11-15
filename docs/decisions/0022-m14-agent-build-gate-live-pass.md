@@ -88,7 +88,8 @@ All are backward compatible; the milestone files list them under "Added later by
 - **Ask API (M04, M07).** `mode` accepts `agent`; the stream gains `step` events. A stored run
   has mode `agent`. The cost and rate limits of a question apply unchanged.
 - **Eval runner (M10).** The answer system `agent` is registered; `SystemOutput.tool_calls` is
-  filled from `AnswerResult.tool_uses`.
+  filled from `AnswerResult.tool_uses`; `repoatlas eval compare` also shows each system's
+  cost per question per run, per type and overall.
 - **Settings.** `agent_*` above, and for the MCP server `mcp_token` and
   `mcp_calls_per_minute`.
 
@@ -101,3 +102,8 @@ All are backward compatible; the milestone files list them under "Added later by
   the test-split report.
 - The offline stand-in now has a second script to keep working; a unit test and the
   end-to-end stack cover it.
+- The MCP SDK is at its 2.x major version, released after LiteLLM 1.106.5 was pinned.
+  LiteLLM imports `mcp` on some paths (decision 0010, the live check); the transport skips
+  that path, and the test suite passes with both installed, but no live call has been made
+  with the two together. Recording the agent cassette is the first live step for that
+  reason.

@@ -72,9 +72,14 @@ as [observability.md](observability.md) describes, ask one question, and check t
 appears in the Langfuse project.
 
 **Item 10 (agent cassette).** `uv run poe record-cassettes` also records
-`tests/llm_cassettes/agent/`; review the diff. If the recorded conversation differs in shape
-from the hand-written one (for example in how thinking blocks come back between tool calls),
-fix the loop before running items 11 to 14.
+`tests/llm_cassettes/agent/` (`tests/live/test_agent_live.py`); review the diff. This is the
+first live call with tools, through LiteLLM with the MCP SDK installed next to it, so run it
+before anything else in agent mode. A real model picks its own steps: update the expectations
+of `tests/integration/agent/test_recorded_agent.py` that name particular steps (which tools,
+how many turns, the usage sums) to the recording; its checks of the request rules must pass
+unchanged. If the API rejects a request (for example the final call's tool choice `none` next
+to a schema, or a thinking block of the small model sent to the large one), fix the loop
+before running items 11 to 14.
 
 **Item 11 (agent budgets on dev).** In `backend/`:
 

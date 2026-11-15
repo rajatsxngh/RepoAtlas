@@ -82,6 +82,11 @@ async def test_compare_reports_and_the_cli(tmp_path: Path) -> None:
     assert comparison.warnings == []
     text = render_comparison(comparison)
     assert "| lookup | 1 | 0.000 | 1.000 | +1.000" in text
+    # What each system cost per question per run, per type and overall.
+    assert "| P(B better) | Cost: bad | Cost: good |" in text
+    assert lookup.cost_a == lookup.cost_b == pytest.approx(0.01)
+    assert comparison.cost_a == pytest.approx(ra.cost_per_question_usd)
+    assert text.splitlines()[-1].endswith("| $0.0100 | $0.0100 |")
 
     pa = write_report(ra, tmp_path / "reports")
     pb = write_report(rb, tmp_path / "reports")
