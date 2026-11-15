@@ -13,6 +13,7 @@ A fast, readable map of any snapshot that starts zoomed out and expands on deman
 ## Provides
 
 - **Added later by decision 0024** (backward compatible): `ApiClient.getFreshness(snapshotId)` and the `Freshness` type; `FreshnessBanner` under the map's header (shown only for a stale snapshot; its button requests a build of the repository and opens the new snapshot); mock mode serves `/freshness`, with snapshot 6 as an older commit of `py-small` (three commits behind snapshot 1).
+- **Added later by decision 0025** (backward compatible): `ApiClient.getGallery()` and the `Gallery` and `GalleryItem` types; `Gallery` on the landing page under the URL form (cards that link straight to `/s/{id}`; nothing is rendered for an empty or unreadable gallery); mock mode serves `/gallery` from the fixtures marked for it.
 - **App:** `frontend/` — Next.js (App Router) + TypeScript + Tailwind + TanStack Query + Zustand; ESLint, Prettier, Vitest, Playwright; CI job `frontend` (lint, typecheck, unit tests, e2e against the API).
 - **API client:** `src/lib/api/client.ts` — typed fetch wrapper over the generated types, with error mapping and 429 backoff; mock mode (`NEXT_PUBLIC_API_MOCK=1`) serving fixtures for development and stress tests.
 - **Routes:** `/` (landing + URL input + progress) and `/s/[snapshotId]` (map workspace).

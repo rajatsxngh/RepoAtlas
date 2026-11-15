@@ -21,6 +21,8 @@ from repoatlas.config import get_settings
 from repoatlas.db import migrate
 from repoatlas.db.engine import create_db_engine, redact_url
 from repoatlas.evals.cli import eval_app
+from repoatlas.gallery.listing import GalleryListError, load_gallery_list
+from repoatlas.gallery.precompute import PrecomputeResult, precompute
 from repoatlas.guardrails.cli import guardrails_app
 from repoatlas.impact.cli import impact_app
 from repoatlas.ingest.errors import IngestError
@@ -324,6 +326,73 @@ def build_command(
         engine.dispose()
     for line in _build_summary(result, info, time.perf_counter() - started):
         typer.echo(line)
+
+
+PRECOMPUTE_HELP = """Build every repository of a gallery list at its pinned commit and record
+it in the gallery the landing page shows.
+
+No model is called. Snapshots that are already built are reused, so the command can be run
+again after a failure. Exits with 1 when an entry could not be built."""
+
+
+@app.command("precompute", help=PRECOMPUTE_HELP)
+def precompute_command(
+    list_path: Annotated[
+        Path, typer.Option("--list", help="The gallery list (launch/repos.yaml).")
+    ],
+    only: Annotated[
+        list[str] | None,
+        typer.Option(help="Build only this entry (`owner/name`, repeatable); keeps other rows."),
+    ] = None,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Check the list and print it; build nothing.")
+    ] = False,
+) -> None:
+    try:
+        listing = load_gallery_list(list_path)
+    except GalleryListError as error:
+        typer.secho(f"Error: {error}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=2) from None
+    known = {entry.ref.key for entry in listing.repos}
+    unknown = sorted(name for name in only or [] if name.lower() not in known)
+    if unknown:
+        typer.secho(f"Error: not in the list: {', '.join(unknown)}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=2)
+    if dry_run:
+        for entry in listing.repos:
+            typer.echo(
+                f"{entry.ref.full_name} @ {entry.commit} ({entry.language}, {entry.license})"
+            )
+        typer.echo(f"{len(listing.repos)} repositories; nothing was built.")
+        return
+
+    settings = get_settings()
+    engine = create_db_engine(settings.database_url)
+    try:
+        results = precompute(listing, settings, engine=engine, only=only, report=_echo_precomputed)
+    except OperationalError as error:
+        _connection_failed(settings.database_url, error)
+    finally:
+        engine.dispose()
+    failed = sum(1 for result in results if not result.ok)
+    typer.echo(f"{len(results) - failed} of {len(results)} in the gallery.")
+    if failed:
+        raise typer.Exit(code=1)
+
+
+def _echo_precomputed(result: PrecomputeResult) -> None:
+    if result.ok:
+        how = "reused" if result.reused else "built"
+        typer.echo(
+            f"ok      {result.repo} @ {result.commit[:10]}: snapshot {result.snapshot_id} "
+            f"({how}, {result.seconds:.1f} s)"
+        )
+    else:
+        typer.secho(
+            f"failed  {result.repo} @ {result.commit[:10]}: {result.error}",
+            err=True,
+            fg=typer.colors.RED,
+        )
 
 
 def _build_summary(result: BuildResult, info: SnapshotInfo, elapsed: float) -> list[str]:

@@ -1,4 +1,5 @@
 import { GitBranch, Layers, ShieldCheck } from "lucide-react";
+import { Gallery } from "@/components/landing/Gallery";
 import { Landing } from "@/components/landing/Landing";
 import { SiteHeader } from "@/components/ui/SiteHeader";
 
@@ -40,6 +41,7 @@ export default function HomePage() {
         <div className="mt-9">
           <Landing />
         </div>
+        <Gallery />
         <ul className="mt-14 grid gap-6 sm:grid-cols-3">
           {POINTS.map(({ icon: Icon, title, text }) => (
             <li key={title}>

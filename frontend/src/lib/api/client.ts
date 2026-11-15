@@ -20,6 +20,7 @@ import type {
   EdgeLinks,
   EdgeLinksQuery,
   Freshness,
+  Gallery,
   GraphPath,
   ImpactRequest,
   ImpactResponse,
@@ -192,6 +193,11 @@ export class ApiClient {
 
   buildRepo(url: string, signal?: AbortSignal): Promise<BuildAccepted> {
     return this.request("POST", "/repos", { body: { url }, signal });
+  }
+
+  /** Repositories precomputed on this deployment; their snapshots are ready. */
+  getGallery(signal?: AbortSignal): Promise<Gallery> {
+    return this.request("GET", "/gallery", { signal });
   }
 
   getJob(jobId: number, signal?: AbortSignal): Promise<JobView> {

@@ -74,3 +74,37 @@ def test_graph_json_to_stdout_keeps_unicode(tmp_path: Path) -> None:
     result = runner.invoke(app, ["graph", str(tmp_path), "--json", "-"])
     assert result.exit_code == 0, result.output
     assert "py:caf\u00e9.py:gr\u00f6\u00dfe:function" in result.stdout
+
+
+GALLERY_LIST = Path(__file__).resolve().parents[3] / "launch" / "repos.yaml"
+
+
+def test_precompute_dry_run_prints_the_list_and_builds_nothing() -> None:
+    result = runner.invoke(app, ["precompute", "--list", str(GALLERY_LIST), "--dry-run"])
+
+    assert result.exit_code == 0, result.output
+    assert "pallets/flask @ 49943b5a94413a530761350f04e896f76e8d620e" in result.output
+    assert "10 repositories; nothing was built." in result.output
+
+
+def test_precompute_refuses_an_unusable_list(tmp_path: Path) -> None:
+    bad = tmp_path / "repos.yaml"
+    bad.write_text(
+        "version: 1\nrepos:\n  - url: https://github.com/a/b\n    commit: main\n"
+        "    title: B\n    description: d\n    language: Python\n    license: MIT\n",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["precompute", "--list", str(bad)])
+
+    assert result.exit_code == 2
+    assert "full 40-character" in result.output
+
+
+def test_precompute_refuses_a_name_that_is_not_in_the_list() -> None:
+    result = runner.invoke(
+        app, ["precompute", "--list", str(GALLERY_LIST), "--only", "acme/missing", "--dry-run"]
+    )
+
+    assert result.exit_code == 2
+    assert "not in the list: acme/missing" in result.output

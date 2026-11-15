@@ -13,9 +13,12 @@ from sqlalchemy import Engine
 
 from repoatlas.api.app import API_PREFIX
 from repoatlas.config import Settings
+from repoatlas.gallery.precompute import precompute
 from repoatlas.ingest.github import GitHubClient
 from tests.e2e.fixtures import (
     DRIFT_COMMITS_BEHIND,
+    GALLERY,
+    GALLERY_TITLE,
     OWNER,
     XSS_DIR,
     XSS_FILE,
@@ -24,6 +27,7 @@ from tests.e2e.fixtures import (
     XSS_TEST_FILE,
     XSS_TS_FILE,
     build_repos,
+    gallery_list,
     github_transport,
     local_freshness,
     patch_fetches,
@@ -140,3 +144,30 @@ async def test_the_drift_repository_moves_after_its_first_build(
         # A third request finds the head already built.
         third = (await client.post(f"{API_PREFIX}/repos", json={"url": url})).json()
         assert (third["snapshot_id"], third["reused"]) == (second["snapshot_id"], True)
+
+
+async def test_the_gallery_fixture_is_precomputed_at_its_pinned_commit(
+    app: FastAPI,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    settings: Settings,
+    pg_engine: Engine,
+) -> None:
+    repos = build_repos(tmp_path / "origins")
+    transport = github_transport(repos)
+    monkeypatch.setattr(
+        GitHubClient, "from_settings", classmethod(lambda cls, _s: cls(transport=transport))
+    )
+    patch_fetches(repos, monkeypatch.setattr)
+
+    (result,) = precompute(gallery_list(repos), settings, engine=pg_engine)
+
+    assert result.ok, result.error
+    async with client_for(app) as client:
+        (card,) = (await client.get(f"{API_PREFIX}/gallery")).json()["entries"]
+    assert (card["repo"], card["title"], card["snapshot_id"]) == (
+        f"{OWNER}/{GALLERY}",
+        GALLERY_TITLE,
+        result.snapshot_id,
+    )
+    assert card["commit_sha"] == repos[GALLERY].head

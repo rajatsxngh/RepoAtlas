@@ -30,6 +30,8 @@ export type SnapshotView = Schemas["SnapshotView"];
 export type SnapshotStatus = SnapshotView["status"];
 /** Whether a snapshot is still the head of its repository's default branch. */
 export type Freshness = Schemas["Freshness"];
+export type Gallery = Schemas["Gallery"];
+export type GalleryItem = Schemas["GalleryItem"];
 export type RepoInfo = Schemas["RepoInfo"];
 export type JobView = Schemas["JobView"];
 export type JobStatus = JobView["status"];

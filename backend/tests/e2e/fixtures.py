@@ -12,6 +12,8 @@
   the repository's first commit; from then on, the real head, three commits later. So the
   first map of a ``drift`` repository is stale, and rebuilding it gives a current one. A test
   picks a name nobody has used (``drift-<anything>``) to start from the first commit.
+- ``gallery``: the shop again, under a name no test builds. The stack precomputes it at start
+  (``gallery_list``), so the landing page's gallery has a card whose map is already built.
 
 ``github_transport`` answers the GitHub API calls the ingestion makes; ``patch_fetches`` points
 the build's git fetches at the local bare repositories; ``local_freshness`` checks freshness
@@ -26,6 +28,7 @@ from typing import Any
 
 import httpx
 
+from repoatlas.gallery.listing import GalleryEntry, GalleryList
 from repoatlas.ingest import fetch as fetch_module
 from repoatlas.ingest.freshness import FreshnessChecker, remote_head
 from repoatlas.ingest.git import run_git
@@ -150,6 +153,9 @@ def build_lab(path: Path) -> OriginRepo:
 
 
 DRIFT = "drift"
+GALLERY = "gallery"
+GALLERY_TITLE = "Shop"
+GALLERY_DESCRIPTION = "A small shop: a cart, a catalog, and their tests."
 DRIFT_COMMITS_BEHIND = 3
 TAX_PY = b"""from shop.utils.helpers import round_money
 
@@ -192,7 +198,28 @@ def build_repos(root: Path) -> dict[str, OriginRepo]:
         "xss": build_xss(root / "xss.git"),
         "lab": build_lab(root / "lab.git"),
         DRIFT: build_drift(root / "drift.git"),
+        GALLERY: build_shop(root / "gallery.git"),
     }
+
+
+def gallery_list(repos: dict[str, OriginRepo]) -> GalleryList:
+    """The gallery of end-to-end runs: the ``gallery`` repository, pinned at its head."""
+    head = repos[GALLERY].head
+    assert head is not None
+    return GalleryList(
+        version=1,
+        repos=(
+            GalleryEntry(
+                url=f"https://github.com/{OWNER}/{GALLERY}",
+                commit=head,
+                title=GALLERY_TITLE,
+                description=GALLERY_DESCRIPTION,
+                language="Python",
+                license="MIT",
+                benchmark=True,
+            ),
+        ),
+    )
 
 
 def _repo_json(name: str, *, private: bool = False) -> dict[str, Any]:

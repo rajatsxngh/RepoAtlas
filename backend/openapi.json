@@ -118,6 +118,58 @@
         }
       }
     },
+    "/api/v1/gallery": {
+      "get": {
+        "tags": [
+          "gallery"
+        ],
+        "summary": "Precomputed repositories",
+        "description": "Well-known repositories built ahead of time at pinned commits, in display order. Every\nentry's snapshot is ready, so it opens without a build. The titles and descriptions come\nfrom the deployment's gallery list, not from the repositories. Empty when nothing was\nprecomputed on this deployment.",
+        "operationId": "get_gallery",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Gallery"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (see Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/jobs/{job_id}": {
       "get": {
         "tags": [
@@ -2899,6 +2951,93 @@
         ],
         "title": "Freshness",
         "description": "Whether a snapshot is still the head of its repository's default branch."
+      },
+      "Gallery": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/GalleryItem"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entries"
+        ],
+        "title": "Gallery",
+        "description": "Repositories precomputed on this deployment, in display order."
+      },
+      "GalleryItem": {
+        "properties": {
+          "snapshot_id": {
+            "type": "integer",
+            "title": "Snapshot Id"
+          },
+          "repo": {
+            "type": "string",
+            "title": "Repo",
+            "description": "`owner/name` on GitHub."
+          },
+          "commit_sha": {
+            "type": "string",
+            "title": "Commit Sha",
+            "description": "The pinned commit the snapshot was built from."
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "license": {
+            "type": "string",
+            "title": "License",
+            "description": "SPDX identifier of the repository's license."
+          },
+          "benchmark": {
+            "type": "boolean",
+            "title": "Benchmark",
+            "description": "One of the repositories the published numbers use."
+          },
+          "files": {
+            "type": "integer",
+            "title": "Files",
+            "description": "Source files in the map."
+          },
+          "nodes": {
+            "type": "integer",
+            "title": "Nodes"
+          },
+          "edges": {
+            "type": "integer",
+            "title": "Edges"
+          }
+        },
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "repo",
+          "commit_sha",
+          "title",
+          "description",
+          "language",
+          "license",
+          "benchmark",
+          "files",
+          "nodes",
+          "edges"
+        ],
+        "title": "GalleryItem",
+        "description": "A gallery card: a ready snapshot of a well-known repository, with text from the list\nfile and sizes from the build's stats."
       },
       "GraphPath": {
         "properties": {

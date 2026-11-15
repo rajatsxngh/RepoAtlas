@@ -11,6 +11,7 @@ import type {
   Direction,
   EdgeKind,
   Freshness,
+  Gallery,
   ImpactResponse,
   JobView,
   TraceView,
@@ -293,6 +294,25 @@ export class MockBackend {
     return { snapshot_id: fixture.id, job_id: job.id, reused: false, status: "pending" };
   }
 
+  /** `GET /gallery`: the fixtures marked for the gallery, which are ready without a build. */
+  async getGallery(): Promise<Gallery> {
+    const entries = [];
+    for (const fixture of MOCK_FIXTURES) {
+      if (!fixture.gallery) continue;
+      const data = await fixture.load();
+      entries.push({
+        snapshot_id: fixture.id,
+        repo: `${fixture.owner}/${fixture.name}`,
+        commit_sha: fixture.commit,
+        ...fixture.gallery,
+        files: data.nodes.filter((node) => node.kind === "file").length,
+        nodes: data.nodes.length,
+        edges: data.edges.length,
+      });
+    }
+    return { entries };
+  }
+
   /**
    * `GET /snapshots/{id}/freshness`: a fixture marked `behind` is that many commits behind
    * the fixture it names; every other snapshot is current.
@@ -570,6 +590,7 @@ export class MockBackend {
     const explain = /^\/snapshots\/(\d+)\/impact\/(\d+)\/explain$/.exec(path);
     if (method === "POST" && explain) return this.explain(Number(explain[1]), Number(explain[2]));
     if (method !== "GET") throw new MockApiError(405, "invalid_request", "Method Not Allowed");
+    if (path === "/gallery") return { status: 200, body: await this.getGallery() };
     if (path === "/health") return { status: 200, body: { status: "ok", version: "mock" } };
     if (path === "/ready") {
       return {

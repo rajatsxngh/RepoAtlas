@@ -73,6 +73,25 @@ Answering a question calls Claude through the Anthropic API, which costs money p
 
 After changing the file, apply it with the same `up -d` command.
 
+## A gallery on the landing page
+
+The landing page shows a gallery of repositories that are already built, when the deployment
+has one. `repoatlas precompute` builds every repository of a list at its pinned commit and
+records it; no model is called. The project's own list is
+[`launch/repos.yaml`](../launch/repos.yaml) (ten repositories), and you can write your own in
+the same format.
+
+On the compose stack, run it in a one-off worker container with the list mounted. This
+command follows Compose's documented options and has not been run during the build:
+
+```bash
+docker compose -f infra/compose.selfhost.yml --env-file infra/selfhost.env run --rm -v "$PWD/launch:/launch:ro" worker repoatlas precompute --list /launch/repos.yaml
+```
+
+Embedding runs on CPU: the largest entry took 31 minutes on the development machine. The
+command reuses what is already built, so it can be stopped and started again. Without a
+gallery the landing page simply shows the URL form.
+
 ## The access gate
 
 With `REPOATLAS_ACCESS_TOKEN` set (the compose file requires it):

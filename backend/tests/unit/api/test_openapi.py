@@ -24,6 +24,7 @@ STALE = (
 )
 ENDPOINTS = {
     ("post", "/api/v1/repos"): "build_repo",
+    ("get", "/api/v1/gallery"): "get_gallery",
     ("get", "/api/v1/jobs/{job_id}"): "get_job_status",
     ("get", "/api/v1/snapshots/{snapshot_id}"): "get_snapshot",
     ("get", "/api/v1/snapshots/{snapshot_id}/freshness"): "get_freshness",

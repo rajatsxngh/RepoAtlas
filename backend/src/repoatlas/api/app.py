@@ -34,7 +34,7 @@ from repoatlas.api.middleware import (
     UnhandledErrorMiddleware,
 )
 from repoatlas.api.ratelimit import RateLimiter, RateLimitMiddleware
-from repoatlas.api.routes import health, impact, jobs, qa, repos, snapshots
+from repoatlas.api.routes import gallery, health, impact, jobs, qa, repos, snapshots
 from repoatlas.config import Settings, get_settings
 from repoatlas.db.engine import create_db_engine
 from repoatlas.impact.engine import ImpactEngine
@@ -132,6 +132,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.impact_explainer = None  # built on first use (it needs the LLM client)
     for router in (
         repos.router,
+        gallery.router,
         jobs.router,
         snapshots.router,
         qa.router,

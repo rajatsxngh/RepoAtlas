@@ -12,12 +12,15 @@ Make RepoAtlas public and tell the story once — with a working demo, precomput
 
 ## Provides
 
-- **Public deployment:** the access gate removed; spend caps and per-client caps verified in production; monitoring of daily spend and error rates.
-- **Precomputed gallery:** `launch/repos.yaml` (10 well-known repos at pinned commits) and `repoatlas precompute --list launch/repos.yaml`; a gallery on the landing page linking straight to ready snapshots.
-- **Final results:** every system on the frozen test split (3 runs each), published as `docs/results.md` with tables, charts, confidence intervals, cost per question, and a "where RepoAtlas loses" section.
-- **README:** demo GIF at the top, one-line pitch, architecture diagram, results summary, cost per question, self-hosting guide link, related projects and credits, license.
-- **Demo video:** a 45-second script in `docs/launch/demo-script.md` and the recording (paste URL → map animates → "What breaks if I change X?" → cited answer with the path highlighted).
-- **Launch post:** `docs/launch/linkedin-post.md` (drafted; the owner publishes it), with optional drafts for Show HN, Reddit, and X.
+As built at the build gate ([decision 0025](../decisions/0025-m17-launch-build-gate-live-pass.md)). What the plan promised and the build could not deliver without spending is listed last.
+
+- **Precomputed gallery:** `launch/repos.yaml` (10 well-known, permissively licensed repos at pinned commits, the five benchmark repos among them) and its loader (`repoatlas.gallery.listing`); `repoatlas precompute --list launch/repos.yaml [--only owner/name] [--dry-run]`; the `gallery` table (migration `0010_gallery`); `GET /gallery`; a gallery on the landing page whose cards link straight to ready snapshots.
+- **Results page:** `docs/results.md`, written from the M10 and M11 test-split reports: tables with confidence intervals, cost per question, a "where RepoAtlas loses" section, known biases, and a table of what is not measured yet. `backend/tests/unit/test_results_page.py` compares it with the report files.
+- **README:** a demo GIF at the top, the pitch, an architecture diagram, the results summary with intervals and cost per question, what is pending, the self-hosting guide, related projects and credits, and the license.
+- **Demo:** the 45-second script in `docs/launch/demo-script.md`; `docs/launch/demo.gif`, recorded on the local stack with `frontend/scripts/record-demo.mjs`, showing only features that use no model.
+- **Launch post drafts:** `docs/launch/linkedin-post.md` (the owner publishes it), with the source of every number, and optional drafts for other channels in `docs/launch/other-channels.md`.
+- **Go-public readiness:** `scripts/check_links.py` (relative links and anchors in CI; `--external` for web links); the checklist `docs/launch/go-public.md`; the "Live pass order" in `docs/live-pass.md`.
+- **Built for, not delivered (live pass):** the public deployment with caps verified in production (LCH-1); the final evaluation of every system on the frozen test split (LCH-3); the demo recorded on the public URL with a live cited answer (LCH-5); the published post; notes to maintainers (LCH-7).
 
 ## Requirements
 
@@ -43,7 +46,7 @@ LCH-1, LCH-2, LCH-3, LCH-4, LCH-5, LCH-6, LCH-7
 Replanned on 2026-11-16 by [decision 0025](../decisions/0025-m17-launch-build-gate-live-pass.md): the build spends nothing, so the tasks that need live calls, hosting, or publishing are built up to that point, and the rest is pending in the live pass.
 
 - [x] **T1 — Choose gallery repos.** Ten repos, pinned commits, `launch/repos.yaml`; a loader that rejects a list the gallery should not show (unpinned, duplicate, not permissively licensed).
-- [ ] **T2 — Precompute and gallery.** `repoatlas precompute`; the `gallery` table and `GET /gallery`; gallery UI; Playwright tests that gallery snapshots open without a build.
+- [x] **T2 — Precompute and gallery.** `repoatlas precompute`; the `gallery` table and `GET /gallery`; gallery UI; Playwright tests that gallery snapshots open without a build.
 - [ ] **T3 — Results page (from the reports that exist).** `docs/results.md` from the M10 and M11 test-split reports, with intervals, cost, losses, biases, and a table of what is pending; a test that the page's numbers are the reports'. The final evaluation is a live-pass item.
 - [ ] **T4 — README.** Demo GIF, architecture diagram, results, cost, self-hosting, credits; every number labelled measured or pending.
 - [ ] **T5 — Demo video (script and local recording).** The 45-second script; a recording on the local stack of the scenes that need no model. The full recording is a live-pass item.

@@ -161,3 +161,21 @@ describe("mock freshness", () => {
     expect(missing).toMatchObject({ status: 404, code: "not_found" });
   });
 });
+
+describe("mock gallery", () => {
+  it("lists the fixtures marked for the gallery, ready without a build", async () => {
+    const { api } = setup();
+    const { entries } = await api.getGallery();
+    expect(entries.map((entry) => [entry.snapshot_id, entry.repo, entry.language])).toEqual([
+      [1, "repoatlas-fixtures/py-small", "Python"],
+      [2, "repoatlas-fixtures/ts-small", "TypeScript"],
+    ]);
+    for (const entry of entries) {
+      expect(entry.commit_sha).toBe((await api.getSnapshot(entry.snapshot_id)).commit_sha);
+      expect((await api.getSnapshot(entry.snapshot_id)).status).toBe("ready");
+      expect(entry.files).toBeGreaterThan(0);
+      expect(entry.nodes).toBeGreaterThan(entry.files);
+      expect(entry.edges).toBeGreaterThan(0);
+    }
+  });
+});

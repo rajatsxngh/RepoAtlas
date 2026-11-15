@@ -70,7 +70,7 @@ repos:
     license: MIT
     benchmark: true
 
-  - url: https://github.com/encode/starlette
+  - url: https://github.com/Kludex/starlette
     commit: 271c277da0ff64e2048a4d46ecc812b9d61db5f6
     title: Starlette
     description: The ASGI toolkit under FastAPI. Routing, middleware, and responses.

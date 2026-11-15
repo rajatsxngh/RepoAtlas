@@ -27,6 +27,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gallery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Precomputed repositories
+         * @description Well-known repositories built ahead of time at pinned commits, in display order. Every
+         *     entry's snapshot is ready, so it opens without a build. The titles and descriptions come
+         *     from the deployment's gallery list, not from the repositories. Empty when nothing was
+         *     precomputed on this deployment.
+         */
+        get: operations["get_gallery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/jobs/{job_id}": {
         parameters: {
             query?: never;
@@ -863,6 +886,58 @@ export interface components {
             checked_at: string;
         };
         /**
+         * Gallery
+         * @description Repositories precomputed on this deployment, in display order.
+         */
+        Gallery: {
+            /** Entries */
+            entries: components["schemas"]["GalleryItem"][];
+        };
+        /**
+         * GalleryItem
+         * @description A gallery card: a ready snapshot of a well-known repository, with text from the list
+         *     file and sizes from the build's stats.
+         */
+        GalleryItem: {
+            /** Snapshot Id */
+            snapshot_id: number;
+            /**
+             * Repo
+             * @description `owner/name` on GitHub.
+             */
+            repo: string;
+            /**
+             * Commit Sha
+             * @description The pinned commit the snapshot was built from.
+             */
+            commit_sha: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Language */
+            language: string;
+            /**
+             * License
+             * @description SPDX identifier of the repository's license.
+             */
+            license: string;
+            /**
+             * Benchmark
+             * @description One of the repositories the published numbers use.
+             */
+            benchmark: boolean;
+            /**
+             * Files
+             * @description Source files in the map.
+             */
+            files: number;
+            /** Nodes */
+            nodes: number;
+            /** Edges */
+            edges: number;
+        };
+        /**
          * GraphPath
          * @description ``edges[i]`` links ``nodes[i]`` and ``nodes[i + 1]``. ``directed`` is false when no path
          *     follows the edge directions; then some edges point backwards along the path.
@@ -1651,6 +1726,53 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_gallery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gallery"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see Retry-After) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

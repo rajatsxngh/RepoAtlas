@@ -16,6 +16,14 @@ export interface MockFixture {
    * that fixture's, and building the repository again gives that fixture's snapshot.
    */
   behind?: { snapshotId: number; commits: number };
+  /** Shown in mock mode's gallery, with this card text. */
+  gallery?: {
+    title: string;
+    description: string;
+    language: "Python" | "TypeScript";
+    license: string;
+    benchmark: boolean;
+  };
   load: () => Promise<FixtureData>;
 }
 
@@ -37,6 +45,13 @@ export const MOCK_FIXTURES: readonly MockFixture[] = [
     owner: FIXTURE_OWNER,
     name: "py-small",
     commit: "3f9d2c71a8b04e6f95d1c2b7e8a0f4c3d2e1b0a9",
+    gallery: {
+      title: "Shop (Python)",
+      description: "A small shop: a cart, a catalog, routes, and their tests.",
+      language: "Python",
+      license: "MIT",
+      benchmark: true,
+    },
     load: async () => fromGolden((await import("./data/py_small.json")).default as GoldenFixture),
   },
   {
@@ -44,6 +59,13 @@ export const MOCK_FIXTURES: readonly MockFixture[] = [
     owner: FIXTURE_OWNER,
     name: "ts-small",
     commit: "8c1e5b2f7a3d9046e1b8c5d2a7f3e9b0c4d6a1e2",
+    gallery: {
+      title: "Shop (TypeScript)",
+      description: "The same shop in TypeScript, with classes and re-exports.",
+      language: "TypeScript",
+      license: "MIT",
+      benchmark: false,
+    },
     load: async () => fromGolden((await import("./data/ts_small.json")).default as GoldenFixture),
   },
   {

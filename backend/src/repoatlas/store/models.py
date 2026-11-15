@@ -275,6 +275,24 @@ class FileRecordRow(Base):
     calls: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
 
 
+class GalleryRow(Base):
+    """One repository of the launch gallery (``repoatlas.gallery``): the snapshot built for
+    its pinned commit and the card's text, which comes from the list file, never from the
+    repository. Keyed by the repository's lowercased ``owner/name``."""
+
+    __tablename__ = "gallery"
+
+    repo_key: Mapped[str] = mapped_column(Text, primary_key=True)
+    position: Mapped[int] = mapped_column(Integer)
+    snapshot_id: Mapped[int] = _snapshot_fk()
+    title: Mapped[str] = mapped_column(Text)
+    description: Mapped[str] = mapped_column(Text)
+    language: Mapped[str] = mapped_column(Text)
+    license: Mapped[str] = mapped_column(Text)
+    benchmark: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
+    updated_at: Mapped[datetime] = _now()
+
+
 STORE_TABLES: tuple[str, ...] = (
     "repos",
     "snapshots",
@@ -286,4 +304,5 @@ STORE_TABLES: tuple[str, ...] = (
     "owners",
     "parse_cache",
     "file_records",
+    "gallery",
 )

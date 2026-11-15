@@ -28,6 +28,7 @@ export function createQueryClient(): QueryClient {
 }
 
 export const queryKeys = {
+  gallery: () => ["gallery"] as const,
   job: (jobId: number) => ["job", jobId] as const,
   snapshot: (snapshotId: number) => ["snapshot", snapshotId] as const,
   freshness: (snapshotId: number) => ["freshness", snapshotId] as const,

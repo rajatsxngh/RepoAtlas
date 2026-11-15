@@ -5,6 +5,7 @@
 
 Builds go through the real pipeline (fetch, inventory, parse, graph, store) from local bare git
 repositories, and freshness checks ask those repositories; GitHub is never contacted. The
+``gallery`` fixture is precomputed before the API starts, so the landing page has a gallery. The
 database is the configured one's name plus ``_e2e`` on the same server, dropped and created
 again at start, so runs never touch real data.
 Stop with Ctrl+C (the web app's Playwright config starts and stops it).
@@ -24,9 +25,16 @@ from sqlalchemy import create_engine, make_url, text
 from repoatlas.api.app import create_app
 from repoatlas.config import Settings, get_settings
 from repoatlas.db import migrate
+from repoatlas.gallery.precompute import precompute
 from repoatlas.ingest.github import GitHubClient
 from repoatlas.jobs.worker import Worker
-from tests.e2e.fixtures import build_repos, github_transport, local_freshness, patch_fetches
+from tests.e2e.fixtures import (
+    build_repos,
+    gallery_list,
+    github_transport,
+    local_freshness,
+    patch_fetches,
+)
 
 
 def fresh_database(base_url: str) -> str:
@@ -79,6 +87,10 @@ def main() -> None:
         job_retry_backoff_s=(1.0,),
     )
     engine = create_engine(settings.database_url, pool_pre_ping=True)
+    # The gallery is precomputed before the API answers, as on a deployment.
+    for result in precompute(gallery_list(repos), settings, engine=engine):
+        if not result.ok:
+            raise SystemExit(f"The gallery fixture did not build: {result.error}")
     worker = Worker(settings, engine=engine, worker_id="e2e")
     thread = threading.Thread(target=worker.run, name="e2e-worker", daemon=True)
     thread.start()

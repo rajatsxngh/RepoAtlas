@@ -21,6 +21,7 @@ from repoatlas.answers.schema import (
     RefusalKind,
     ToolUse,
 )
+from repoatlas.gallery.store import GalleryItem
 from repoatlas.graph.model import Node, Owner
 from repoatlas.ingest.freshness import FreshnessResult
 from repoatlas.jobs.models import JobStatus
@@ -222,6 +223,12 @@ class SnapshotView(_Schema):
             updated_at=info.updated_at,
             job=None if job is None else JobView.of(job),
         )
+
+
+class Gallery(_Schema):
+    """Repositories precomputed on this deployment, in display order."""
+
+    entries: list[GalleryItem]
 
 
 class Freshness(_Schema):
