@@ -200,6 +200,15 @@ class GitHubClient:
             raise GitHubError("GitHub returned an unexpected commit id.")
         return sha
 
+    def commits_ahead(self, ref: RepoRef, base: str, head: str) -> int | None:
+        """How many commits ``head`` is ahead of ``base`` (two full commit SHAs), from the
+        compare endpoint; ``None`` when GitHub doesn't say."""
+        if not _SHA_RE.fullmatch(base) or not _SHA_RE.fullmatch(head):
+            raise GitHubError("Comparing commits needs two full commit SHAs.")
+        data = self._get(f"/repos/{ref.owner}/{ref.name}/compare/{base}...{head}", ref).json()
+        ahead = data.get("ahead_by") if isinstance(data, dict) else None
+        return ahead if isinstance(ahead, int) and not isinstance(ahead, bool) else None
+
     def _get(self, path: str, ref: RepoRef, *, accept: str | None = None) -> httpx.Response:
         headers = {"Accept": accept} if accept else None
         for attempt in range(self._retries + 1):

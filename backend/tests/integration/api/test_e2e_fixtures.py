@@ -15,6 +15,7 @@ from repoatlas.api.app import API_PREFIX
 from repoatlas.config import Settings
 from repoatlas.ingest.github import GitHubClient
 from tests.e2e.fixtures import (
+    DRIFT_COMMITS_BEHIND,
     OWNER,
     XSS_DIR,
     XSS_FILE,
@@ -24,6 +25,7 @@ from tests.e2e.fixtures import (
     XSS_TS_FILE,
     build_repos,
     github_transport,
+    local_freshness,
     patch_fetches,
 )
 from tests.integration.api.conftest import run_worker
@@ -33,13 +35,14 @@ pytestmark = pytest.mark.anyio
 
 
 @pytest.fixture
-def served(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def served(app: FastAPI, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     repos = build_repos(tmp_path / "origins")
     transport = github_transport(repos)
     monkeypatch.setattr(
         GitHubClient, "from_settings", classmethod(lambda cls, _s: cls(transport=transport))
     )
     patch_fetches(repos, monkeypatch.setattr)
+    app.state.freshness = local_freshness(repos)
 
 
 async def test_the_fixture_repositories_build_and_keep_their_text(
@@ -99,3 +102,41 @@ async def test_the_fixture_repositories_build_and_keep_their_text(
             f"{API_PREFIX}/repos", json={"url": f"https://github.com/{OWNER}/private"}
         )
         assert private.status_code == 403
+
+
+async def test_the_drift_repository_moves_after_its_first_build(
+    app: FastAPI, served: None, settings: Settings, pg_engine: Engine
+) -> None:
+    """What the web app's freshness test relies on: the first map of a drift repository is
+    behind, and building it again gives the head, built on the first."""
+    url = f"https://github.com/{OWNER}/drift-check"
+    async with client_for(app) as client:
+        first = (await client.post(f"{API_PREFIX}/repos", json={"url": url})).json()
+        run_worker(settings, pg_engine)
+        stale = (
+            await client.get(f"{API_PREFIX}/snapshots/{first['snapshot_id']}/freshness")
+        ).json()
+        assert (stale["stale"], stale["commits_behind"]) == (True, DRIFT_COMMITS_BEHIND)
+
+        second = (await client.post(f"{API_PREFIX}/repos", json={"url": url})).json()
+        assert second["snapshot_id"] != first["snapshot_id"] and not second["reused"]
+        run_worker(settings, pg_engine)
+        fresh = (
+            await client.get(f"{API_PREFIX}/snapshots/{second['snapshot_id']}/freshness")
+        ).json()
+        assert (fresh["stale"], fresh["commits_behind"]) == (False, 0)
+        assert fresh["snapshot_commit"] == stale["remote_head"]
+        stats = (await client.get(f"{API_PREFIX}/snapshots/{second['snapshot_id']}")).json()[
+            "stats"
+        ]
+        assert stats["incremental"]["previous_snapshot_id"] == first["snapshot_id"]
+        assert stats["incremental"]["changes"] == {
+            "unchanged": stats["incremental"]["changes"]["unchanged"],
+            "modified": 1,  # cart.py's comment
+            "added": 1,  # tax.py
+            "deleted": 0,
+            "renamed": 0,
+        }
+        # A third request finds the head already built.
+        third = (await client.post(f"{API_PREFIX}/repos", json={"url": url})).json()
+        assert (third["snapshot_id"], third["reused"]) == (second["snapshot_id"], True)

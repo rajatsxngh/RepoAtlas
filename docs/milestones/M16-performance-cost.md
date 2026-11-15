@@ -65,7 +65,7 @@ PRF-1, PRF-2, PRF-3, PRF-4, PRF-5, PRF-6
 - [x] **T2 — Change detection.** Inventory diff with the five change classes; tests.
 - [x] **T3 — Incremental parse and re-resolve.** Parse cache by content; per-file records; call resolution reused per file under the invalidation rules of decision 0024; a test per rule, each showing the graph is wrong without the rule.
 - [x] **T4 — Reuse and equality checks.** Builds find their previous snapshot; `build_incremental`; chunk reuse; embedding reuse counted; scripted and generated change sets with digest equality against full rebuilds, through the store.
-- [ ] **T5 — Freshness.** Endpoint with caching; banner and rebuild button; Playwright test with mock mode.
+- [x] **T5 — Freshness.** Endpoint with caching; banner and rebuild button; Playwright test with mock mode.
 - [ ] **T6 — Prompt caching and tuning (build gate).** Cache breakpoints on tool definitions, the system prompt, and the growing conversation, checked in every mode's requests with `FakeLLM` and the cassettes; the tolerance rule as code. Cache reads in live traces and settings tried on dev are live-pass items (decision 0024).
 - [ ] **T7 — After measurement and report (tooling).** `repoatlas eval cost-report --before … --after …` with paired intervals and a verdict per mode, run end to end on stand-in reports. The live before/after report is a live-pass item (decision 0024).
 - [ ] **T8 — Documentation.** Performance notes in the docs; Results filled in.

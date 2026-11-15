@@ -39,6 +39,7 @@ from repoatlas.config import Settings, get_settings
 from repoatlas.db.engine import create_db_engine
 from repoatlas.impact.engine import ImpactEngine
 from repoatlas.impact.store_data import StoreImpactData
+from repoatlas.ingest.freshness import FreshnessChecker
 from repoatlas.logging import configure
 from repoatlas.observability import otel
 from repoatlas.redact import register_secrets
@@ -124,6 +125,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.engine = engine
     app.state.store = GraphStore.from_settings(settings, engine)
     app.state.ready_snapshots = set()  # IDs of snapshots seen ready (they never change)
+    app.state.freshness = FreshnessChecker.from_settings(settings)
     errors.install(app)
     app.state.answer_systems = {}  # answer systems by mode, built on first use
     app.state.impact_engine = ImpactEngine(StoreImpactData(app.state.store))

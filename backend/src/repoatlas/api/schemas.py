@@ -22,6 +22,7 @@ from repoatlas.answers.schema import (
     ToolUse,
 )
 from repoatlas.graph.model import Node, Owner
+from repoatlas.ingest.freshness import FreshnessResult
 from repoatlas.jobs.models import JobStatus
 from repoatlas.jobs.queue import Job
 from repoatlas.llm.types import Usage
@@ -220,6 +221,33 @@ class SnapshotView(_Schema):
             created_at=info.created_at,
             updated_at=info.updated_at,
             job=None if job is None else JobView.of(job),
+        )
+
+
+class Freshness(_Schema):
+    """Whether a snapshot is still the head of its repository's default branch."""
+
+    snapshot_commit: str = Field(description="The commit the snapshot was built from.")
+    remote_head: str = Field(description="The commit the default branch points to now.")
+    stale: bool = Field(description="True when the two differ.")
+    commits_behind: int | None = Field(
+        description="How many commits the branch is ahead of the snapshot: 0 when it is "
+        "current, null when GitHub doesn't say (for example after a history rewrite)."
+    )
+    default_branch: str
+    checked_at: datetime = Field(
+        description="When the repository was asked; answers are reused for five minutes."
+    )
+
+    @classmethod
+    def of(cls, result: FreshnessResult) -> Freshness:
+        return cls(
+            snapshot_commit=result.snapshot_commit,
+            remote_head=result.remote_head,
+            stale=result.stale,
+            commits_behind=result.commits_behind,
+            default_branch=result.default_branch,
+            checked_at=result.checked_at,
         )
 
 

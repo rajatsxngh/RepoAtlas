@@ -7,9 +7,15 @@
 - ``lab``: the planted-injection fixture (``injection_lab``), whose code the injection
   detector flags.
 - ``private``: GitHub answers that it is private.
+- ``drift`` (and any name starting with ``drift-``): the shop, whose default branch moves right
+  after its first build. The first time GitHub is asked for the head of such a name it answers
+  the repository's first commit; from then on, the real head, three commits later. So the
+  first map of a ``drift`` repository is stale, and rebuilding it gives a current one. A test
+  picks a name nobody has used (``drift-<anything>``) to start from the first commit.
 
 ``github_transport`` answers the GitHub API calls the ingestion makes; ``patch_fetches`` points
-the build's git fetches at the local bare repositories.
+the build's git fetches at the local bare repositories; ``local_freshness`` checks freshness
+against them.
 """
 
 from __future__ import annotations
@@ -21,7 +27,9 @@ from typing import Any
 import httpx
 
 from repoatlas.ingest import fetch as fetch_module
+from repoatlas.ingest.freshness import FreshnessChecker, remote_head
 from repoatlas.ingest.git import run_git
+from repoatlas.ingest.github import RepoRef
 from repoatlas.pipeline import build as build_module
 from repoatlas.pipeline import graph as graph_module
 from tests.unit.ingest.gitrepo import OriginRepo, Spec
@@ -141,12 +149,49 @@ def build_lab(path: Path) -> OriginRepo:
     return repo
 
 
+DRIFT = "drift"
+DRIFT_COMMITS_BEHIND = 3
+TAX_PY = b"""from shop.utils.helpers import round_money
+
+
+def with_tax(amount, rate=0.2):
+    return round_money(amount * (1 + rate))
+"""
+
+
+def build_drift(path: Path) -> OriginRepo:
+    """The shop with three more commits after its first: a comment, a new module, and a
+    changed function body."""
+    repo = OriginRepo(path)
+    files = _py_small_files()
+    cart = next(spec for spec in files if spec.path == "src/shop/cart.py")
+    others = [spec for spec in files if spec.path != cart.path]
+    tax = Spec("src/shop/tax.py", TAX_PY)
+    noted = Spec(cart.path, cart.data + b"\n# Totals round to cents.\n")
+    commit_as(repo, files, "Avery Chen", "Start the shop")
+    commit_as(repo, [*others, noted], "Sam Okafor", "Note how totals round")
+    commit_as(repo, [*others, noted, tax], "Avery Chen", "Add tax")
+    changed = Spec(tax.path, TAX_PY.replace(b"rate=0.2", b"rate=0.25"))
+    commit_as(repo, [*others, noted, changed], "Sam Okafor", "Raise the default rate")
+    return repo
+
+
+def first_commit(repo: OriginRepo) -> str:
+    return run_git(["rev-list", "--max-parents=0", "main"], cwd=repo.path).decode().strip()
+
+
+def origin_name(name: str) -> str:
+    """The fixture repository a GitHub repository name is served from."""
+    return DRIFT if name == DRIFT or name.startswith(f"{DRIFT}-") else name
+
+
 def build_repos(root: Path) -> dict[str, OriginRepo]:
     root.mkdir(parents=True, exist_ok=True)
     return {
         "shop": build_shop(root / "shop.git"),
         "xss": build_xss(root / "xss.git"),
         "lab": build_lab(root / "lab.git"),
+        DRIFT: build_drift(root / "drift.git"),
     }
 
 
@@ -169,6 +214,8 @@ def _repo_json(name: str, *, private: bool = False) -> dict[str, Any]:
 def github_transport(repos: dict[str, OriginRepo]) -> httpx.MockTransport:
     """The GitHub API as the ingestion sees it, for the fixture repositories only."""
 
+    asked_for_head: set[str] = set()  # drift names whose head was asked once already
+
     def answer(request: httpx.Request) -> httpx.Response:
         parts = request.url.path.strip("/").split("/")
         if len(parts) < 3 or parts[0] != "repos" or parts[1] != OWNER:
@@ -176,10 +223,13 @@ def github_transport(repos: dict[str, OriginRepo]) -> httpx.MockTransport:
         name = parts[2]
         if name == "private":
             return httpx.Response(200, json=_repo_json(name, private=True))
-        repo = repos.get(name)
+        repo = repos.get(origin_name(name))
         if repo is None:
             return httpx.Response(404, json={"message": "Not Found"})
         if len(parts) >= 5 and parts[3] == "commits":
+            if origin_name(name) == DRIFT and name.lower() not in asked_for_head:
+                asked_for_head.add(name.lower())
+                return httpx.Response(200, text=first_commit(repo))
             return httpx.Response(200, text=repo.head or "")
         return httpx.Response(200, json=_repo_json(name))
 
@@ -196,7 +246,7 @@ def patch_fetches(repos: dict[str, OriginRepo], setattr_: Any) -> None:
         if not clone_url.startswith(prefix):
             raise ValueError(f"Only {prefix} repositories are served in end-to-end runs.")
         name = clone_url.removeprefix(prefix).removesuffix(".git")
-        return repos[name].url
+        return repos[origin_name(name)].url
 
     def source(clone_url: str, commit: str, dest: Path, **kwargs: Any) -> Any:
         return real_source(local(clone_url), commit, dest, **kwargs)
@@ -207,3 +257,18 @@ def patch_fetches(repos: dict[str, OriginRepo], setattr_: Any) -> None:
     for module in (build_module, graph_module):
         setattr_(module, "fetch_source", source)
         setattr_(module, "fetch_history", history)
+
+
+def local_freshness(repos: dict[str, OriginRepo]) -> FreshnessChecker:
+    """A freshness checker that asks the local bare repositories: the head with a real
+    ``git ls-remote``, the distance with ``git rev-list``."""
+
+    def head_of(ref: RepoRef, branch: str) -> str:
+        return remote_head(repos[origin_name(ref.name)].url, branch)
+
+    def behind(ref: RepoRef, base: str, head: str) -> int | None:
+        repo = repos[origin_name(ref.name)]
+        counted = run_git(["rev-list", "--count", f"{base}..{head}"], cwd=repo.path)
+        return int(counted.decode().strip())
+
+    return FreshnessChecker(head_of, behind)

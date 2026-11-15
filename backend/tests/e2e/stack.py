@@ -4,8 +4,9 @@
     uv run python -m tests.e2e.stack --port 8765 --web-origin http://127.0.0.1:3100
 
 Builds go through the real pipeline (fetch, inventory, parse, graph, store) from local bare git
-repositories; GitHub is never contacted. The database is the configured one's name plus
-``_e2e`` on the same server, dropped and created again at start, so runs never touch real data.
+repositories, and freshness checks ask those repositories; GitHub is never contacted. The
+database is the configured one's name plus ``_e2e`` on the same server, dropped and created
+again at start, so runs never touch real data.
 Stop with Ctrl+C (the web app's Playwright config starts and stops it).
 """
 
@@ -25,7 +26,7 @@ from repoatlas.config import Settings, get_settings
 from repoatlas.db import migrate
 from repoatlas.ingest.github import GitHubClient
 from repoatlas.jobs.worker import Worker
-from tests.e2e.fixtures import build_repos, github_transport, patch_fetches
+from tests.e2e.fixtures import build_repos, github_transport, local_freshness, patch_fetches
 
 
 def fresh_database(base_url: str) -> str:
@@ -81,8 +82,10 @@ def main() -> None:
     worker = Worker(settings, engine=engine, worker_id="e2e")
     thread = threading.Thread(target=worker.run, name="e2e-worker", daemon=True)
     thread.start()
+    app = create_app(settings)
+    app.state.freshness = local_freshness(repos)  # git ls-remote on the local origins
     try:
-        uvicorn.run(create_app(settings), host=args.host, port=args.port, log_level="warning")
+        uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
     finally:
         worker.request_stop()
         thread.join(timeout=10)

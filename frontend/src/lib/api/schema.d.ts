@@ -69,6 +69,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/snapshots/{snapshot_id}/freshness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Is the snapshot up to date?
+         * @description Compare the snapshot's commit with the head of the repository's default branch, asked
+         *     with `git ls-remote` and reused for five minutes. When it is behind, `POST /repos` with the
+         *     repository's URL builds the new head, reusing what did not change.
+         */
+        get: operations["get_freshness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/snapshots/{snapshot_id}/subgraph": {
         parameters: {
             query?: never;
@@ -805,6 +827,40 @@ export interface components {
             end_line: number;
             /** Symbol Key */
             symbol_key?: string | null;
+        };
+        /**
+         * Freshness
+         * @description Whether a snapshot is still the head of its repository's default branch.
+         */
+        Freshness: {
+            /**
+             * Snapshot Commit
+             * @description The commit the snapshot was built from.
+             */
+            snapshot_commit: string;
+            /**
+             * Remote Head
+             * @description The commit the default branch points to now.
+             */
+            remote_head: string;
+            /**
+             * Stale
+             * @description True when the two differ.
+             */
+            stale: boolean;
+            /**
+             * Commits Behind
+             * @description How many commits the branch is ahead of the snapshot: 0 when it is current, null when GitHub doesn't say (for example after a history rewrite).
+             */
+            commits_behind: number | null;
+            /** Default Branch */
+            default_branch: string;
+            /**
+             * Checked At
+             * Format: date-time
+             * @description When the repository was asked; answers are reused for five minutes.
+             */
+            checked_at: string;
         };
         /**
          * GraphPath
@@ -1713,6 +1769,74 @@ export interface operations {
             };
             /** @description Internal error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_freshness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Snapshot ID. */
+                snapshot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Freshness"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see Retry-After) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

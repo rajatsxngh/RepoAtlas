@@ -26,6 +26,7 @@ ENDPOINTS = {
     ("post", "/api/v1/repos"): "build_repo",
     ("get", "/api/v1/jobs/{job_id}"): "get_job_status",
     ("get", "/api/v1/snapshots/{snapshot_id}"): "get_snapshot",
+    ("get", "/api/v1/snapshots/{snapshot_id}/freshness"): "get_freshness",
     ("get", "/api/v1/snapshots/{snapshot_id}/subgraph"): "get_subgraph",
     ("get", "/api/v1/snapshots/{snapshot_id}/links"): "get_edge_links",
     ("get", "/api/v1/snapshots/{snapshot_id}/overview"): "get_overview",
@@ -76,7 +77,9 @@ def test_every_endpoint_is_in_the_spec_with_its_errors() -> None:
         for status in ("422", "429", "500"):
             schema = responses[status]["content"]["application/json"]["schema"]
             assert schema == {"$ref": ERROR_REF}, (path, status)
-        if "/snapshots/{snapshot_id}/" in path:
+        if path.endswith("/freshness"):  # answers for a snapshot in any status; asks GitHub
+            assert {"404", "502"} <= set(responses), path
+        elif "/snapshots/{snapshot_id}/" in path:
             assert {"404", "409"} <= set(responses), path
     assert "HTTPValidationError" not in spec["components"]["schemas"]  # ours replaces it
     codes = spec["components"]["schemas"]["ErrorCode"]["enum"]

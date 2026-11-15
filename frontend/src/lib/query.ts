@@ -30,6 +30,7 @@ export function createQueryClient(): QueryClient {
 export const queryKeys = {
   job: (jobId: number) => ["job", jobId] as const,
   snapshot: (snapshotId: number) => ["snapshot", snapshotId] as const,
+  freshness: (snapshotId: number) => ["freshness", snapshotId] as const,
   subgraph: (snapshotId: number, parent: string, level: SubgraphLevel) =>
     ["subgraph", snapshotId, parent, level] as const,
   node: (snapshotId: number, key: string) => ["node", snapshotId, key] as const,

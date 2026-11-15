@@ -1,5 +1,5 @@
-"""Snapshot reads (API-5): metadata, subgraph, edge links, overview, node, locate, neighbors,
-search, path, code.
+"""Snapshot reads (API-5): metadata, freshness, subgraph, edge links, overview, node, locate,
+neighbors, search, path, code.
 
 Thin wrappers over ``GraphStore``. Every read except the snapshot's own metadata needs a ready
 snapshot (409 ``snapshot_not_ready`` with the build job otherwise). Nodes are named by symbol
@@ -15,13 +15,14 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from pydantic import AfterValidator
 
-from repoatlas.api.deps import EngineDep, ReadySnapshot, StoreDep, decode_key
+from repoatlas.api.deps import EngineDep, FreshnessDep, ReadySnapshot, StoreDep, decode_key
 from repoatlas.api.errors import documented, not_found
 from repoatlas.api.schemas import (
     MAX_LINE,
     MAX_QUERY_CHARS,
     MAX_SEARCH_LIMIT,
     Degree,
+    Freshness,
     KeyPath,
     LineQuery,
     NodeDetail,
@@ -33,6 +34,7 @@ from repoatlas.api.schemas import (
     no_nul,
 )
 from repoatlas.graph.model import EdgeKind, Node, NodeKind
+from repoatlas.ingest.github import RepoRef
 from repoatlas.jobs.build import BUILD_JOB
 from repoatlas.jobs.queue import latest_job
 from repoatlas.store.cache import Direction, Level, SnapshotGraph
@@ -68,6 +70,16 @@ def get_snapshot(snapshot_id: SnapshotIdPath, store: StoreDep, engine: EngineDep
     latest build job of a snapshot, whatever its status."""
     info = store.snapshot(snapshot_id)
     return SnapshotView.of(info, latest_job(snapshot_id, kind=BUILD_JOB, engine=engine))
+
+
+@router.get("/freshness", summary="Is the snapshot up to date?", responses=documented(404, 502))
+def get_freshness(snapshot_id: SnapshotIdPath, store: StoreDep, checker: FreshnessDep) -> Freshness:
+    """Compare the snapshot's commit with the head of the repository's default branch, asked
+    with `git ls-remote` and reused for five minutes. When it is behind, `POST /repos` with the
+    repository's URL builds the new head, reusing what did not change."""
+    info = store.snapshot(snapshot_id)
+    ref = RepoRef(owner=info.repo.owner, name=info.repo.name)
+    return Freshness.of(checker.check(ref, info.repo.default_branch, info.commit_sha))
 
 
 @router.get("/subgraph", summary="Children and aggregated edges", responses=READ_ERRORS)

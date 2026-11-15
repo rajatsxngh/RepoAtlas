@@ -10,6 +10,7 @@ import type {
   BuildAccepted,
   Direction,
   EdgeKind,
+  Freshness,
   ImpactResponse,
   JobView,
   TraceView,
@@ -292,6 +293,29 @@ export class MockBackend {
     return { snapshot_id: fixture.id, job_id: job.id, reused: false, status: "pending" };
   }
 
+  /**
+   * `GET /snapshots/{id}/freshness`: a fixture marked `behind` is that many commits behind
+   * the fixture it names; every other snapshot is current.
+   */
+  getFreshness(snapshotId: number): Freshness {
+    const fixture = fixtureById(snapshotId);
+    if (!fixture) {
+      throw new MockApiError(404, "not_found", `Snapshot ${snapshotId} does not exist.`, {
+        resource: "snapshot",
+        snapshot_id: snapshotId,
+      });
+    }
+    const head = fixture.behind ? fixtureById(fixture.behind.snapshotId) : undefined;
+    return {
+      snapshot_commit: fixture.commit,
+      remote_head: head?.commit ?? fixture.commit,
+      stale: Boolean(head),
+      commits_behind: head ? fixture.behind!.commits : 0,
+      default_branch: "main",
+      checked_at: iso(this.now()),
+    };
+  }
+
   getJob(jobId: number): JobView {
     const job = this.jobs.get(jobId);
     if (!job)
@@ -571,6 +595,7 @@ export class MockBackend {
     const snapshotId = Number(snapshot[1]);
     const rest = snapshot[2] ?? "";
     if (rest === "") return { status: 200, body: await this.getSnapshot(snapshotId) };
+    if (rest === "/freshness") return { status: 200, body: this.getFreshness(snapshotId) };
     const graph = await this.ready(snapshotId);
     if (rest === "/subgraph") {
       const level = (query.get("level") ?? "dir") as SubgraphLevel;

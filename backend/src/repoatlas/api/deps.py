@@ -11,6 +11,7 @@ from sqlalchemy import Engine
 from repoatlas.api.errors import ApiError, ErrorCode
 from repoatlas.api.schemas import MAX_KEY_CHARS, SnapshotIdPath, public_error
 from repoatlas.config import Settings
+from repoatlas.ingest.freshness import FreshnessChecker
 from repoatlas.jobs.build import BUILD_JOB
 from repoatlas.jobs.queue import latest_job
 from repoatlas.store.graphstore import GraphStore
@@ -30,7 +31,14 @@ def get_store(request: Request) -> GraphStore:
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 EngineDep = Annotated[Engine, Depends(get_engine)]
+
+
+def get_freshness(request: Request) -> FreshnessChecker:
+    return cast(FreshnessChecker, request.app.state.freshness)
+
+
 StoreDep = Annotated[GraphStore, Depends(get_store)]
+FreshnessDep = Annotated[FreshnessChecker, Depends(get_freshness)]
 
 
 def ready_snapshot(snapshot_id: SnapshotIdPath, request: Request) -> int:

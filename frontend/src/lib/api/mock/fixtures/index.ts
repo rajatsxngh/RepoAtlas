@@ -11,6 +11,11 @@ export interface MockFixture {
   commit: string;
   /** Every build of this fixture fails (for error states). */
   failsToBuild?: boolean;
+  /**
+   * An older commit of another fixture's repository: its map is this many commits behind
+   * that fixture's, and building the repository again gives that fixture's snapshot.
+   */
+  behind?: { snapshotId: number; commits: number };
   load: () => Promise<FixtureData>;
 }
 
@@ -63,6 +68,15 @@ export const MOCK_FIXTURES: readonly MockFixture[] = [
     failsToBuild: true,
     load: async () => fromGolden((await import("./data/py_small.json")).default as GoldenFixture),
   },
+  {
+    // py-small as it was three commits ago: the stale map of mock mode.
+    id: 6,
+    owner: FIXTURE_OWNER,
+    name: "py-small",
+    commit: "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+    behind: { snapshotId: 1, commits: 3 },
+    load: async () => fromGolden((await import("./data/py_small.json")).default as GoldenFixture),
+  },
 ];
 
 export function fixtureById(id: number): MockFixture | undefined {
@@ -71,5 +85,6 @@ export function fixtureById(id: number): MockFixture | undefined {
 
 export function fixtureByName(name: string): MockFixture | undefined {
   const wanted = name.toLowerCase();
-  return MOCK_FIXTURES.find((fixture) => fixture.name === wanted);
+  // The current snapshot of a repository, never an older commit of it.
+  return MOCK_FIXTURES.find((fixture) => fixture.name === wanted && !fixture.behind);
 }

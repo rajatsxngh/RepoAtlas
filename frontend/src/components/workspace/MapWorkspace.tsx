@@ -28,6 +28,7 @@ import {
   type SnapshotView,
 } from "@/lib/api/types";
 import { queryKeys } from "@/lib/query";
+import { FreshnessBanner } from "./FreshnessBanner";
 
 export interface MapWorkspaceProps {
   snapshot: SnapshotView;
@@ -201,6 +202,7 @@ export function MapWorkspace({ snapshot }: MapWorkspaceProps) {
           </Button>
         </div>
       </SiteHeader>
+      <FreshnessBanner key={snapshot.id} snapshot={snapshot} />
       <div className="flex min-h-0 flex-1 border-t border-line">
         <main className="relative min-w-0 flex-1">
           <GraphCanvas

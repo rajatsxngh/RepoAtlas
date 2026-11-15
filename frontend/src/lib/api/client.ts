@@ -19,6 +19,7 @@ import type {
   CodeSlice,
   EdgeLinks,
   EdgeLinksQuery,
+  Freshness,
   GraphPath,
   ImpactRequest,
   ImpactResponse,
@@ -199,6 +200,11 @@ export class ApiClient {
 
   getSnapshot(snapshotId: number, signal?: AbortSignal): Promise<SnapshotView> {
     return this.request("GET", this.snapshotPath(snapshotId), { signal });
+  }
+
+  /** Whether the snapshot is behind its repository's default branch (cached by the API). */
+  getFreshness(snapshotId: number, signal?: AbortSignal): Promise<Freshness> {
+    return this.request("GET", this.snapshotPath(snapshotId, "/freshness"), { signal });
   }
 
   getSubgraph(

@@ -272,6 +272,93 @@
         }
       }
     },
+    "/api/v1/snapshots/{snapshot_id}/freshness": {
+      "get": {
+        "tags": [
+          "snapshots"
+        ],
+        "summary": "Is the snapshot up to date?",
+        "description": "Compare the snapshot's commit with the head of the repository's default branch, asked\nwith `git ls-remote` and reused for five minutes. When it is behind, `POST /repos` with the\nrepository's URL builds the new head, reusing what did not change.",
+        "operationId": "get_freshness",
+        "parameters": [
+          {
+            "name": "snapshot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "description": "Snapshot ID.",
+              "title": "Snapshot Id"
+            },
+            "description": "Snapshot ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Freshness"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (see Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/snapshots/{snapshot_id}/subgraph": {
       "get": {
         "tags": [
@@ -2759,6 +2846,59 @@
         ],
         "title": "EvidenceRef",
         "description": "Lines ``start_line`` to ``end_line`` of blob ``blob_oid`` at ``path``."
+      },
+      "Freshness": {
+        "properties": {
+          "snapshot_commit": {
+            "type": "string",
+            "title": "Snapshot Commit",
+            "description": "The commit the snapshot was built from."
+          },
+          "remote_head": {
+            "type": "string",
+            "title": "Remote Head",
+            "description": "The commit the default branch points to now."
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale",
+            "description": "True when the two differ."
+          },
+          "commits_behind": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commits Behind",
+            "description": "How many commits the branch is ahead of the snapshot: 0 when it is current, null when GitHub doesn't say (for example after a history rewrite)."
+          },
+          "default_branch": {
+            "type": "string",
+            "title": "Default Branch"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At",
+            "description": "When the repository was asked; answers are reused for five minutes."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_commit",
+          "remote_head",
+          "stale",
+          "commits_behind",
+          "default_branch",
+          "checked_at"
+        ],
+        "title": "Freshness",
+        "description": "Whether a snapshot is still the head of its repository's default branch."
       },
       "GraphPath": {
         "properties": {

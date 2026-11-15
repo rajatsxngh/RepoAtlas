@@ -126,3 +126,38 @@ describe("mock build flow", () => {
     ).rejects.toMatchObject({ status: 422 });
   });
 });
+
+describe("mock freshness", () => {
+  it("serves a stale snapshot of py-small whose rebuild is the current one", async () => {
+    const { api, advance } = setup();
+    const stale = await api.getFreshness(6);
+    expect(stale).toMatchObject({
+      snapshot_commit: "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+      remote_head: (await api.getSnapshot(1)).commit_sha,
+      stale: true,
+      commits_behind: 3,
+      default_branch: "main",
+    });
+    expect((await api.getSnapshot(6)).repo.name).toBe("py-small");
+
+    // Building the repository again builds its head, never the old commit.
+    const accepted = await api.buildRepo("https://github.com/repoatlas-fixtures/py-small");
+    expect(accepted).toMatchObject({ snapshot_id: 1, reused: false, status: "pending" });
+    advance(5000);
+    expect(await api.getJob(accepted.job_id!)).toMatchObject({ status: "succeeded" });
+    expect(await api.getFreshness(1)).toMatchObject({ stale: false, commits_behind: 0 });
+    expect((await api.getFreshness(6)).stale).toBe(true);
+  });
+
+  it("says every other snapshot is current, and 404s for one that doesn't exist", async () => {
+    const { api } = setup();
+    for (const id of [1, 2, 3, 4]) {
+      const fresh = await api.getFreshness(id);
+      expect(fresh).toMatchObject({ stale: false, commits_behind: 0 });
+      expect(fresh.remote_head).toBe(fresh.snapshot_commit);
+    }
+    const missing = await api.getFreshness(99).catch((error: unknown) => error);
+    expect(missing).toBeInstanceOf(ApiError);
+    expect(missing).toMatchObject({ status: 404, code: "not_found" });
+  });
+});
