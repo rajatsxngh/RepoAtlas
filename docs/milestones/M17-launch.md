@@ -51,7 +51,7 @@ Replanned on 2026-11-16 by [decision 0025](../decisions/0025-m17-launch-build-ga
 - [ ] **T4 — README.** Demo GIF, architecture diagram, results, cost, self-hosting, credits; every number labelled measured or pending.
 - [x] **T5 — Demo video (script and local recording).** The 45-second script; a recording on the local stack of the scenes that need no model. The full recording is a live-pass item.
 - [x] **T6 — Launch post drafts.** LinkedIn post (and optional others) for the owner to publish.
-- [ ] **T7 — Go-public readiness.** `scripts/check_links.py` in CI; the go-public checklist; the live-pass order. Removing the gate and verifying production are live-pass items.
+- [x] **T7 — Go-public readiness.** `scripts/check_links.py` in CI; the go-public checklist; the live-pass order. Removing the gate and verifying production are live-pass items.
 - [ ] **T8 — Gate.** The ten repos precomputed on the local stack; gate evidence; backlog triage; Results filled in. Post-launch monitoring is a live-pass item.
 
 ## Exit criteria

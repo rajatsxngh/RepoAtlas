@@ -5,13 +5,65 @@ finished and the owner approves it (decisions
 [0020](decisions/0020-build-without-spend-live-pass.md),
 [0021](decisions/0021-m13-build-gate-injection-live-pass.md),
 [0022](decisions/0022-m14-agent-build-gate-live-pass.md),
-[0023](decisions/0023-m15-multi-agent-build-gate-live-pass.md), and
-[0024](decisions/0024-m16-incremental-builds-cost-build-gate.md)). Each item is **pending** until it is
+[0023](decisions/0023-m15-multi-agent-build-gate-live-pass.md),
+[0024](decisions/0024-m16-incremental-builds-cost-build-gate.md), and
+[0025](decisions/0025-m17-launch-build-gate-live-pass.md)). Each item is **pending** until it is
 run and its result is written here and in its milestone's Results. Nothing on this list may be
 reported as passed before then.
 
 Everything the items need is already built and checked without spending, so the pass is
 configuration plus one run per item.
+
+## Live pass order
+
+The build is finished. This section is a recommendation for the owner, who decides what to
+run. Item numbers refer to the [table below](#all-items). Dollar amounts are **caps** set on
+the commands (`--max-cost`), not estimates of what a run will cost. Hosting is billed by the
+provider and is not included.
+
+### A. What a public launch needs, in order
+
+There is no setting that switches an answering mode off in a deployment (a mode switch is in
+the [backlog](backlog.md)). A public deployment therefore offers one-shot, agent, and
+multi-agent answers, and the injection gates of all three are launch requirements.
+
+| Step | Items | What it settles | Cap |
+|---|---|---|---|
+| 1 | 5 | A live cited answer on the self-host stack. It needs no hosting, and it proves the key, the transport, and the prompt work before anything else is paid for | cents |
+| 2 | 8, 10, 21 | Cassettes re-recorded from the API, and cache reads confirmed. Item 10 is the first live call with tools: if the API rejects a request shape, it is found here, cheaply | under $1 |
+| 3 | 6, 7 | Injection gates for one-shot answers and impact explanations | $2 + $2 |
+| 4 | 11, 12 | Agent budgets on dev, then the agent's injection gate | $5 + $3 |
+| 5 | 15, 16 | Multi-agent budgets on dev, then its injection gate | $10 + $4 |
+| 6 | 1, 2, 3 | Hosting: backend, database, and web app behind the access gate; one release and one rollback | provider's bill |
+| 7 | 4, 24 | The hosted deployment answers end to end; the gallery is precomputed on it | cents (item 24 calls no model) |
+| 8 | 26 | Go public: caps verified in production, then the gate removed ([checklist](launch/go-public.md)) | cents |
+| 9 | 27, 28 | The demo recorded on the public URL; the launch post published by the owner | cents |
+| 10 | 29 | A week of daily spend and error checks | the daily cap |
+
+Steps 1 to 5 need only an API key, and their caps add up to about **$27**. A leak in any
+injection run stops the launch for that mode until it is fixed and run again.
+
+### B. Recommended before the post; the launch works without it
+
+| Items | What it adds | Cap |
+|---|---|---|
+| 13, 17, 25 | The final evaluation: every system on the frozen test split, three runs each. Without it the post can quote only the numbers of 2026-11-12, which are for one-shot answers on the earlier prompt, and must say that agent and multi-agent modes are not evaluated yet | $10 + $25 + $40, and $20 for the three baselines |
+| 14, 19 | Agent and multi-agent answers seen working in the app with a live model | cents |
+| 9 | Traces arriving in a Langfuse project | free tier |
+
+If section B is not wanted now, the honest launch is to publish with the measured one-shot
+numbers, say in the README and the post that agent and multi-agent modes are not evaluated
+yet (the drafts already do), and run section B later.
+
+### C. Optional; no launch depends on it
+
+| Items | What it adds | Cap |
+|---|---|---|
+| 20, 22, 23 | The cost baseline per mode, cheaper settings tried on dev, and the before/after cost report | $5 + $20, and reruns for modes whose settings change |
+| 18 | The verifier's labels checked against a person's (an hour of labeling, no calls) | none |
+| 30 | Notes to the maintainers of gallery repos | none |
+
+## All items
 
 | # | From | Check | Needs | Status |
 |---|---|---|---|---|
@@ -38,6 +90,13 @@ configuration plus one run per item.
 | 21 | M16 | Cache reads confirmed: cache-read tokens above zero on a repeated static prefix with tools, and on an agent conversation's second step | API key, a few cents | Pending |
 | 22 | M16 | Cheaper routing, step caps, and evidence budgets tried on dev, each kept only inside the tolerance (lower bound of the 95% interval above −0.02 for every question type) | API key; capped at $20.00 | Pending |
 | 23 | M16 | The before/after cost report per mode on test, for every setting item 22 kept | API key; capped at the caps of items 13 and 17, and only for modes whose settings changed | Pending |
+| 24 | M17 | The gallery precomputed on the hosted database (`repoatlas precompute`); all ten cards open from the landing page without a build | Items 1 to 3; worker CPU time; no model | Pending |
+| 25 | M17 | The final evaluation: every system on the frozen test split, three runs each, at its final settings; `docs/results.md` and the README updated from the reports | API key; the reports of items 13 and 17, and the three baselines capped at $20.00 together; the impact engine costs $0 | Pending |
+| 26 | M17 | Go public: the daily spend cap and the per-client caps verified on the hosted deployment, then the access gate removed; the public URL healthy | Items 1 to 4, 6, 7, 12, 16, and 24; a few cents of calls | Pending |
+| 27 | M17 | The 45-second demo recorded on the public URL, with a cited answer from the live model; the README's GIF replaced | Item 26; a few cents | Pending |
+| 28 | M17 | The launch post published | The owner; items 26 and 27 | Pending |
+| 29 | M17 | One week of daily spend and error checks after launch | Item 26 | Pending |
+| 30 | M17 | Optional: notes to maintainers of gallery repos | The owner | Pending |
 
 ## How to run them
 
@@ -231,6 +290,54 @@ uv run repoatlas eval cost-report --before <before reports> --after <after repor
 
 Write the tables and the verdicts into M16's Results. If no candidate was kept, say so: the
 report then shows prompt caching alone, from item 21's dev comparison.
+
+**Item 24 (gallery on the hosted database).** From a machine that can reach the hosted
+database (or in a one-off worker container), with `REPOATLAS_DATABASE_URL` pointing at it:
+
+```bash
+uv run repoatlas precompute --list ../launch/repos.yaml
+```
+
+No model is called. A first build of the largest entry (zod) embeds about 5,200 chunks, which
+took 31 minutes on the development machine's CPU. The command can be stopped and run again,
+and it reuses what is built. It must end with `10 of 10 in the gallery.` Then open the landing
+page and open each card. The rate and daily build caps apply to `POST /repos`, not to this
+command.
+
+**Item 25 (final evaluation).** Run it after items 11 and 15 have settled the budgets, and
+after item 22 if a cheaper setting is to be adopted. The one-shot, agent, and multi-agent runs
+are the reports of items 13 and 17 when the settings have not changed since; otherwise run
+them again. Then the three baselines and the engine:
+
+```bash
+uv run repoatlas eval run --system closed_book --split test --runs 3 --max-cost 2.00
+uv run repoatlas eval run --system bm25_only --split test --runs 3 --max-cost 9.00
+uv run repoatlas eval run --system vector_only --split test --runs 3 --max-cost 9.00
+uv run repoatlas eval run --system impact_engine --split test --runs 3
+uv run repoatlas eval compare <vector report>.json <oneshot report>.json
+```
+
+Update `docs/results.md` from the new reports: move each row of its "Pending" table into the
+measured tables, keep the 2026-11-12 numbers labelled with their date, and point
+`backend/tests/unit/test_results_page.py` at the new report files. This is the last use of
+the test split.
+
+**Item 26 (go public).** Follow [launch/go-public.md](launch/go-public.md). It lists the
+checks to make while the gate is still on, the one variable to unset, and how to put the gate
+back.
+
+**Item 27 (demo recording).** Follow [launch/demo-script.md](launch/demo-script.md) on the
+public URL and replace `docs/launch/demo.gif`. The answer on screen must come from the live
+model, not from the offline stand-in.
+
+**Item 28 (launch post).** The owner edits and publishes
+[launch/linkedin-post.md](launch/linkedin-post.md) after filling its placeholders. If item 25
+was run, quote its numbers; if not, the post keeps the numbers of 2026-11-12 with their date.
+
+**Item 29 (first week).** Each day: `/ready`, the day's spend against the daily cap, 5xx
+counts and failed jobs in the logs, and the injection flags, as the [runbook](runbook.md)
+describes. Critical bugs get fixed; everything else goes to the [backlog](backlog.md). Write
+the week's totals into M17's Results.
 
 ## Results
 

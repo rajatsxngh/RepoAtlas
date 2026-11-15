@@ -32,6 +32,7 @@ Work only on the current milestone. Don't start the next one until every exit cr
 | Check incremental linking on real commits (network: git fetches from GitHub; no model, no database) | `cd backend && uv run python scripts/incremental_check.py` |
 | Live prompt-cache check (costs about a cent; **calls the API**; `docs/live-pass.md` item 21) | `cd backend && uv run pytest -m live tests/live/test_prompt_cache_live.py` |
 | Serve a snapshot's tools to a coding agent over MCP (no model; `--transport http` needs `REPOATLAS_MCP_TOKEN`; see `docs/mcp.md`) | `cd backend && uv run repoatlas mcp --snapshot <id>` |
+| Precompute the launch gallery (no model; network: fetches the ten repos from GitHub; embedding a new repo on CPU takes minutes; `--dry-run` only checks the list) | `cd backend && uv run repoatlas precompute --list ../launch/repos.yaml` |
 | Run the API (dev, reloads on change) | `cd backend && uv run uvicorn repoatlas.api.app:create_app --factory --reload` |
 | Run a worker (stop: Ctrl+C, or create `.repoatlas/worker.stop`) | `cd backend && uv run repoatlas worker` |
 | Run everything locally: Postgres, migrations, API, worker, web app (next free ports when 8000/3000 are taken; Ctrl+C stops all) | `node scripts/dev.mjs` |
@@ -39,12 +40,14 @@ Work only on the current milestone. Don't start the next one until every exit cr
 | End-to-end check of a running stack (gate, build, ask, impact; `--only gate` for the quick part) | `python scripts/selfhost_check.py --env-file infra/selfhost.env` |
 | Regenerate the OpenAPI spec and TS types (commit both) | `scripts/gen_api_types.sh` (Windows: `scripts/gen_api_types.ps1`; `--check` / `-Check` only checks) |
 | Docs lint | `python scripts/check_milestones.py` |
+| Links of the README and docs (`--external` also requests web links; network) | `python scripts/check_links.py` |
+| Record the demo GIF on a running local stack (no model; needs `ffmpeg` on the PATH) | `cd frontend && node scripts/record-demo.mjs --base-url http://localhost:3000 --out ../docs/launch` |
 | Install git hooks (once per clone) | `cd backend && uv run pre-commit install` |
 | Frontend checks | `cd frontend && npm run lint && npm run typecheck && npm test` |
 | End-to-end tests (Postgres running; starts the API and a worker on fixture repos, builds the web app) | `cd frontend && npx playwright test` |
 | End-to-end tests in mock mode only (no services) | `cd frontend && E2E_MOCK_ONLY=1 npx playwright test --project mock` |
 
-Commits run pre-commit hooks automatically (whitespace, YAML/TOML, ruff check and format, docs lint). Migrations live in `backend/src/repoatlas/db/migrations/` and ship with the package; revision IDs are sequential (`0002_…`, at most 32 characters).
+Commits run pre-commit hooks automatically (whitespace, YAML/TOML, ruff check and format, docs lint, link check). Migrations live in `backend/src/repoatlas/db/migrations/` and ship with the package; revision IDs are sequential (`0002_…`, at most 32 characters).
 
 ## Conventions
 

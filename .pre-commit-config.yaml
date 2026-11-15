@@ -35,3 +35,9 @@ repos:
         language: system
         pass_filenames: false
         files: ^(docs/|scripts/check_milestones\.py$)
+      - id: link-check
+        name: links in the README and docs
+        entry: uv run --project backend python scripts/check_links.py
+        language: system
+        pass_filenames: false
+        files: (\.md$|^scripts/check_links\.py$)

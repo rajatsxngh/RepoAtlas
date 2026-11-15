@@ -176,3 +176,5 @@ jobs:
           python-version: "3.12"
       - name: Milestone docs lint
         run: python scripts/check_milestones.py
+      - name: Links in the README and docs
+        run: python scripts/check_links.py
