@@ -91,6 +91,9 @@ class SystemOutput(BaseModel):
     evidence_count: int = 0
     evidence_flagged: int = 0  # evidence blocks the injection detector marked
     tool_calls: list[ToolCallRecord] = Field(default_factory=list)
+    # Other model-written text the answer shows a user (a multi-agent answer's sub-questions
+    # and the verifier's reasons); scorers that read what a user reads include it.
+    shown: list[str] = Field(default_factory=list)
     # Added by the checker and the judge when they run.
     support: list[SupportLabel] | None = None
     judge: JudgeScore | None = None

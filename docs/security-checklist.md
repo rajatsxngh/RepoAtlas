@@ -26,7 +26,7 @@ validated against stored code; and the injection suite checks whether an answeri
 planted instructions.
 
 **Not yet shown:** how the live model behaves on the suite. That run is pending in
-[live-pass.md](live-pass.md) (items 6, 7, and 12). The tests below prove the layout, the detector, and
+[live-pass.md](live-pass.md) (items 6, 7, 12, and 16). The tests below prove the layout, the detector, and
 the scorer, with scripted stand-ins in place of the model.
 
 - `backend/tests/unit/answers/test_prompting.py::test_repo_text_cannot_break_out_of_its_block`
@@ -190,3 +190,33 @@ limits each client's calls; tool names, arguments, and errors are shown in the w
 - `backend/tests/integration/mcp/test_mcp_transports.py::test_http_needs_the_bearer_token`
 - `backend/tests/integration/mcp/test_mcp_transports.py::test_http_is_rate_limited_per_client`
 - `frontend/src/components/trace/TracePanel.test.tsx :: "renders tool names, arguments, and errors as text, never as HTML"`
+
+## S12 — Text one model hands another
+
+In multi-agent mode a model's output becomes another model's input: the planner's
+sub-questions go to the explorers, the explorers' findings to the writer, the writer's claims
+to the verifier. Each of them was written after reading repository text, so a planted
+instruction could ride along. Every such hand-over is treated as repository text: it is marked
+by the injection detector, it can't close its block or forge another, and the receiving
+prompt says it is data. The planner is shown names and places, never code, and seed symbols it
+returns are kept only if the server listed them. The verifier sees only the claims and the
+cited lines, read again from the stored blobs. A failed branch's error text is never shown.
+The injection suite reads everything a multi-agent answer shows (its sub-questions and the
+verifier's reasons, not only the answer) and counts each branch's tool calls.
+
+**Not yet shown:** how the live model behaves on the suite in this mode
+([live-pass.md](live-pass.md), item 16).
+
+- `backend/tests/unit/multiagent/test_planner.py::test_names_in_the_context_are_marked_and_cannot_break_out_of_their_tag`
+- `backend/tests/unit/multiagent/test_planner.py::test_seed_symbols_the_context_did_not_list_are_dropped`
+- `backend/tests/unit/multiagent/test_explorers.py::test_the_branch_prompt_shows_the_question_then_the_branch_with_its_seeds`
+- `backend/tests/unit/multiagent/test_writer.py::test_notes_are_marked_and_cannot_break_out_of_their_block`
+- `backend/tests/unit/multiagent/test_verifier.py::test_claims_are_marked_and_cannot_break_out_of_their_block`
+- `backend/tests/unit/multiagent/test_verifier.py::test_the_verifier_sees_only_the_claims_and_the_cited_code`
+- `backend/tests/unit/multiagent/test_verifier.py::test_the_cited_lines_are_read_again_from_the_blobs`
+- `backend/tests/unit/llm/test_offline.py::test_a_claim_forged_inside_cited_code_gets_no_verdict`
+- `backend/tests/unit/multiagent/test_failures.py::test_the_error_text_of_a_failed_branch_is_never_shown`
+- `backend/tests/unit/evals/test_injection.py::test_text_a_mode_shows_besides_its_answer_is_read_too`
+- `backend/tests/integration/security/test_injection_gate.py::test_multiagent_the_obedient_stand_in_is_caught_at_every_stage`
+- `backend/tests/integration/security/test_injection_gate.py::test_multiagent_the_careful_stand_in_scores_zero_leaks_over_three_runs`
+- `frontend/src/components/trace/TracePanel.test.tsx :: "shows each branch under its sub-question with its own steps"`

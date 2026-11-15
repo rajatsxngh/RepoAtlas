@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from repoatlas.answers.schema import Budget
+from repoatlas.config import Settings
 from repoatlas.evals.registry import (
     EvalContext,
     EvalItem,
@@ -77,6 +79,19 @@ def _llm(context: EvalContext) -> None:
         context.llm = LLMClient.from_settings(context.settings)
 
 
+def run_budget(system: Any, settings: Settings) -> Budget:
+    """The budget of one answer in an evaluation run: the system's own when it names one
+    (``default_budget``: a mode that makes several calls per answer needs more than one-shot
+    answers do, decision 0023), otherwise the settings' answer budget."""
+    own = getattr(system, "default_budget", None)
+    if isinstance(own, Budget):
+        return own
+    return Budget(
+        max_cost_usd=settings.answer_max_cost_usd,
+        max_output_tokens=settings.answer_max_output_tokens,
+    )
+
+
 def prepare_run(
     options: EvalOptions,
     *,
@@ -125,12 +140,7 @@ def prepare_run(
             fingerprint=config_fingerprint(ctx.settings),
             overrides=parse_overrides(options.snapshots),
         )
-    from repoatlas.answers.schema import Budget
-
-    budget = Budget(
-        max_cost_usd=ctx.settings.answer_max_cost_usd,
-        max_output_tokens=ctx.settings.answer_max_output_tokens,
-    )
+    budget = run_budget(system, ctx.settings)
     config = system_config(system)
     fingerprint = system_fingerprint(
         options.system,

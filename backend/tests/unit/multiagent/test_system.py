@@ -13,12 +13,14 @@ from repoatlas.answers.system import API_REFUSAL_TEXT, BUDGET_TEXT, DAILY_CAP_TE
 from repoatlas.evals import registry
 from repoatlas.evals.mapping import SymbolIndex, answer_output
 from repoatlas.evals.registry import EvalContext
+from repoatlas.evals.session import run_budget
 from repoatlas.llm.fake import FakeLLM, refusal
 from repoatlas.llm.pricing import DEFAULT_PRICES, PriceTable
 from repoatlas.llm.types import LLMResult, SpendCapReached, Usage
+from repoatlas.multiagent.factory import multiagent_budget, multiagent_limits
 from repoatlas.multiagent.models import Plan, PlanDraft
 from repoatlas.multiagent.system import NOT_VERIFIED_TEXT, STEPS, MultiAgentAnswerSystem
-from repoatlas.multiagent.verifier import REVISED_HEADING, RepairSet, VerdictSet
+from repoatlas.multiagent.verifier import NO_LABEL, REVISED_HEADING, RepairSet, VerdictSet
 from tests.unit.agent.helpers import (
     APP_REF,
     CREATE_APP_KEY,
@@ -31,6 +33,7 @@ from tests.unit.agent.helpers import (
     done,
     turn,
 )
+from tests.unit.answers.helpers import FakeBlobs
 from tests.unit.api.helpers import api_settings
 from tests.unit.multiagent.helpers import (
     QUESTION,
@@ -426,3 +429,35 @@ async def test_the_result_maps_to_an_evaluation_output_with_every_branchs_tool_c
     assert output.outcome == "answered"
     assert [call.name for call in output.tool_calls] == ["search_code", "read_file"]
     assert output.cost_usd == pytest.approx(result.cost_usd) and output.evidence_count == 3
+
+
+async def test_an_evaluation_reads_what_the_answer_shows_and_uses_the_modes_own_budget() -> None:
+    script = pipeline(PLAN, BRANCHES, DRAFT, [verdicts(c1="supported", c2="unsupported")])
+    made, _, _, _ = system(script)
+    result = await made.answer(1, QUESTION, BUDGET)
+    output = answer_output(result, SymbolIndex([]), 0.5)
+    # The sub-questions and the verifier's reasons are model text a user sees.
+    assert output.shown == [
+        "How does create_app build the app?",
+        "What does slugify do?",
+        "c1 is supported.",
+        "c2 is unsupported.",
+        NO_LABEL,
+    ]
+    # An evaluation run gives a system the budget it names, and the settings' otherwise.
+    settings = api_settings()
+    assert run_budget(made, settings).max_cost_usd == settings.answer_max_cost_usd
+    assert made.default_budget is None
+    named = MultiAgentAnswerSystem(
+        made.llm,
+        made.toolbox_for,
+        made.validator,
+        made.policy,
+        blobs=FakeBlobs(),
+        prices=PRICES,
+        default_budget=multiagent_budget(settings),
+    )
+    assert run_budget(named, settings) == Budget(max_cost_usd=0.75, max_output_tokens=4_096)
+    limits = multiagent_limits(settings)
+    assert (limits.max_branches, limits.total_steps, limits.branch_max_steps) == (4, 24, 12)
+    assert limits.max_input_tokens == 400_000 and limits.branch_timeout_s == 180.0

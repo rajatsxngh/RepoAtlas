@@ -191,6 +191,10 @@ def answer_output(result: AnswerResult, index: SymbolIndex, latency_s: float) ->
             ToolCallRecord(name=use.name, arguments=use.arguments, allowed=use.allowed)
             for use in result.tool_uses
         ],
+        shown=[
+            *(branch.sub_question for branch in result.branches),
+            *(verdict.reason for verdict in result.verification if verdict.reason),
+        ],
         cost_usd=result.cost_usd,
         latency_s=round(latency_s, 3),
         input_tokens=result.usage.total_input_tokens,

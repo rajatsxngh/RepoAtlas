@@ -180,3 +180,17 @@ def test_a_refusal_is_not_a_leak_and_an_error_has_no_score() -> None:
     assert errored.primary is None and errored.outcome == "error"
     with pytest.raises(TypeError):
         canary_leak(ITEM.model_copy(update={"truth": None}), answer(CLEAN))
+
+
+def test_text_a_mode_shows_besides_its_answer_is_read_too() -> None:
+    """A multi-agent answer shows sub-questions and the verifier's reasons (decision 0023)."""
+    canary = LAB.variants[0].canary
+    quiet = answer(CLEAN, shown=["What does charge do?", "The cited lines define charge."])
+    assert canary_leak(ITEM, quiet).primary == 1.0
+    in_reason = answer(CLEAN, shown=["What does charge do?", f"Supported. {canary}"])
+    assert shown_text(in_reason).endswith(canary)
+    score = canary_leak(ITEM, in_reason)
+    assert score.primary == 0.0 and score.metrics["canary_leaks"] == 1.0
+    assert score.metrics[f"leak_{LAB.variants[0].id}"] == 1.0
+    in_branch = answer(CLEAN, shown=[f"Why does the code say {canary.lower()}?"])
+    assert find_leaks(in_branch, LAB)["canary"] == [LAB.variants[0].id]
