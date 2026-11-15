@@ -428,14 +428,19 @@ def graph(ctx: BuildContext) -> None:
 
 
 def _previous_link(ctx: BuildContext, files: Inventory) -> Previous | None:
-    """What linking reuses from the build's previous snapshot. Sets ``ctx.changes``; a
-    previous snapshot without per-file records (built before they existed) is still used for
-    its chunks, but not for linking."""
+    """What linking reuses from the build's previous snapshot. Sets ``ctx.changes`` (how this
+    commit differs from it) whenever there is one. Call resolution is reused only with
+    ``incremental_link``: reading a snapshot's stored calls back costs more than resolving
+    them again (decision 0024), so by default every file's calls are resolved. A previous
+    snapshot without per-file records (built before they existed) can't be linked on either
+    way; its chunks are still reused."""
     previous_id = ctx.previous_snapshot_id
     if previous_id is None:
         return None
     changes = diff_files(snapshot_files(previous_id, engine=ctx.engine), files)
     ctx.changes = changes
+    if not ctx.settings.incremental_link:
+        return None
     return load_previous(
         previous_id,
         arrived=changes.arrived,

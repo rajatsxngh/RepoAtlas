@@ -4,6 +4,9 @@ Each scripted change set is committed on top of a built snapshot and built again
 snapshot must equal a full build of that commit in everything that is compared: the graph's
 digest, the chunks (text, lines, nodes, keyword index, and their order), and the embeddings.
 The stats say what was reused.
+
+Reusing call resolution is opt-in (``incremental_link``; by default every file's calls are
+resolved, which was measured faster). The change sets run both ways.
 """
 
 from __future__ import annotations
@@ -22,7 +25,7 @@ from repoatlas.pipeline.graph import run_graph
 from repoatlas.pipeline.incremental import build_incremental
 from repoatlas.retrieval import chunker
 from repoatlas.retrieval.keyword import chunk_tsvector
-from repoatlas.retrieval.reuse import chunk_stats
+from repoatlas.retrieval.reuse import chunk_stats, plan_chunk_reuse
 from repoatlas.store.errors import SnapshotNotFound
 from repoatlas.store.graphstore import GraphStore
 from repoatlas.store.loader import load_graph
@@ -90,6 +93,16 @@ def empty_embeddings(pg_engine: Engine) -> None:
 @pytest.fixture
 def settings(tmp_path: Path, pg_url: str) -> Settings:
     return Settings(_env_file=None, data_dir=tmp_path / "data", database_url=pg_url)
+
+
+@pytest.fixture
+def linking(settings: Settings) -> Settings:
+    """The settings with call resolution reused from the previous snapshot."""
+    return Settings(**{**settings.model_dump(), "incremental_link": True})
+
+
+def with_link(settings: Settings, link: bool) -> Settings:
+    return Settings(**{**settings.model_dump(), "incremental_link": link})
 
 
 def commit(origin: Origin, files: dict[str, bytes]) -> str:
@@ -167,10 +180,12 @@ def assert_equals_a_full_build(engine: Engine, settings: Settings, snapshot_id: 
     assert missing == 0
 
 
+@pytest.mark.parametrize("link", [False, True], ids=["resolve-all", "reuse-calls"])
 @pytest.mark.parametrize("name", sorted(CHANGE_SETS))
 def test_a_scripted_change_set_equals_a_full_build(
-    name: str, origin: Origin, settings: Settings, pg_engine: Engine
+    name: str, link: bool, origin: Origin, settings: Settings, pg_engine: Engine
 ) -> None:
+    settings = with_link(settings, link)
     commit(origin, BASE)
     first = build_snapshot(URL, settings, engine=pg_engine)
     assert "incremental" not in stats(pg_engine, first)
@@ -181,6 +196,7 @@ def test_a_scripted_change_set_equals_a_full_build(
     built = stats(pg_engine, second)
     assert built["incremental"]["previous_snapshot_id"] == first
     assert sum(built["incremental"]["changes"].values()) >= len(SOURCES) - 1
+    assert (built["link"]["files_reused"] > 0) is link
     assert_equals_a_full_build(pg_engine, settings, second)
 
     # The same commit built with nothing to reuse stores the same graph and chunks.
@@ -197,9 +213,11 @@ def test_a_scripted_change_set_equals_a_full_build(
     assert stored_chunks(pg_engine, full) == chunks
 
 
+@pytest.mark.parametrize("link", [False, True], ids=["resolve-all", "reuse-calls"])
 def test_the_stats_say_what_was_reused(
-    origin: Origin, settings: Settings, pg_engine: Engine
+    link: bool, origin: Origin, settings: Settings, pg_engine: Engine
 ) -> None:
+    settings = with_link(settings, link)
     commit(origin, BASE)
     first = build_snapshot(URL, settings, engine=pg_engine)
     before = stats(pg_engine, first)
@@ -217,11 +235,12 @@ def test_the_stats_say_what_was_reused(
         "changes": {"unchanged": 5, "modified": 1, "added": 0, "deleted": 0, "renamed": 0},
     }
     assert after["parse_cache"] == {"hits": 5, "misses": 1}
-    assert after["link"] == {
-        "files_resolved": 1,
-        "files_reused": 5,
-        "by_rule": {"changed": 1},
-    }
+    # By default every file's calls are resolved; with incremental_link, only report.py's.
+    assert after["link"] == (
+        {"files_resolved": 1, "files_reused": 5, "by_rule": {"changed": 1}}
+        if link
+        else {"files_resolved": 6, "files_reused": 0, "by_rule": {}}
+    )
     chunks = after["chunks"]
     assert chunks["files_reused"] == 5
     assert chunks["rebuilt"] == 1  # report.py's one function
@@ -250,8 +269,9 @@ def test_unchanged_files_are_not_read_or_cut_again(
 
 
 def test_a_chain_of_incremental_builds(
-    origin: Origin, settings: Settings, pg_engine: Engine
+    origin: Origin, linking: Settings, pg_engine: Engine
 ) -> None:
+    settings = linking
     files = dict(BASE)
     commit(origin, files)
     previous = build_snapshot(URL, settings, engine=pg_engine)
@@ -316,10 +336,11 @@ def test_incremental_builds_can_be_switched_off(
 
 
 def test_a_previous_snapshot_without_records_still_gives_its_chunks(
-    origin: Origin, settings: Settings, pg_engine: Engine
+    origin: Origin, linking: Settings, pg_engine: Engine
 ) -> None:
     """A snapshot built before per-file records existed can't be linked on, but its chunks
     of unchanged files are as good as any."""
+    settings = linking
     commit(origin, BASE)
     first = build_snapshot(URL, settings, engine=pg_engine)
     with pg_engine.begin() as connection:
@@ -335,7 +356,9 @@ def test_a_previous_snapshot_without_records_still_gives_its_chunks(
 def test_verification_passes_on_a_correct_build_and_fails_a_wrong_one(
     origin: Origin, settings: Settings, pg_engine: Engine, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    verify = Settings(**{**settings.model_dump(), "incremental_verify": True})
+    verify = Settings(
+        **{**settings.model_dump(), "incremental_link": True, "incremental_verify": True}
+    )
     commit(origin, BASE)
     build_snapshot(URL, verify, engine=pg_engine)
     commit(origin, apply(BASE, CHANGE_SETS["add_a_class_that_a_name_matched_call_finds"]))
@@ -392,4 +415,43 @@ def test_chunk_stats_from_rows_match_the_chunks(
     again = chunker.chunk_snapshot(second, engine=pg_engine)
     assert counted["split_parts"] == sum(1 for chunk in again if chunk.part)
     assert counted["tokens"] == sum(chunk.tokens for chunk in again)
+    assert_equals_a_full_build(pg_engine, settings, second)
+
+
+def test_a_file_whose_nodes_are_not_found_again_is_cut_instead_of_copied(
+    origin: Origin, settings: Settings, pg_engine: Engine
+) -> None:
+    """A chunk is copied only if its node exists in the new snapshot under the same key. If the
+    previous snapshot names a node differently (it never should), that file is cut again."""
+    commit(origin, BASE)
+    first = build_snapshot(URL, settings, engine=pg_engine)
+    with pg_engine.begin() as connection:
+        renamed = connection.execute(
+            text(
+                "UPDATE nodes SET symbol_key = symbol_key || '-gone' WHERE snapshot_id = :s "
+                "AND path = 'src/shop/cart.py' AND name = 'total'"
+            ),
+            {"s": first},
+        ).rowcount
+    assert renamed == 1
+    commit(origin, apply(BASE, CHANGE_SETS["edit_a_function_body"]))
+    second = build_snapshot(URL, settings, engine=pg_engine)
+    reuse = plan_chunk_reuse(second, first, engine=pg_engine)
+    assert "src/shop/cart.py" not in reuse.paths
+    assert sorted(reuse.paths) == [
+        "src/shop/__init__.py",
+        "src/shop/app.py",
+        "src/shop/util.py",
+        "tests/test_app.py",
+    ]
+    # Only nodes of copied files are mapped, each to a node of the new snapshot.
+    with pg_engine.connect() as connection:
+        new_paths = {
+            row.id: row.path
+            for row in connection.execute(
+                text("SELECT id, path FROM nodes WHERE snapshot_id = :s"), {"s": second}
+            )
+        }
+    assert {new_paths[new] for new in reuse.node_ids.values()} <= set(reuse.paths)
+    assert stats(pg_engine, second)["chunks"]["files_reused"] == 4
     assert_equals_a_full_build(pg_engine, settings, second)

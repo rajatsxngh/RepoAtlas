@@ -326,6 +326,8 @@ def test_registering_a_stage_gives_new_builds_a_new_snapshot(
 def test_a_build_job_for_a_new_commit_reuses_the_previous_snapshot(
     origin: Origin, settings: Settings, pg_engine: Engine
 ) -> None:
+    # With call resolution reused too (opt-in), so the resumed attempt has it to keep.
+    settings = settings.model_copy(update={"incremental_link": True})
     first_id, _job, _payload = request(settings, pg_engine)
     assert worker(settings, pg_engine, "w1").run_once()
     assert "incremental" not in snapshot(pg_engine, first_id).stats

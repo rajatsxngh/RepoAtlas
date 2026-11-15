@@ -65,11 +65,15 @@ class Settings(BaseSettings):
     owner_commits: int = 1000  # most recent commits read for file owners
     max_source_files: int = 5_000  # after skip rules
     max_file_bytes: int = 1_000_000
-    # Incremental builds (decision 0024). Neither changes what a build produces.
+    # Incremental builds (decision 0024). None of these changes what a build produces.
     parse_cache: bool = True  # reuse parse results of unchanged files across snapshots
-    # Reuse the previous ready snapshot of the repository (call resolution, chunks).
+    # Reuse the previous ready snapshot of the repository: the chunks of unchanged files.
     incremental_builds: bool = True
-    # Also link every incremental build in full and fail if the graphs differ.
+    # Also reuse each file's call resolution from it, unless a rule invalidates the file.
+    # Off by default: reading the stored calls back was measured slower than resolving
+    # them again (docs/performance.md).
+    incremental_link: bool = False
+    # With incremental_link: also link in full and fail if the graphs differ.
     incremental_verify: bool = False
 
     # Graph store

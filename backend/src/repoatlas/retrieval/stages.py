@@ -20,7 +20,12 @@ from repoatlas.retrieval import chunker
 from repoatlas.retrieval.chunkstore import save_chunks
 from repoatlas.retrieval.embed import EMBED_VERSION, embed_chunks, embedder_for
 from repoatlas.retrieval.keyword import KEYWORD_VERSION
-from repoatlas.retrieval.reuse import chunk_stats, reusable_paths, save_chunks_reusing
+from repoatlas.retrieval.reuse import (
+    ChunkReuse,
+    chunk_stats,
+    plan_chunk_reuse,
+    save_chunks_reusing,
+)
 
 
 def chunk(ctx: BuildContext) -> None:
@@ -28,14 +33,14 @@ def chunk(ctx: BuildContext) -> None:
     build, decision 0024), the chunks of files that did not change are copied from it."""
     snapshot_id = ctx.need(ctx.snapshot_id, "snapshot")
     previous = ctx.previous_snapshot_id
-    reused: set[str] = set()
+    reuse = ChunkReuse()
     if previous is not None:
-        reused = reusable_paths(snapshot_id, previous, engine=ctx.engine)
-    chunks = chunker.chunk_snapshot(snapshot_id, engine=ctx.engine, skip_paths=reused)
+        reuse = plan_chunk_reuse(snapshot_id, previous, engine=ctx.engine)
+    chunks = chunker.chunk_snapshot(snapshot_id, engine=ctx.engine, skip_paths=reuse.paths)
     ctx.progress(0.5)
     copied = 0
-    if previous is not None and reused:
-        copied = save_chunks_reusing(snapshot_id, previous, reused, chunks, engine=ctx.engine)
+    if previous is not None and reuse.paths:
+        copied = save_chunks_reusing(snapshot_id, previous, reuse, chunks, engine=ctx.engine)
     else:
         save_chunks(snapshot_id, chunks, engine=ctx.engine)
     stats: dict[str, JsonValue] = chunk_stats(snapshot_id, engine=ctx.engine)
@@ -43,7 +48,7 @@ def chunk(ctx: BuildContext) -> None:
         **stats,
         "reused": copied,
         "rebuilt": len(chunks),
-        "files_reused": len(reused),
+        "files_reused": len(reuse.paths),
     }
 
 

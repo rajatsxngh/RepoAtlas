@@ -9,16 +9,22 @@ The copied and the newly cut chunks are inserted together, in path order, so chu
 the same order as in a full build. Search breaks ties by chunk ID, so this keeps an incremental
 snapshot's results identical to a full rebuild's.
 
+Which files can be copied, and which node each copied chunk belongs to, is worked out here from
+four plain reads (each by one snapshot ID), not in one large join: the copy then joins the
+previous snapshot's chunks to a list of node IDs, a plan that does not depend on table
+statistics, which are stale right after a snapshot's rows are loaded.
+
 ``chunk_stats`` counts a snapshot's chunks from its rows, so a build that copied chunks
 reports the same numbers as one that cut them all.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Collection, Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field
 from typing import Any
 
-from sqlalchemy import Engine, text
+from sqlalchemy import Connection, Engine, text
 
 from repoatlas.retrieval.chunker import CHARS_PER_TOKEN, MAX_CHUNK_TOKENS, Chunk
 from repoatlas.retrieval.keyword import chunk_tsvector
@@ -27,40 +33,78 @@ INSERT_BATCH = 500
 _COLUMNS = "blob_oid, path, start_line, end_line, chunk_hash, header, text, tsv"
 
 
-def reusable_paths(snapshot_id: int, previous_id: int, *, engine: Engine) -> set[str]:
+@dataclass(frozen=True)
+class ChunkReuse:
+    """What a snapshot takes from its previous one: the files whose chunks are copied, and for
+    every node those chunks belong to, its ID in the previous snapshot and in the new one."""
+
+    paths: frozenset[str] = frozenset()
+    node_ids: dict[int, int] = field(default_factory=dict)  # previous node ID → new node ID
+
+
+def _indexed_files(connection: Connection, snapshot_id: int) -> dict[str, str]:
+    rows = connection.execute(
+        text("SELECT path, blob_oid FROM files WHERE snapshot_id = :s AND skip_reason IS NULL"),
+        {"s": snapshot_id},
+    )
+    return {row.path: row.blob_oid for row in rows}
+
+
+def plan_chunk_reuse(snapshot_id: int, previous_id: int, *, engine: Engine) -> ChunkReuse:
     """Indexed files of ``snapshot_id`` whose chunks can be copied from ``previous_id``: the
     same path and blob there, and every chunk's node found again by its symbol key. (A chunk
-    whose node is missing would mean the file's nodes differ; the file is cut again instead.)"""
+    whose node is missing would mean the file's nodes differ; the file is cut again instead.)
+    A file without chunks there (an empty file) is copied too: it has none here either."""
     with engine.connect() as connection:
-        rows = connection.execute(
+        new_files = _indexed_files(connection, snapshot_id)
+        old_files = _indexed_files(connection, previous_id)
+        same = {path for path, oid in new_files.items() if old_files.get(path) == oid}
+        if not same:
+            return ChunkReuse()
+        new_nodes = {
+            row.symbol_key: row.id
+            for row in connection.execute(
+                text("SELECT symbol_key, id FROM nodes WHERE snapshot_id = :s"),
+                {"s": snapshot_id},
+            )
+        }
+        chunk_nodes = connection.execute(
             text(
-                "SELECT f1.path, count(c.id) AS chunks, count(n2.id) AS mapped "
-                "FROM files f1 "
-                "JOIN files f2 ON f2.snapshot_id = :new AND f2.path = f1.path "
-                "AND f2.blob_oid = f1.blob_oid AND f2.skip_reason IS NULL "
-                "LEFT JOIN chunks c ON c.snapshot_id = :prev AND c.path = f1.path "
-                "LEFT JOIN nodes n1 ON n1.id = c.node_id "
-                "LEFT JOIN nodes n2 ON n2.snapshot_id = :new AND n2.symbol_key = n1.symbol_key "
-                "WHERE f1.snapshot_id = :prev AND f1.skip_reason IS NULL "
-                "GROUP BY f1.path"
+                "SELECT DISTINCT c.path, c.node_id, n.symbol_key FROM chunks c "
+                "JOIN nodes n ON n.id = c.node_id WHERE c.snapshot_id = :s"
             ),
-            {"new": snapshot_id, "prev": previous_id},
+            {"s": previous_id},
         ).all()
-    return {row.path for row in rows if row.chunks == row.mapped}
+    node_ids: dict[int, int] = {}
+    broken: set[str] = set()
+    for row in chunk_nodes:
+        if row.path not in same:
+            continue
+        new_id = new_nodes.get(row.symbol_key)
+        if new_id is None:
+            broken.add(row.path)
+        else:
+            node_ids[row.node_id] = new_id
+    paths = frozenset(same - broken)
+    if broken:
+        kept = {row.node_id for row in chunk_nodes if row.path in paths}
+        node_ids = {old: new for old, new in node_ids.items() if old in kept}
+    return ChunkReuse(paths=paths, node_ids=node_ids)
 
 
 def save_chunks_reusing(
     snapshot_id: int,
     previous_id: int,
-    reused: Collection[str],
+    reuse: ChunkReuse,
     chunks: Sequence[Chunk],
     *,
     engine: Engine,
     keyword_document: Callable[[Chunk], str] = chunk_tsvector,
 ) -> int:
-    """Replace the snapshot's chunks with the previous snapshot's chunks of the ``reused``
-    paths plus ``chunks`` (the other files', newly cut), in one transaction. Returns how many
-    were copied."""
+    """Replace the snapshot's chunks with the previous snapshot's chunks of ``reuse`` plus
+    ``chunks`` (the other files', newly cut), in one transaction. Returns how many were
+    copied."""
+    old_ids = sorted(reuse.node_ids)
     with engine.begin() as connection:
         connection.execute(text("DELETE FROM chunks WHERE snapshot_id = :s"), {"s": snapshot_id})
         connection.execute(
@@ -100,16 +144,21 @@ def save_chunks_reusing(
             text(
                 f"INSERT INTO chunks (snapshot_id, node_id, {_COLUMNS}) "
                 f"SELECT :new, merged.node_id, {_COLUMNS} FROM ("
-                f"SELECT n2.id AS node_id, c.id AS seq, c.blob_oid, c.path, c.start_line, "
+                "SELECT m.new_id AS node_id, c.id AS seq, c.blob_oid, c.path, c.start_line, "
                 "c.end_line, c.chunk_hash, c.header, c.text, c.tsv FROM chunks c "
-                "JOIN nodes n1 ON n1.id = c.node_id "
-                "JOIN nodes n2 ON n2.snapshot_id = :new AND n2.symbol_key = n1.symbol_key "
-                "WHERE c.snapshot_id = :prev AND c.path = ANY(:reused) "
+                "JOIN unnest(CAST(:old AS bigint[]), CAST(:mapped AS bigint[])) "
+                "AS m(old_id, new_id) ON m.old_id = c.node_id "
+                "WHERE c.snapshot_id = :prev "
                 "UNION ALL "
                 f"SELECT node_id, seq, {_COLUMNS} FROM chunks_incoming"
                 ") merged ORDER BY merged.path, merged.seq"
             ),
-            {"new": snapshot_id, "prev": previous_id, "reused": sorted(reused)},
+            {
+                "new": snapshot_id,
+                "prev": previous_id,
+                "old": old_ids,
+                "mapped": [reuse.node_ids[old] for old in old_ids],
+            },
         )
         total = connection.execute(
             text("SELECT count(*) FROM chunks WHERE snapshot_id = :s"), {"s": snapshot_id}
