@@ -1,6 +1,6 @@
 # M17 — Launch
 
-**Type of work:** Release and content · **Size:** M (8 tasks) · **Status:** Not started
+**Type of work:** Release and content · **Size:** M (8 tasks) · **Status:** In progress
 
 ## Goal
 
@@ -40,32 +40,47 @@ LCH-1, LCH-2, LCH-3, LCH-4, LCH-5, LCH-6, LCH-7
 
 ## Tasks
 
-- [ ] **T1 — Choose gallery repos.** Ten repos, pinned commits, `launch/repos.yaml`.
-- [ ] **T2 — Precompute and gallery.** `repoatlas precompute`; gallery UI; Playwright test that gallery snapshots open instantly.
-- [ ] **T3 — Final evaluation.** All systems on the test split, 3 runs each; `docs/results.md`.
-- [ ] **T4 — README.** Demo GIF, architecture diagram, results, cost, self-hosting, credits.
-- [ ] **T5 — Demo video.** Script and recording.
+Replanned on 2026-11-16 by [decision 0025](../decisions/0025-m17-launch-build-gate-live-pass.md): the build spends nothing, so the tasks that need live calls, hosting, or publishing are built up to that point, and the rest is pending in the live pass.
+
+- [ ] **T1 — Choose gallery repos.** Ten repos, pinned commits, `launch/repos.yaml`; a loader that rejects a list the gallery should not show (unpinned, duplicate, not permissively licensed).
+- [ ] **T2 — Precompute and gallery.** `repoatlas precompute`; the `gallery` table and `GET /gallery`; gallery UI; Playwright tests that gallery snapshots open without a build.
+- [ ] **T3 — Results page (from the reports that exist).** `docs/results.md` from the M10 and M11 test-split reports, with intervals, cost, losses, biases, and a table of what is pending; a test that the page's numbers are the reports'. The final evaluation is a live-pass item.
+- [ ] **T4 — README.** Demo GIF, architecture diagram, results, cost, self-hosting, credits; every number labelled measured or pending.
+- [ ] **T5 — Demo video (script and local recording).** The 45-second script; a recording on the local stack of the scenes that need no model. The full recording is a live-pass item.
 - [ ] **T6 — Launch post drafts.** LinkedIn post (and optional others) for the owner to publish.
-- [ ] **T7 — Go public.** Remove the access gate; verify caps and alerts in production; smoke test.
-- [ ] **T8 — Post-launch checks.** One week of spend and error monitoring; backlog triage; Results filled in.
+- [ ] **T7 — Go-public readiness.** `scripts/check_links.py` in CI; the go-public checklist; the live-pass order. Removing the gate and verifying production are live-pass items.
+- [ ] **T8 — Gate.** The ten repos precomputed on the local stack; gate evidence; backlog triage; Results filled in. Post-launch monitoring is a live-pass item.
 
 ## Exit criteria
 
-- [ ] The public URL is healthy, with spend caps and per-client caps verified in production.
-- [ ] All 10 gallery repos open instantly from the landing page.
-- [ ] `docs/results.md` publishes every system's test-split results with intervals and cost.
-- [ ] README links all resolve; the demo video is recorded; the launch post is drafted.
+- [ ] All 10 gallery repos are precomputed on the local stack and open from the landing page without a build (the snapshot is ready before the click).
+- [ ] `docs/results.md` publishes the measured test-split results with intervals and cost, names what is pending, and matches the report files (checked by a test).
+- [ ] The README's links resolve (`python scripts/check_links.py`, and once with `--external`); the demo script is written and the local recording is in the README; the launch post is drafted.
+- [ ] The go-public checklist and the live-pass order exist, and every launch-time live item is listed as pending.
+
+### Live pass (pending; not part of this gate)
+
+These need spending, hosting, or publishing, which the owner has deferred or keeps (decisions 0020 and 0025). They are not checked here and must never be reported as passed until they are run:
+
+- The gallery precomputed on the hosted database, opening from the public landing page.
+- The final evaluation: every system on the frozen test split, three runs each, at its final settings; `docs/results.md` and the README updated from it.
+- Going public: the access gate removed; spend caps and per-client caps verified in production; the public URL healthy.
+- The 45-second demo recorded on the public URL, with a cited answer from the live model.
+- The launch post published by the owner.
+- One week of daily spend and error monitoring after launch.
+- Optional (LCH-7): notes to maintainers of gallery repos.
 
 ## Verification
 
 ```bash
 cd backend
 uv run repoatlas precompute --list ../launch/repos.yaml
-uv run repoatlas eval run --system <each> --split test --runs 3
+uv run pytest tests/unit/test_gallery_list.py tests/unit/test_results_page.py tests/integration/api/test_gallery.py -q
 cd ../frontend && npx playwright test gallery
+cd .. && python scripts/check_links.py
 ```
 
-Manual: open the public URL in a private browser window and run the demo script end to end.
+Live pass (needs an API key, hosting, and the owner): see [`docs/live-pass.md`](../live-pass.md), "Live pass order" and items 24 to 30.
 
 ## Risks and open questions
 

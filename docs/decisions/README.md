@@ -28,3 +28,4 @@ Short records of decisions that shape RepoAtlas. Each has a context, the decisio
 | [0022](0022-m14-agent-build-gate-live-pass.md) | M14 without spend: the agent's build gate, and what moved | Accepted |
 | [0023](0023-m15-multi-agent-build-gate-live-pass.md) | M15 without spend: the multi-agent build gate, and what moved | Accepted |
 | [0024](0024-m16-incremental-builds-cost-build-gate.md) | M16 without spend: incremental builds in full, cost work as a build gate | Accepted |
+| [0025](0025-m17-launch-build-gate-live-pass.md) | M17 without spend: the launch's build gate, and what moved | Accepted |
