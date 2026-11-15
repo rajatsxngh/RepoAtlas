@@ -81,7 +81,7 @@ AGT-1, AGT-2, AGT-3, AGT-4, AGT-5, AGT-6, AGT-7, AGT-8
 - [x] **T6 — UI.** Mode toggle; live steps in `TracePanel`; Playwright test with mock mode.
 - [x] **T7 — MCP server.** stdio and HTTP transports, bearer token and rate limits; in-memory client test.
 - [x] **T8 — Manual MCP check.** Connect from Claude Code and run three questions with tools that call no model; notes in Results.
-- [ ] **T9 — Injection gate (build gate).** The injection suite in agent mode end to end through the runner with scripted stand-ins: the obedient one is caught (planted text and a tool call outside the snapshot), the careful one scores zero leaks over three runs. The live run is a live-pass item (decision 0022).
+- [x] **T9 — Injection gate (build gate).** The injection suite in agent mode end to end through the runner with scripted stand-ins: the obedient one is caught (planted text and a tool call outside the snapshot), the careful one scores zero leaks over three runs. The live run is a live-pass item (decision 0022).
 - [ ] **T10 — Evaluation (tooling).** `agent` and `oneshot` through the runner on the same questions with stand-ins, compared per question type with 95% intervals and cost per question; the agent conversation's request shapes replayed from a cassette. The test-split report is a live-pass item (decision 0022).
 
 ## Exit criteria

@@ -24,6 +24,7 @@ conversation is ever changed.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from html import escape
 
@@ -43,6 +44,7 @@ PATH_FIELDS = frozenset({"path"})
 KEY_FIELDS = frozenset({"symbol_key", "from_key", "to_key"})
 TEXT_FIELDS = frozenset({"query", "name"})
 MAX_ERROR_CHARS = 600
+_GUTTER = re.compile(r"^ *\d+ \| ?", re.MULTILINE)
 
 
 def check_arguments(arguments: BaseModel) -> None:
@@ -111,10 +113,17 @@ def cut_note(trimmed: Trimmed, tokens: int) -> str:
     )
 
 
+def _without_gutters(text: str) -> str:
+    """``text`` with the line-number gutters of numbered code (``  12 | ``) blanked, at the same
+    length. The detector reads comment lines that follow each other as one sentence; a gutter
+    between them would hide an instruction split over two comment lines."""
+    return _GUTTER.sub(lambda match: " " * len(match[0]), text)
+
+
 def mark_text(text: str) -> tuple[str, list[str]]:
     """``text`` with what the injection detector marks wrapped in ``<flagged>`` and prompt
     block markers defused, and the kinds that were marked."""
-    flags = marked(scan(text))
+    flags = marked(scan(_without_gutters(text)))
     return mark_flagged(text, flags), kinds(flags)
 
 
