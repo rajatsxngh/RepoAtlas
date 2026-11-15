@@ -42,7 +42,7 @@ LCH-1, LCH-2, LCH-3, LCH-4, LCH-5, LCH-6, LCH-7
 
 Replanned on 2026-11-16 by [decision 0025](../decisions/0025-m17-launch-build-gate-live-pass.md): the build spends nothing, so the tasks that need live calls, hosting, or publishing are built up to that point, and the rest is pending in the live pass.
 
-- [ ] **T1 — Choose gallery repos.** Ten repos, pinned commits, `launch/repos.yaml`; a loader that rejects a list the gallery should not show (unpinned, duplicate, not permissively licensed).
+- [x] **T1 — Choose gallery repos.** Ten repos, pinned commits, `launch/repos.yaml`; a loader that rejects a list the gallery should not show (unpinned, duplicate, not permissively licensed).
 - [ ] **T2 — Precompute and gallery.** `repoatlas precompute`; the `gallery` table and `GET /gallery`; gallery UI; Playwright tests that gallery snapshots open without a build.
 - [ ] **T3 — Results page (from the reports that exist).** `docs/results.md` from the M10 and M11 test-split reports, with intervals, cost, losses, biases, and a table of what is pending; a test that the page's numbers are the reports'. The final evaluation is a live-pass item.
 - [ ] **T4 — README.** Demo GIF, architecture diagram, results, cost, self-hosting, credits; every number labelled measured or pending.

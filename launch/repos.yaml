@@ -1,0 +1,92 @@
+# The launch gallery (LCH-2): ten well-known public repositories at pinned commits.
+#
+#   cd backend && uv run repoatlas precompute --list ../launch/repos.yaml
+#
+# builds each one (no model is called) and records it in the `gallery` table, which the
+# landing page reads. Order here is the order of the cards.
+#
+# Rules, checked when the list is loaded (repoatlas.gallery.listing):
+#   - `url` is https://github.com/<owner>/<repo>; `commit` is a full 40-character SHA;
+#   - `license` is one of the permissive licenses the loader names, as GitHub reported it
+#     on the day the repo was pinned (2026-11-16 unless noted);
+#   - `title` and `description` are written here, never copied from the repository.
+#
+# `benchmark: true` marks the five repos of the evaluation benchmark, pinned at the
+# benchmark's commits (eval/benchmark/README.md), so the published numbers are about code a
+# visitor can open.
+version: 1
+repos:
+  - url: https://github.com/pallets/flask
+    commit: 49943b5a94413a530761350f04e896f76e8d620e
+    title: Flask
+    description: A small web framework. Routes, blueprints, and the request context.
+    language: Python
+    license: BSD-3-Clause
+
+  - url: https://github.com/colinhacks/zod
+    commit: c7ec94d309ee8acb25113e3db738b3e03816a424
+    title: Zod
+    description: Schema validation with static type inference.
+    language: TypeScript
+    license: MIT
+    benchmark: true
+
+  - url: https://github.com/psf/requests
+    commit: 6e83187b8feb273ed4c6cdab5efd8d54901dfab3
+    title: Requests
+    description: The HTTP client most Python code reaches for. Sessions, adapters, and auth.
+    language: Python
+    license: Apache-2.0
+    benchmark: true
+
+  - url: https://github.com/pmndrs/zustand
+    commit: 9fed2eb2f3af672da9f7bf694b996df3831fc207
+    title: Zustand
+    description: A small state store for React, with middleware.
+    language: TypeScript
+    license: MIT
+
+  - url: https://github.com/pallets/click
+    commit: cf19179e8e2fd54c601378cec9e0d21bb12b6fb1
+    title: Click
+    description: Command-line interfaces built from decorated functions.
+    language: Python
+    license: BSD-3-Clause
+    benchmark: true
+
+  - url: https://github.com/encode/httpx
+    commit: b5addb64f0161ff6bfe94c124ef76f6a1fba5254
+    title: HTTPX
+    description: An HTTP client with sync and async APIs and pluggable transports.
+    language: Python
+    license: BSD-3-Clause
+    benchmark: true
+
+  - url: https://github.com/remeda/remeda
+    commit: ec4d3f5dad1105c522c83ec4877e04937cb2405e
+    title: Remeda
+    description: A utility library with data-first and data-last forms of every function.
+    language: TypeScript
+    license: MIT
+    benchmark: true
+
+  - url: https://github.com/encode/starlette
+    commit: 271c277da0ff64e2048a4d46ecc812b9d61db5f6
+    title: Starlette
+    description: The ASGI toolkit under FastAPI. Routing, middleware, and responses.
+    language: Python
+    license: BSD-3-Clause
+
+  - url: https://github.com/gvergnaud/ts-pattern
+    commit: f11be73acb18e1d653d4f252e7d75981d873a2e6
+    title: ts-pattern
+    description: Exhaustive pattern matching for TypeScript.
+    language: TypeScript
+    license: MIT
+
+  - url: https://github.com/pallets/itsdangerous
+    commit: 672971d66a2ef9f85151e53283113f33d642dabd
+    title: ItsDangerous
+    description: Signed and timestamped tokens. Small enough to read in one sitting.
+    language: Python
+    license: BSD-3-Clause
