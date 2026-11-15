@@ -1,6 +1,6 @@
 # M14 — Agent harness
 
-**Type of work:** AI agent · **Size:** L (10 tasks) · **Status:** In progress
+**Type of work:** AI agent · **Size:** L (10 tasks) · **Status:** Done
 
 ## Goal
 
@@ -127,6 +127,8 @@ uv run repoatlas eval run --system agent --split test --runs 3 --max-cost 25.00
 
 **Build gate reached on 2026-11-15 (decision 0022). No model was called and nothing was spent.**
 Evidence: [`docs/m14-gate-evidence.md`](../m14-gate-evidence.md).
+CI run 43662452645 passed all five jobs on `d692d33` (Linux full checks, Windows unit tests, API
+types, frontend with end-to-end tests, docs lint).
 
 What was built:
 
