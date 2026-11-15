@@ -33,7 +33,7 @@ Let a tool-using agent explore the graph for questions one retrieval pass can't 
 - **`repoatlas.agent.loop.AgentAnswerSystem`** — limits `AgentConfig(max_steps = 12, max_input_tokens, per_tool_result_tokens)`, roles (`small` for steps, `large` for the final answer); an evidence ledger (`repoatlas.agent.ledger.Ledger`, IDs `E1…`); final structured answer validated by `CitationValidator`; `answer(snapshot_id, question, budget, *, on_status=None, on_step=None)` where `on_step` hears a `StepEvent` per tool call and for the final call; registered as `agent`. Built from settings by `repoatlas.agent.factory` (`agent_from_settings`, `agent_system`, `toolbox_factory`, `agent_budget`).
 - **Tool output for a model** (`repoatlas.agent.guard`): `check_arguments`, `prepare_result(result, evidence_lines, max_tokens=…)` (trim, detector marks, evidence list), `prepare_error`.
 - **API and UI:** `mode = "agent"` on the ask endpoint; server-sent `step` events (tool, argument summary, result size, tokens, cost); the UI mode toggle and live steps in `TracePanel`.
-- **MCP server:** `repoatlas mcp --snapshot <id> [--transport stdio|http] [--port N]` exposing the same tools; HTTP requires a bearer token and is rate-limited; the MCP SDK is pinned to one major version.
+- **MCP server:** `repoatlas mcp --snapshot <id> [--transport stdio|http] [--port N] [--host H]` exposing the same tools (`repoatlas.agent.mcp_server.build_server`); results carry the prepared text and the evidence as structured content, with compact evidence references as IDs; HTTP (Streamable HTTP at `/mcp`, stateless) requires the bearer token `REPOATLAS_MCP_TOKEN` and is rate-limited per client address (`REPOATLAS_MCP_CALLS_PER_MINUTE`); the MCP SDK is pinned to its 2.x major version. Documented in `docs/mcp.md`.
 - **Results:** the injection suite and the agent-versus-one-shot comparison run end to end without a model (decision 0022); the live results are pending in [`docs/live-pass.md`](../live-pass.md).
 
 ## Requirements
@@ -79,7 +79,7 @@ AGT-1, AGT-2, AGT-3, AGT-4, AGT-5, AGT-6, AGT-7, AGT-8
 - [x] **T4 — Evidence ledger and final answer.** Validation of ledger citations; refusal rules.
 - [x] **T5 — API agent mode.** `step` events over server-sent events; trace linkage.
 - [x] **T6 — UI.** Mode toggle; live steps in `TracePanel`; Playwright test with mock mode.
-- [ ] **T7 — MCP server.** stdio and HTTP transports, bearer token and rate limits; in-memory client test.
+- [x] **T7 — MCP server.** stdio and HTTP transports, bearer token and rate limits; in-memory client test.
 - [ ] **T8 — Manual MCP check.** Connect from Claude Code and run three questions with tools that call no model; notes in Results.
 - [ ] **T9 — Injection gate (build gate).** The injection suite in agent mode end to end through the runner with scripted stand-ins: the obedient one is caught (planted text and a tool call outside the snapshot), the careful one scores zero leaks over three runs. The live run is a live-pass item (decision 0022).
 - [ ] **T10 — Evaluation (tooling).** `agent` and `oneshot` through the runner on the same questions with stand-ins, compared per question type with 95% intervals and cost per question; the agent conversation's request shapes replayed from a cassette. The test-split report is a live-pass item (decision 0022).

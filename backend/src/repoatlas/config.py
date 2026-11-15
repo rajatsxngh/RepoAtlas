@@ -105,6 +105,10 @@ class Settings(BaseSettings):
     agent_per_tool_result_tokens: int = Field(default=2_000, ge=200)
     agent_max_cost_usd: float = Field(default=0.25, gt=0)  # per answer
 
+    # MCP server (repoatlas mcp). The HTTP transport refuses to start without a token.
+    mcp_token: SecretStr | None = None  # the bearer token HTTP clients must send
+    mcp_calls_per_minute: int = Field(default=120, ge=1)  # per client address (HTTP)
+
     # API
     web_origins: str = "http://localhost:3000"  # comma-separated origins allowed by CORS
     db_connect_timeout_s: float = 10.0  # opening one database connection, in the API and worker

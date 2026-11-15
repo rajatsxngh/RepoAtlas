@@ -838,6 +838,86 @@ def worker_command(
     typer.echo(f"Worker {worker.id} stopped after {worker.processed} job(s).", err=True)
 
 
+MCP_HELP = (
+    "Serve the snapshot's read-only tools (search, definitions, callers, callees, paths, code, "
+    "owners, impact) over the Model Context Protocol, for coding agents such as Claude Code. "
+    "No model is called. --transport stdio (the default) talks to a local client over stdin and "
+    "stdout; --transport http serves Streamable HTTP at /mcp and needs REPOATLAS_MCP_TOKEN, "
+    "which clients send as a bearer token."
+)
+
+
+@app.command("mcp", help=MCP_HELP)
+def mcp_command(
+    snapshot: SnapshotOption,
+    transport: Annotated[str, typer.Option(help="stdio or http.")] = "stdio",
+    port: Annotated[int, typer.Option(min=1, max=65535, help="Port for --transport http.")] = 8811,
+    host: Annotated[
+        str, typer.Option(help="Address to listen on for --transport http.")
+    ] = "127.0.0.1",
+) -> None:
+    import anyio
+
+    from repoatlas.agent.factory import toolbox_factory
+    from repoatlas.agent.mcp_server import MCP_PATH, build_server, http_app, serve_stdio
+    from repoatlas.answers.validate import StoreBlobs
+
+    if transport not in ("stdio", "http"):
+        typer.secho("The transport is stdio or http.", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=2)
+    settings = get_settings()
+    token = settings.mcp_token.get_secret_value() if settings.mcp_token is not None else ""
+    if transport == "http" and not token:
+        typer.secho(
+            "The HTTP transport needs a token: set REPOATLAS_MCP_TOKEN (clients send it as "
+            "Authorization: Bearer <token>).",
+            err=True,
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=2)
+    engine = create_db_engine(settings.database_url)
+    try:
+        store = GraphStore.from_settings(settings, engine)
+        try:
+            info = store.snapshot(snapshot)
+        except StoreError as error:
+            typer.secho(f"Error: {error}", err=True, fg=typer.colors.RED)
+            raise typer.Exit(code=1) from None
+        except OperationalError as error:
+            _connection_failed(settings.database_url, error)
+        if info.status != "ready":
+            typer.secho(
+                f"Snapshot {snapshot} is {info.status}; only a ready snapshot can be served.",
+                err=True,
+                fg=typer.colors.RED,
+            )
+            raise typer.Exit(code=1)
+        server = build_server(
+            toolbox_factory(settings, store)(snapshot),
+            StoreBlobs(engine),
+            result_tokens=settings.agent_per_tool_result_tokens,
+        )
+        repo = f"{info.repo.owner}/{info.repo.name}@{info.commit_sha[:12]}"
+        # Everything a person reads goes to stderr: on stdio, stdout carries only the protocol.
+        if transport == "stdio":
+            typer.echo(f"RepoAtlas MCP server for snapshot {snapshot} ({repo}) on stdio.", err=True)
+            anyio.run(serve_stdio, server)
+        else:
+            import uvicorn
+
+            typer.echo(
+                f"RepoAtlas MCP server for snapshot {snapshot} ({repo}) at "
+                f"http://{host}:{port}{MCP_PATH} (bearer token required).",
+                err=True,
+            )
+            asgi = http_app(
+                server, token, calls_per_minute=settings.mcp_calls_per_minute, host=host
+            )
+            uvicorn.run(asgi, host=host, port=port, log_level="warning")
+    finally:
+        engine.dispose()
+
+
 @api_app.command("openapi")
 def api_openapi(
     out: Annotated[
