@@ -3,8 +3,9 @@
 Checks that need spending (Anthropic API calls or hosting) and are deferred until the build is
 finished and the owner approves it (decisions
 [0020](decisions/0020-build-without-spend-live-pass.md),
-[0021](decisions/0021-m13-build-gate-injection-live-pass.md), and
-[0022](decisions/0022-m14-agent-build-gate-live-pass.md)). Each item is **pending** until it is
+[0021](decisions/0021-m13-build-gate-injection-live-pass.md),
+[0022](decisions/0022-m14-agent-build-gate-live-pass.md), and
+[0023](decisions/0023-m15-multi-agent-build-gate-live-pass.md)). Each item is **pending** until it is
 run and its result is written here and in its milestone's Results. Nothing on this list may be
 reported as passed before then.
 
@@ -27,6 +28,11 @@ configuration plus one run per item.
 | 12 | M14 | Live injection suite in agent mode, three runs per question: zero canary leaks | API key; capped at $3.00 | Pending |
 | 13 | M14 | Agent versus one-shot on the test split, three runs each: report with 95% intervals and cost per question | API key; capped at $25.00 (agent) plus $10.00 (one-shot, on the hardened prompt) | Pending |
 | 14 | M14 | In the running app, a question in agent mode is answered by the live model with steps in the trace panel | API key, a few cents | Pending |
+| 15 | M15 | The multi-agent budgets (steps, tokens, cost, branch time limit) checked on the dev split | API key; capped at $10.00 | Pending |
+| 16 | M15 | Live injection suite in multi-agent mode, three runs per question: zero canary leaks | API key; capped at $4.00 | Pending |
+| 17 | M15 | Multi-agent versus agent versus one-shot on the test split, three runs each: report with 95% intervals, cost per question, and cost per stage | API key; capped at $40.00 (multi-agent), reusing the reports of item 13 | Pending |
+| 18 | M15 | The verifier's labels spot-checked against human labels on dev | Item 15's report; an hour of labeling; no extra calls | Pending |
+| 19 | M15 | In the running app, a question in multi-agent mode is answered by the live model, with branches in the trace panel | API key, a few cents | Pending |
 
 ## How to run them
 
@@ -116,6 +122,54 @@ the traces.
 **Item 14 (agent mode in the app).** With a key set, start the stack (`node scripts/dev.mjs`),
 ask a question with the mode set to Agent, and check that steps appear while it runs and that
 the answer's citations open the cited code.
+
+**Item 15 (multi-agent budgets on dev).** Run items 10 and 11 first: the explorers are the
+agent loop. Then, in `backend/`:
+
+```bash
+uv run repoatlas eval run --system multiagent --split dev --runs 1 --max-cost 10.00
+```
+
+Read the report's refusals and the cost-per-stage table. `budget` refusals, branches that end
+`partial` or `timeout` on ordinary questions, and a verification stage that costs more than
+the rest together say the defaults of decision 0023 are wrong. Change
+`REPOATLAS_MULTIAGENT_TOTAL_STEPS`, `REPOATLAS_MULTIAGENT_MAX_INPUT_TOKENS`,
+`REPOATLAS_MULTIAGENT_MAX_COST_USD`, or `REPOATLAS_MULTIAGENT_BRANCH_TIMEOUT_S`, record the
+choice in a decision record, and only then run item 17. This is the first live run of the
+planner, the notes call (a response schema next to the tools, with tool choice `none`, on the
+small model), the writer, and the verifier: if the API rejects a request, fix the stage first.
+
+**Item 16 (live injection suite, multi-agent mode).**
+
+```bash
+uv run repoatlas eval run --suite injection --system multiagent --runs 3 --max-cost 4.00
+```
+
+It must end with `complete` and a score of 1.000. A leak in the answer, in a sub-question the
+answer shows, or a tool call outside the snapshot fails the gate for multi-agent mode; the
+mode is not deployed until this passes.
+
+**Item 17 (three-way report).** With the two reports of item 13:
+
+```bash
+uv run repoatlas eval run --system multiagent --split test --runs 3 --max-cost 40.00
+uv run repoatlas eval compare <oneshot report>.json <agent report>.json <multiagent report>.json
+```
+
+Write the summary table, the paired differences with their intervals, the cost per question,
+and the cost per stage into M15's Results. If the pipeline's gain over the agent is small, say
+so; the default mode then stays the cheaper one.
+
+**Item 18 (verifier against human labels).** Take 30 claims from item 15's dev report with
+`uv run repoatlas eval labels export-claims --report <multiagent dev report>.json`, label them
+without looking at the verifier's labels, and compare with the `verification` labels stored in
+the cached answers. Report the agreement and every claim the verifier called supported that a
+person did not.
+
+**Item 19 (multi-agent mode in the app).** With a key set, start the stack
+(`node scripts/dev.mjs`), ask a question that has two independent parts with the mode set to
+Multi-agent, and check that the plan and each branch's steps appear while it runs, that the
+trace panel groups the spans by branch, and that the answer's citations open the cited code.
 
 ## Results
 

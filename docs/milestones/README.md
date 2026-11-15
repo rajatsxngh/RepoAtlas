@@ -66,7 +66,7 @@ The arrows show build order. The exact dependencies of each milestone are in the
 | M12 | [Private deployment & limits](M12-private-deployment.md) | DevOps | M | M00–M11 | Done |
 | M13 | [Observability panel & guardrails](M13-observability-guardrails.md) | Reliability and security | L | M04, M05, M07, M10, M11 | Done |
 | M14 | [Agent harness](M14-agent-harness.md) | AI agent | L | M03, M06, M07, M10, M11, M13 | Done |
-| M15 | [Multi-agent pipeline](M15-multi-agent.md) | AI agents | M | M10, M13, M14 | Not started |
+| M15 | [Multi-agent pipeline](M15-multi-agent.md) | AI agents | M | M10, M13, M14 | In progress |
 | M16 | [Performance & cost](M16-performance-cost.md) | Optimization | M | M02, M03, M04, M05, M06, M10, M13, M15 | Not started |
 | M17 | [Launch](M17-launch.md) | Release and content | M | M00–M16 | Not started |
 

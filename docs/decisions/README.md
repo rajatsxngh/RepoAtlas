@@ -26,3 +26,4 @@ Short records of decisions that shape RepoAtlas. Each has a context, the decisio
 | [0020](0020-build-without-spend-live-pass.md) | Build without spending; live and hosted checks move to a live pass | Accepted |
 | [0021](0021-m13-build-gate-injection-live-pass.md) | M13 without spend: a build gate for the injection suite, and what moved | Accepted |
 | [0022](0022-m14-agent-build-gate-live-pass.md) | M14 without spend: the agent's build gate, and what moved | Accepted |
+| [0023](0023-m15-multi-agent-build-gate-live-pass.md) | M15 without spend: the multi-agent build gate, and what moved | Accepted |
