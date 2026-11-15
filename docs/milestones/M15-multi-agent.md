@@ -46,7 +46,7 @@ MAS-1, MAS-2, MAS-3, MAS-4, MAS-5, MAS-6, MAS-7
 
 - [x] **T1 — Planner.** Structured plan schema; tests with `FakeLLM` (single-branch and multi-branch questions).
 - [x] **T2 — Explorers.** Concurrent branches, per-branch budgets, shared tool cache; tests for concurrency limits and partial results.
-- [ ] **T3 — Writer.** Ledger merging with stable evidence IDs; draft generation.
+- [x] **T3 — Writer.** Ledger merging with stable evidence IDs; draft generation.
 - [ ] **T4 — Verifier.** Support labels, drop and repair; test with a seeded unsupported claim (must be dropped) and a seeded partial claim (repaired or dropped).
 - [ ] **T5 — Failure handling.** Branch errors and timeouts produce partial answers with explicit gaps.
 - [ ] **T6 — API and UI mode.** Branch-aware events; `TracePanel` grouping; Playwright test with mock mode.

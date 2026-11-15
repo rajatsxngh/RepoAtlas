@@ -41,7 +41,7 @@ class MultiAgentConfig(BaseModel):
     per_tool_result_tokens: int = Field(default=2_000, ge=MIN_RESULT_TOKENS)
     step_output_tokens: int = Field(default=2_048, ge=256)  # one exploration turn
     branch_timeout_s: float = Field(default=180.0, gt=0)
-    evidence_tokens: int = Field(default=12_000, ge=500)  # evidence the writer is shown
+    evidence_tokens: int = Field(default=12_000, ge=50)  # evidence the writer is shown
     context_k: int = Field(default=10, ge=1, le=10)  # search results the planner is shown
     plan_output_tokens: int = Field(default=1_024, ge=256)
     notes_output_tokens: int = Field(default=1_024, ge=256)
