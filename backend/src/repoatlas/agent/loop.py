@@ -30,6 +30,13 @@ Guards:
 Every step and every tool call is a span of the current trace, and ``on_step`` hears a
 ``StepEvent`` after each tool call and when the model ends the exploration.
 
+``Explorer.run`` is ``begin`` (a fresh ``Exploration``) followed by ``explore`` (the loop, which
+fills that state in place). A caller that may have to cancel an exploration calls the two
+itself and keeps the state: the ledger, the tool calls, and what was spent so far. ``explore``
+can also share a ``ToolCache`` with other explorations of the same answer, so the same call is
+run once for all of them, and an explorer can be given its own closing instruction (both are
+used by the multi-agent pipeline, decision 0023).
+
 ``AgentAnswerSystem`` (AGT-5) is the whole answering mode, registered as ``agent``. After
 exploring, it gives the ``large`` model the same conversation, unchanged, with tool choice
 ``none`` and the ``AnswerDraft`` schema; the draft may cite only ledger IDs, and
@@ -46,6 +53,7 @@ exploring, it gives the ``large`` model the same conversation, unchanged, with t
 from __future__ import annotations
 
 import json
+import threading
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -71,7 +79,7 @@ from repoatlas.agent.prompting import (
     estimate_conversation_tokens,
     system_prompt,
 )
-from repoatlas.agent.results import ToolError
+from repoatlas.agent.results import ToolError, ToolResult
 from repoatlas.agent.tools import TOOLS_BY_NAME, Toolbox, tool_definitions
 from repoatlas.answers.policy import RefusalDecision, RefusalPolicy
 from repoatlas.answers.prompting import estimate_tokens
@@ -126,18 +134,26 @@ class AgentConfig(BaseModel):
     answer_role: Role = "large"
 
 
+StepKind = Literal["tool", "finish", "answer", "plan", "notes", "write", "verify", "repair"]
+
+
 class StepEvent(BaseModel):
     """One thing the agent did, as the ask stream reports it. ``kind`` is ``tool`` for a tool
     call, ``finish`` for the model ending the exploration, and ``answer`` for the final answer
     call. The tokens and cost are those of the model turn behind the event; a turn that called
     several tools reports them once, on its first event, so the events of an answer add up to
-    its usage and cost."""
+    its usage and cost.
+
+    The multi-agent pipeline (decision 0023) reports its stages with the same event: ``plan``,
+    a branch's ``notes``, ``write``, ``verify``, and ``repair``; the events of a branch carry
+    its ID in ``branch``."""
 
     model_config = ConfigDict(frozen=True)
 
     seq: int  # order within the answer, from 1
-    step: int  # the model turn, from 1
-    kind: Literal["tool", "finish", "answer"] = "tool"
+    step: int  # the model turn, from 1 (within its branch, when there is one)
+    kind: StepKind = "tool"
+    branch: str | None = None  # the branch of a multi-agent answer the event belongs to
     tool: str
     arguments: str = ""  # a short summary
     result_tokens: int = 0
@@ -210,6 +226,46 @@ async def _quiet(_event: StepEvent) -> None:
     return None
 
 
+class ToolCache:
+    """Tool results shared by the explorations of one answer: the same tool with the same
+    arguments is run once, whichever exploration asks first, and the others get its result (or
+    its error). Each exploration still lists the result's evidence in its own ledger."""
+
+    def __init__(self) -> None:
+        self._results: dict[tuple[str, str], ToolResult | ToolError] = {}
+        self._locks: dict[tuple[str, str], threading.Lock] = {}
+        self._lock = threading.Lock()
+        self.hits = 0
+        self.misses = 0
+
+    def call(
+        self, toolbox: Toolbox, name: str, arguments: dict[str, Any]
+    ) -> tuple[ToolResult, bool]:
+        """The result of the call, and whether it came from the cache. Raises the call's
+        ``ToolError`` (a cached one too)."""
+        key = (name, canonical_json(arguments))
+        with self._lock:
+            lock = self._locks.setdefault(key, threading.Lock())
+        with lock:  # a second identical call waits for the first instead of running too
+            with self._lock:
+                known = self._results.get(key)
+            hit = known is not None
+            if known is None:
+                try:
+                    known = toolbox.call(name, arguments)
+                except ToolError as exc:
+                    known = exc
+            with self._lock:
+                self._results[key] = known
+                if hit:
+                    self.hits += 1
+                else:
+                    self.misses += 1
+        if isinstance(known, ToolError):
+            raise known
+        return known, hit
+
+
 class Explorer:
     def __init__(
         self,
@@ -219,12 +275,14 @@ class Explorer:
         *,
         prices: PriceTable,
         config: AgentConfig | None = None,
+        closing: Callable[[str], str] = closing_text,
     ) -> None:
         self.llm = llm
         self.toolbox_for = toolbox_for
         self.ledger_for = ledger_for
         self.prices = prices
         self.config = config or AgentConfig()
+        self.closing = closing  # the instruction that ends exploring, by stop reason
         self.tools = [*tool_definitions(), FINAL_ANSWER_TOOL]
 
     # --- budgets ---------------------------------------------------------------------------
@@ -232,7 +290,7 @@ class Explorer:
     def final_cost(self, messages: list[Message], budget: Budget) -> float:
         """The most the final answer call can cost on this conversation (with its repair)."""
         tokens = estimate_conversation_tokens(messages, self.tools) + estimate_tokens(
-            closing_text("max_steps")
+            self.closing("max_steps")
         )
         model = self.llm.model_for(self.config.answer_role)
         return REPAIR_FACTOR * self.prices.max_cost(model, tokens, budget.max_output_tokens)
@@ -260,6 +318,14 @@ class Explorer:
 
     # --- the loop --------------------------------------------------------------------------
 
+    def begin(self, question: str, *, messages: list[Message] | None = None) -> Exploration:
+        """A fresh exploration: the opening messages (the agent's own for ``question`` unless
+        ``messages`` are given) and an empty ledger."""
+        opening = messages or build_agent_messages(question, self.config.max_steps)
+        return Exploration(
+            messages=opening, tools=self.tools, ledger=self.ledger_for(), stop="max_steps"
+        )
+
     async def run(
         self,
         snapshot_id: int,
@@ -268,13 +334,23 @@ class Explorer:
         *,
         on_step: StepCallback | None = None,
     ) -> Exploration:
+        return await self.explore(self.begin(question), snapshot_id, budget, on_step=on_step)
+
+    async def explore(
+        self,
+        state: Exploration,
+        snapshot_id: int,
+        budget: Budget,
+        *,
+        on_step: StepCallback | None = None,
+        cache: ToolCache | None = None,
+    ) -> Exploration:
+        """Run the loop on ``state`` and return it. ``state`` is filled as the loop goes, so a
+        caller that cancels this still has what was found and spent."""
         config = self.config
         notify = on_step or _quiet
         toolbox = self.toolbox_for(snapshot_id)
-        messages = build_agent_messages(question, config.max_steps)
-        state = Exploration(
-            messages=messages, tools=self.tools, ledger=self.ledger_for(), stop="max_steps"
-        )
+        messages = state.messages
         previous: tuple[str, str] | None = None  # the call before this one: (tool, arguments)
         previous_lines: list[str] = []
         blocked = self._room(messages, budget, state.usage, state.cost_usd)
@@ -309,7 +385,7 @@ class Explorer:
                 span.set(tool_calls=len(calls), stop_reason=result.stop_reason)
                 if not calls:
                     state.stop = "no_tool_call"
-                    messages.append(_user([_text(closing_text("no_tool_call"))]))
+                    messages.append(_user([_text(self.closing("no_tool_call"))]))
                     state.events += 1
                     await notify(_finish(state.events, step, result, str(span.id)))
                     return state
@@ -336,7 +412,7 @@ class Explorer:
                             ran = _repeat(call, step, previous_lines)
                         else:
                             ran = await anyio.to_thread.run_sync(
-                                self._run_tool, toolbox, state.ledger, call, step
+                                self._run_tool, toolbox, state.ledger, call, step, cache
                             )
                         tool_span.set(
                             result_tokens=ran.use.result_tokens,
@@ -371,18 +447,30 @@ class Explorer:
                         [*messages, _user(blocks)], budget, state.usage, state.cost_usd
                     )
                 if stop is not None:
-                    blocks.append(_text(closing_text(stop)))
+                    blocks.append(_text(self.closing(stop)))
                 messages.append(_user(blocks))
                 span.set(stop=stop)
             if stop is not None:
                 state.stop = stop
                 return state
 
-    def _run_tool(self, toolbox: Toolbox, ledger: Ledger, call: ToolCall, step: int) -> _Ran:
-        """Run one tool call (in a worker thread) and prepare its result for the model."""
+    def _run_tool(
+        self,
+        toolbox: Toolbox,
+        ledger: Ledger,
+        call: ToolCall,
+        step: int,
+        cache: ToolCache | None = None,
+    ) -> _Ran:
+        """Run one tool call (in a worker thread) and prepare its result for the model. With a
+        ``cache``, a call another exploration already made is answered from it."""
         arguments = kept_arguments(call.input)
+        shared = False
         try:
-            result = toolbox.call(call.name, call.input)
+            if cache is None:
+                result = toolbox.call(call.name, call.input)
+            else:
+                result, shared = cache.call(toolbox, call.name, call.input)
         except ToolError as exc:
             text = prepare_error(str(exc))
             use = ToolUse(
@@ -404,10 +492,16 @@ class Explorer:
             evidence_ids=[entry.id for entry in entries],
             result_tokens=prepared.tokens,
             truncated=prepared.truncated,
+            cached=shared,
             flags=prepared.flags,
         )
         return _Ran(
-            text=prepared.text, is_error=False, use=use, prepared=prepared, evidence_lines=lines
+            text=prepared.text,
+            is_error=False,
+            use=use,
+            prepared=prepared,
+            cached=shared,
+            evidence_lines=lines,
         )
 
 

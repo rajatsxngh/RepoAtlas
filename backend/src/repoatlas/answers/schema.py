@@ -86,11 +86,14 @@ class ToolUse(BaseModel):
     """One tool call an answering mode with tools made (decision 0022). ``allowed`` is False
     when the call was refused for reaching outside the snapshot (an unknown tool, a path that
     is not one of its files); ``error`` is set when the call did not return a result;
-    ``cached`` marks a repeated call that was not run again."""
+    ``cached`` marks a call that was not run again: a repeat of the call before it, or, in a
+    multi-agent answer, a call another branch had already made. ``branch`` is the branch of a
+    multi-agent answer that made the call (decision 0023)."""
 
     model_config = ConfigDict(frozen=True)
 
     step: int = Field(ge=1)  # the model turn that made the call
+    branch: str | None = None
     name: str
     arguments: dict[str, Any] = Field(default_factory=dict)
     allowed: bool = True

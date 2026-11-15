@@ -124,7 +124,7 @@ All are backward compatible; the milestone files list them under "Added later by
   other modes). `ToolUse` gains `branch` (the branch that made the call; `None` elsewhere).
 - **Agent loop (M14).** `Explorer` takes a `closing` text function and a shared `ToolCache`;
   its work is split into `begin` and `explore` so a caller keeps the state of a branch it had
-  to cancel (`run` is unchanged). `AgentConfig` gains `notes_output_tokens`. `StepEvent` gains
+  to cancel (`run` is unchanged). `StepEvent` gains
   `branch` and the kinds `plan`, `notes`, `write`, `verify`, and `repair`.
 - **Ask API (M04, M07).** `mode` accepts `multiagent`; the stream gains a `plan` event (the
   branches) and `step` events carry `branch`. A stored run has mode `multiagent`.
