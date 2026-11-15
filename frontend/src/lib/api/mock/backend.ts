@@ -24,10 +24,10 @@ import {
   fixtureByName,
   type MockFixture,
 } from "./fixtures";
-import { mockAnswer, sseBody } from "./ask";
+import { mockAgentRun, mockAnswer, sseBody } from "./ask";
 import { mockExplanation, mockImpact } from "./impact";
 import { MockApiError, MockGraph } from "./graph";
-import { mockAnswerTrace, mockImpactTrace } from "./trace";
+import { mockAgentTrace, mockAnswerTrace, mockImpactTrace } from "./trace";
 
 export interface MockResponse {
   status: number;
@@ -363,7 +363,10 @@ export class MockBackend {
 
   private askRuns = 0;
 
-  /** `POST /snapshots/{id}/ask`: the status steps, then a mock answer (see `./ask`). */
+  /**
+   * `POST /snapshots/{id}/ask`: the status steps, then a mock answer (see `./ask`). In agent mode
+   * the stream also has a `step` event per tool call, in the order the API sends them.
+   */
   private async ask(snapshotId: number, body: unknown): Promise<MockResponse> {
     const graph = await this.ready(snapshotId);
     const question =
@@ -377,7 +380,33 @@ export class MockBackend {
         "The question must have 1 to 2000 characters.",
       );
     }
+    const mode = body && typeof body === "object" && "mode" in body ? body.mode : "oneshot";
+    if (mode !== "oneshot" && mode !== "agent") {
+      throw new MockApiError(422, "invalid_request", "The mode must be oneshot or agent.");
+    }
     this.askRuns += 1;
+    if (mode === "agent") {
+      const run = mockAgentRun(graph, question, this.askRuns);
+      const { trace, steps: linked } = mockAgentTrace(run.answer, snapshotId, run.steps);
+      this.traces.set(run.answer.trace_id!, trace);
+      const events: (readonly [string, unknown])[] = [["status", { step: "exploring" }]];
+      for (const event of linked) {
+        // The API reports "answering" before the final call and "validating" after it.
+        if (event.kind === "answer") events.push(["status", { step: "answering" }]);
+        events.push(["step", event]);
+        if (event.kind === "answer") events.push(["status", { step: "validating" }]);
+      }
+      return {
+        status: 200,
+        body: null,
+        headers: { "Content-Type": "text/event-stream" },
+        raw: sseBody([
+          ...events,
+          ["answer", run.answer],
+          ["done", { run_id: run.answer.run_id, trace_id: run.answer.trace_id }],
+        ]),
+      };
+    }
     const answer = mockAnswer(graph, question, this.askRuns);
     this.traces.set(answer.trace_id!, mockAnswerTrace(answer, snapshotId, "answer"));
     const steps =

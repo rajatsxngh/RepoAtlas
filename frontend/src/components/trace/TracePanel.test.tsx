@@ -2,9 +2,10 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { ApiClient } from "@/lib/api/client";
-import type { SpanView, TraceView } from "@/lib/api/types";
+import type { AskStepEvent, SpanView, TraceView } from "@/lib/api/types";
 import { renderWithApi } from "@/test/render";
 import {
+  LiveSteps,
   TracePanel,
   TraceToggle,
   formatCost,
@@ -171,6 +172,128 @@ describe("TracePanel", () => {
   it("says when the trace can't be loaded", async () => {
     renderWithApi(<TracePanel traceId={TRACE_ID} />, { api: apiFor(null) });
     expect(await screen.findByRole("alert")).toBeInTheDocument();
+  });
+});
+
+function stepEvent(seq: number, fields: Partial<AskStepEvent> = {}): AskStepEvent {
+  return {
+    seq,
+    step: seq,
+    kind: "tool",
+    tool: "search_code",
+    arguments: 'query="cart total"',
+    result_tokens: 1240,
+    evidence: 3,
+    error: null,
+    allowed: true,
+    cached: false,
+    truncated: false,
+    flags: [],
+    model: "claude-haiku-5-5",
+    tokens_in: 3100,
+    tokens_out: 70,
+    cost_usd: 0.0003,
+    span_id: null,
+    ...fields,
+  };
+}
+
+describe("LiveSteps", () => {
+  it("lists each step with what it returned and what its model turn cost", () => {
+    renderWithApi(
+      <LiveSteps
+        steps={[
+          stepEvent(1),
+          stepEvent(2, {
+            tool: "read_file",
+            arguments: 'path="src/cart.py", start=1, end=40',
+            evidence: 1,
+            model: null,
+            tokens_in: 0,
+            tokens_out: 0,
+            cost_usd: 0,
+            truncated: true,
+          }),
+          stepEvent(3, {
+            kind: "finish",
+            tool: "final_answer",
+            arguments: "",
+            evidence: 0,
+            result_tokens: 0,
+          }),
+          stepEvent(4, {
+            kind: "answer",
+            tool: "answer",
+            arguments: "",
+            model: "claude-sonnet-5-5",
+            tokens_in: 5200,
+            tokens_out: 310,
+            cost_usd: 0.0135,
+          }),
+        ]}
+        running
+      />,
+    );
+    const region = screen.getByRole("region", { name: "Agent steps" });
+    expect(region).toHaveAttribute("aria-busy", "true");
+    const rows = within(region).getAllByRole("listitem");
+    expect(rows).toHaveLength(4);
+    expect(rows[0]).toHaveTextContent("search_code");
+    expect(rows[0]).toHaveTextContent("3 pieces of evidence · about 1.2k tokens returned");
+    expect(rows[0]).toHaveTextContent("claude-haiku-5-5 · 3.1k in · 70 out · $0.0003");
+    expect(rows[1]).toHaveTextContent("1 piece of evidence");
+    expect(rows[1]).toHaveTextContent("cut to fit");
+    expect(rows[1]).not.toHaveTextContent("claude-haiku-5-5"); // reported once per model turn
+    expect(rows[2]).toHaveTextContent("Finished exploring");
+    expect(rows[3]).toHaveTextContent("Wrote the answer");
+    expect(rows[3]).toHaveTextContent("claude-sonnet-5-5 · 5.2k in · 310 out · $0.0135");
+    expect(within(region).getByTestId("steps-summary")).toHaveTextContent("2 tool calls · $0.0141");
+  });
+
+  it("marks refused, failed, repeated, and flagged calls", () => {
+    renderWithApi(
+      <LiveSteps
+        steps={[
+          stepEvent(1, {
+            tool: "read_file",
+            arguments: 'path="/etc/passwd"',
+            allowed: false,
+            error: "'/etc/passwd' is not a file of this snapshot: the path is absolute.",
+            evidence: 0,
+          }),
+          stepEvent(2, {
+            tool: "find_callers",
+            error: "The snapshot has no symbol with the key 'py:x'.",
+            evidence: 0,
+          }),
+          stepEvent(3, { cached: true, evidence: 0, result_tokens: 40 }),
+          stepEvent(4, { flags: ["instruction_to_assistant"] }),
+        ]}
+      />,
+    );
+    const rows = screen.getAllByRole("listitem");
+    expect(rows[0]).toHaveAttribute("data-refused", "true");
+    expect(rows[0]).toHaveTextContent("Refused: '/etc/passwd' is not a file of this snapshot");
+    expect(rows[0]).not.toHaveTextContent("pieces of evidence");
+    expect(rows[1]).not.toHaveAttribute("data-refused");
+    expect(rows[1]).toHaveTextContent("Failed: The snapshot has no symbol");
+    expect(rows[2]).toHaveTextContent("same call as before, not run again");
+    expect(rows[3]).toHaveTextContent("contains instruction-like text, marked as data");
+    expect(screen.getByTestId("steps-summary")).toHaveTextContent("4 tool calls");
+    expect(screen.getByRole("region", { name: "Agent steps" })).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+  });
+
+  it("renders tool names, arguments, and errors as text, never as HTML", () => {
+    const hostile = "<img src=x onerror=alert(1)><script>alert(2)</script>";
+    renderWithApi(
+      <LiveSteps steps={[stepEvent(1, { tool: hostile, arguments: hostile, error: hostile })]} />,
+    );
+    const region = screen.getByRole("region", { name: "Agent steps" });
+    expect(region.querySelector("img, script")).toBeNull();
+    expect(region).toHaveTextContent("<script>alert(2)</script>");
   });
 });
 

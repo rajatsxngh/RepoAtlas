@@ -6,6 +6,9 @@
  * markdown goes through the sanitized renderer; claims and paths are repo or model text,
  * rendered as text. Each citation is a chip: clicking it opens the cited lines in the code
  * viewer and tells the workspace to highlight the cited symbol on the map.
+ *
+ * Two modes (AGT-6): "Quick" retrieves once and answers; "Agent" explores the code with tools
+ * first, and its tool calls appear one by one while it works (`LiveSteps`).
  */
 
 import { MessageSquareText, X } from "lucide-react";
@@ -15,7 +18,8 @@ import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { useApi } from "@/lib/api/context";
 import { describeError } from "@/lib/api/errors";
-import type { AnswerView, AskStep, Citation } from "@/lib/api/types";
+import { LiveSteps } from "@/components/trace/TracePanel";
+import type { AnswerView, AskMode, AskStep, AskStepEvent, Citation } from "@/lib/api/types";
 import { AnswerBody, citationLabel } from "./AnswerBody";
 
 export interface AskPanelProps {
@@ -28,9 +32,19 @@ export interface AskPanelProps {
 
 const STEP_TEXT: Record<AskStep, string> = {
   retrieving: "Finding the relevant code…",
+  exploring: "Exploring the code…",
   answering: "Writing the answer…",
   validating: "Checking every citation…",
 };
+
+const MODES: readonly { mode: AskMode; label: string; hint: string }[] = [
+  { mode: "oneshot", label: "Quick", hint: "One search of the code, then an answer." },
+  {
+    mode: "agent",
+    label: "Agent",
+    hint: "Explores the code with tools first. Slower, for questions one search can't answer.",
+  },
+];
 
 /** Lines of context shown around a cited range. */
 const CONTEXT_LINES = 3;
@@ -40,6 +54,9 @@ export { citationLabel };
 export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPanelProps) {
   const api = useApi();
   const [question, setQuestion] = useState("");
+  const [mode, setMode] = useState<AskMode>("oneshot");
+  // The tool calls of the agent answer being made or shown (empty for quick answers).
+  const [steps, setSteps] = useState<AskStepEvent[]>([]);
   const [step, setStep] = useState<AskStep | null>(null);
   const [answer, setAnswer] = useState<AnswerView | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -60,12 +77,17 @@ export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPan
       setAnswer(null);
       setError(null);
       setCited(null);
-      setStep("retrieving");
+      setSteps([]);
+      setStep(mode === "agent" ? "exploring" : "retrieving");
       try {
         const outcome = await api.ask(
           snapshotId,
-          { question: text, mode: "oneshot" },
-          { signal: current.signal, onStatus: setStep },
+          { question: text, mode },
+          {
+            signal: current.signal,
+            onStatus: setStep,
+            onStep: (event) => setSteps((known) => [...known, event]),
+          },
         );
         setAnswer(outcome.answer);
       } catch (caught) {
@@ -74,7 +96,7 @@ export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPan
         if (controller.current === current) setStep(null);
       }
     },
-    [api, busy, question, snapshotId],
+    [api, busy, mode, question, snapshotId],
   );
 
   const open = useCallback(
@@ -124,6 +146,33 @@ export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPan
             placeholder="How does checkout compute the total?"
             className="w-full resize-y rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-fg-faint focus:ring-2 focus:ring-focus focus:outline-none"
           />
+          <div role="radiogroup" aria-label="Answer mode" className="flex items-center gap-1.5">
+            {MODES.map((option) => (
+              <label
+                key={option.mode}
+                title={option.hint}
+                className={`cursor-pointer rounded-md border px-2 py-1 text-xs has-focus-visible:ring-2 has-focus-visible:ring-focus ${
+                  mode === option.mode
+                    ? "border-focus bg-focus/10 text-fg"
+                    : "border-line bg-surface-2 text-fg-muted hover:text-fg"
+                } ${busy ? "cursor-not-allowed opacity-60" : ""}`}
+              >
+                <input
+                  type="radio"
+                  name="ask-mode"
+                  value={option.mode}
+                  checked={mode === option.mode}
+                  disabled={busy}
+                  onChange={() => setMode(option.mode)}
+                  className="sr-only"
+                />
+                {option.label}
+              </label>
+            ))}
+            <span className="text-[11px] text-fg-faint" data-testid="ask-mode-hint">
+              {MODES.find((option) => option.mode === mode)?.hint}
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             <Button
               type="submit"
@@ -144,6 +193,8 @@ export function AskPanel({ snapshotId, onCite, onClose, className = "" }: AskPan
             <Spinner /> {STEP_TEXT[step]}
           </p>
         ) : null}
+
+        {steps.length > 0 ? <LiveSteps steps={steps} running={busy} /> : null}
 
         {failure ? (
           <div role="alert" className="rounded-lg border border-line px-3 py-2 text-sm">

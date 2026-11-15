@@ -5,6 +5,10 @@
  * each with its kind, model, tokens, cost, and time, a bar showing when it ran inside the
  * trace, and the totals. The data is `GET /traces/{id}`. Span names, kinds, and error text come
  * from the server and are rendered as text.
+ *
+ * `LiveSteps` shows an agent answer's tool calls while it is being made (AGT-6): one row per
+ * `step` event of the ask stream, as it arrives. Tool names, arguments, and errors are model
+ * or repo text, rendered as text.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -13,7 +17,7 @@ import { useMemo, useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import { useApi } from "@/lib/api/context";
 import { describeError } from "@/lib/api/errors";
-import type { SpanView, TraceView } from "@/lib/api/types";
+import type { AskStepEvent, SpanView, TraceView } from "@/lib/api/types";
 
 export interface SpanNode {
   span: SpanView;
@@ -269,6 +273,113 @@ export function TracePanel({ traceId, className = "" }: TracePanelProps) {
           )}
         </>
       ) : null}
+    </section>
+  );
+}
+
+const STEP_TITLE: Record<AskStepEvent["kind"], string | null> = {
+  tool: null,
+  finish: "Finished exploring",
+  answer: "Wrote the answer",
+};
+
+function stepNotes(event: AskStepEvent): string[] {
+  const notes: string[] = [];
+  if (event.kind !== "tool") return notes;
+  if (event.cached) notes.push("same call as before, not run again");
+  if (!event.error) {
+    notes.push(`${event.evidence} ${event.evidence === 1 ? "piece" : "pieces"} of evidence`);
+    notes.push(`about ${formatTokens(event.result_tokens)} tokens returned`);
+  }
+  if (event.truncated) notes.push("cut to fit");
+  if (event.flags.length > 0) notes.push("contains instruction-like text, marked as data");
+  return notes;
+}
+
+export interface LiveStepsProps {
+  /** The `step` events received so far, in order. */
+  steps: readonly AskStepEvent[];
+  /** The answer is still being made. */
+  running?: boolean;
+  className?: string;
+}
+
+/** An agent answer's steps as they happen: each tool call, then the final answer call. */
+export function LiveSteps({ steps, running = false, className = "" }: LiveStepsProps) {
+  const calls = steps.filter((event) => event.kind === "tool").length;
+  const cost = steps.reduce((sum, event) => sum + event.cost_usd, 0);
+  return (
+    <section
+      aria-label="Agent steps"
+      aria-busy={running}
+      className={`rounded-lg border border-line bg-surface px-3 py-2 ${className}`}
+    >
+      <h3 className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-fg-muted uppercase">
+        <Activity className="h-3.5 w-3.5" aria-hidden="true" />
+        Steps
+        <span
+          data-testid="steps-summary"
+          className="ml-auto font-mono text-[11px] font-normal tracking-normal normal-case"
+        >
+          {calls} {calls === 1 ? "tool call" : "tool calls"} · {formatCost(cost)}
+        </span>
+      </h3>
+      <ol aria-label="Agent steps" className="mt-1 divide-y divide-line">
+        {steps.map((event) => {
+          const refused = !event.allowed;
+          const notes = stepNotes(event);
+          const usage = event.model
+            ? [
+                event.model,
+                `${formatTokens(event.tokens_in)} in · ${formatTokens(event.tokens_out)} out`,
+                formatCost(event.cost_usd),
+              ].join(" · ")
+            : null;
+          return (
+            <li
+              key={event.seq}
+              data-step-kind={event.kind}
+              data-refused={refused ? "true" : undefined}
+              className="py-1.5"
+            >
+              <p className="flex items-baseline gap-1.5 text-xs">
+                <span className="w-4 shrink-0 text-right font-mono text-[10px] text-fg-faint tabular-nums">
+                  {event.seq}
+                </span>
+                {STEP_TITLE[event.kind] ? (
+                  <span className="text-fg">{STEP_TITLE[event.kind]}</span>
+                ) : (
+                  <>
+                    <span
+                      className={`shrink-0 font-mono ${event.error ? "text-danger" : "text-fg"}`}
+                    >
+                      {event.tool}
+                    </span>
+                    <span
+                      className="min-w-0 truncate font-mono text-fg-muted"
+                      title={event.arguments}
+                    >
+                      {event.arguments}
+                    </span>
+                  </>
+                )}
+              </p>
+              <div className="pl-[22px]">
+                {event.error ? (
+                  <p className="text-[11px] break-words text-danger">
+                    {refused ? "Refused: " : "Failed: "}
+                    {event.error}
+                  </p>
+                ) : null}
+                {notes.length > 0 ? (
+                  <p className="text-[11px] text-fg-muted">{notes.join(" · ")}</p>
+                ) : null}
+                {usage ? <p className="truncate text-[11px] text-fg-faint">{usage}</p> : null}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
     </section>
   );
 }

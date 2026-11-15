@@ -12,6 +12,7 @@ import type {
   AskDone,
   AskRequest,
   AskStep,
+  AskStepEvent,
   BuildAccepted,
   CodeQuery,
   CodeSlice,
@@ -41,6 +42,8 @@ export interface AskOptions {
   signal?: AbortSignal;
   /** Told as each step starts. */
   onStatus?: (step: AskStep) => void;
+  /** Agent mode: told after each tool call, when exploring ends, and after the final call. */
+  onStep?: (event: AskStepEvent) => void;
 }
 
 export interface AskOutcome {
@@ -275,14 +278,14 @@ export class ApiClient {
   }
 
   /**
-   * Ask a question. The answer streams as server-sent events: `status` steps, then the validated
-   * `answer` and `done`, or an `error` (thrown as an `ApiError`). Never retried: each question
-   * costs money.
+   * Ask a question. The answer streams as server-sent events: `status` steps (and, in agent
+   * mode, a `step` per tool call), then the validated `answer` and `done`, or an `error` (thrown
+   * as an `ApiError`). Never retried: each question costs money.
    */
   async ask(
     snapshotId: number,
     request: AskRequest,
-    { signal, onStatus }: AskOptions = {},
+    { signal, onStatus, onStep }: AskOptions = {},
   ): Promise<AskOutcome> {
     let response: Response;
     try {
@@ -308,6 +311,8 @@ export class ApiClient {
     for await (const { event, data } of readEvents(response.body)) {
       if (event === "status") {
         onStatus?.((data as { step: AskStep }).step);
+      } else if (event === "step") {
+        onStep?.(data as AskStepEvent);
       } else if (event === "answer") {
         answer = data as AnswerView;
       } else if (event === "done") {

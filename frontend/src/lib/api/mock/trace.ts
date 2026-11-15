@@ -4,7 +4,7 @@
  * impact analysis is one step), with made-up but consistent times.
  */
 
-import type { AnswerView, SpanView, TraceView } from "../types";
+import type { AnswerView, AskStepEvent, SpanView, TraceView } from "../types";
 
 const STARTED = Date.parse("2026-01-01T12:00:00.000Z");
 const MODEL = "claude-sonnet-5-5";
@@ -23,7 +23,7 @@ interface Step {
   parent: number | null;
   start: number;
   end: number;
-  llm?: { tokensIn: number; tokensOut: number; cacheRead: number; cost: number };
+  llm?: { tokensIn: number; tokensOut: number; cacheRead: number; cost: number; model?: string };
   attrs?: Record<string, unknown>;
 }
 
@@ -33,7 +33,7 @@ function build(traceId: string, kind: string, snapshotId: number, steps: Step[])
     parent_id: step.parent === null ? null : spanId(traceId, step.parent + 1),
     name: step.name,
     kind: step.kind,
-    model: step.llm ? MODEL : null,
+    model: step.llm ? (step.llm.model ?? MODEL) : null,
     status: "ok",
     started_at: at(step.start),
     ended_at: at(step.end),
@@ -105,6 +105,109 @@ export function mockAnswerTrace(
     );
   }
   return build(answer.trace_id!, kind, snapshotId, steps);
+}
+
+/**
+ * The trace of a mock agent answer, built from its `step` events: a step per model turn with its
+ * model call and tool calls under it, then the final answer call and validation. Returns the
+ * events with `span_id` set to their span, as the API links them.
+ */
+export function mockAgentTrace(
+  answer: AnswerView,
+  snapshotId: number,
+  events: readonly AskStepEvent[],
+): { trace: TraceView; steps: AskStepEvent[] } {
+  const steps: Step[] = [{ name: "answer", kind: "answer", parent: null, start: 0, end: 0 }];
+  const linked: AskStepEvent[] = [];
+  const turns = new Map<number, number>(); // model turn → index of its agent.step span
+  let clock = 2;
+  for (const event of events) {
+    const llm = event.model
+      ? {
+          tokensIn: event.tokens_in,
+          tokensOut: event.tokens_out,
+          cacheRead: 0,
+          cost: event.cost_usd,
+          model: event.model,
+        }
+      : undefined;
+    if (event.kind === "answer") {
+      const parent = steps.length;
+      steps.push({
+        name: "agent.answer",
+        kind: "agent",
+        parent: 0,
+        start: clock,
+        end: clock + 1500,
+      });
+      if (llm) {
+        steps.push({
+          name: "llm.call",
+          kind: "llm",
+          parent,
+          start: clock + 2,
+          end: clock + 1498,
+          llm,
+        });
+      }
+      clock += 1502;
+      linked.push({ ...event, span_id: spanId(answer.trace_id!, parent + 1) });
+      continue;
+    }
+    let turn = turns.get(event.step);
+    if (turn === undefined) {
+      turn = steps.length;
+      turns.set(event.step, turn);
+      steps.push({
+        name: "agent.step",
+        kind: "agent",
+        parent: 0,
+        start: clock,
+        end: clock + 420,
+        attrs: { step: event.step },
+      });
+      if (llm) {
+        steps.push({
+          name: "llm.call",
+          kind: "llm",
+          parent: turn,
+          start: clock + 1,
+          end: clock + 400,
+          llm,
+        });
+      }
+      clock += 402;
+    }
+    if (event.kind === "tool") {
+      const index = steps.length;
+      steps.push({
+        name: `tool.${event.tool}`,
+        kind: "tool",
+        parent: turn,
+        start: clock,
+        end: clock + 8,
+        attrs: { arguments: event.arguments, evidence: event.evidence, allowed: event.allowed },
+      });
+      clock += 9;
+      steps[turn]!.end = clock;
+      linked.push({ ...event, span_id: spanId(answer.trace_id!, index + 1) });
+    } else {
+      linked.push({ ...event, span_id: spanId(answer.trace_id!, turn + 1) });
+    }
+  }
+  if (events.some((event) => event.kind === "answer")) {
+    steps.push({
+      name: "validate",
+      kind: "validation",
+      parent: 0,
+      start: clock,
+      end: clock + 20,
+      attrs: { citations: answer.metrics.citations_total, valid: answer.metrics.citations_valid },
+    });
+    clock += 22;
+  }
+  steps[0]!.end = clock;
+  return { trace: build(answer.trace_id!, "answer", snapshotId, steps), steps: linked };
 }
 
 /** The trace of a mock impact analysis: one step, no model. */

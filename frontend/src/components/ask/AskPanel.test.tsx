@@ -156,6 +156,123 @@ describe("AskPanel", () => {
   });
 });
 
+describe("AskPanel in agent mode", () => {
+  it("offers two modes and asks in the chosen one", async () => {
+    const bodies: unknown[] = [];
+    const api = new ApiClient({
+      baseUrl: "http://x/api/v1",
+      fetch: async (_url, init) => {
+        bodies.push(JSON.parse(String(init?.body)));
+        return streamOf([["answer", HOSTILE]]);
+      },
+    });
+    const user = userEvent.setup();
+    renderWithApi(<AskPanel snapshotId={1} />, { api });
+    const modes = screen.getByRole("radiogroup", { name: "Answer mode" });
+    expect(within(modes).getByRole("radio", { name: "Quick" })).toBeChecked();
+    expect(screen.getByTestId("ask-mode-hint")).toHaveTextContent("One search of the code");
+    await user.type(screen.getByLabelText("Question"), "q");
+    await user.click(screen.getByRole("button", { name: "Ask" }));
+    await screen.findByRole("region", { name: "Answer" });
+    await user.click(within(modes).getByRole("radio", { name: "Agent" }));
+    expect(within(modes).getByRole("radio", { name: "Agent" })).toBeChecked();
+    expect(screen.getByTestId("ask-mode-hint")).toHaveTextContent("Explores the code with tools");
+    await user.click(screen.getByRole("button", { name: "Ask" }));
+    await waitFor(() => expect(bodies).toHaveLength(2));
+    expect(bodies).toEqual([
+      { question: "q", mode: "oneshot" },
+      { question: "q", mode: "agent" },
+    ]);
+    // A quick answer has no steps.
+    expect(screen.queryByRole("region", { name: "Agent steps" })).toBeNull();
+  });
+
+  it("shows each tool call, then the answer with its citations", async () => {
+    const user = userEvent.setup();
+    renderWithApi(<AskPanel snapshotId={1} />);
+    await user.click(screen.getByRole("radio", { name: "Agent" }));
+    await user.type(screen.getByLabelText("Question"), "How does create_app work?");
+    await user.click(screen.getByRole("button", { name: "Ask" }));
+    const answer = await screen.findByRole("region", { name: "Answer" });
+    const steps = screen.getByRole("region", { name: "Agent steps" });
+    const rows = within(steps).getAllByRole("listitem");
+    expect(rows).toHaveLength(5);
+    expect(rows[0]).toHaveTextContent("search_code");
+    expect(rows[0]).toHaveTextContent('query="How does create_app work?"');
+    expect(rows[0]).toHaveTextContent("5 pieces of evidence");
+    expect(rows[1]).toHaveTextContent("find_definition");
+    expect(rows[2]).toHaveTextContent("read_file");
+    expect(rows[3]).toHaveTextContent("Finished exploring");
+    expect(rows[4]).toHaveTextContent("Wrote the answer");
+    expect(rows[4]).toHaveTextContent("claude-sonnet-5-5");
+    expect(within(steps).getByTestId("steps-summary")).toHaveTextContent("3 tool calls · $0.0133");
+    expect(steps).toHaveAttribute("aria-busy", "false");
+    // The answer's cost is the steps' cost, and its citation opens like any other.
+    expect(within(answer).getByTestId("cost-badge")).toHaveTextContent("$0.0133");
+    await user.click(within(answer).getByRole("button", { name: "app.py:22–23" }));
+    expect(await screen.findByRole("figure")).toHaveTextContent("def create_app");
+  });
+
+  it("shows steps while the agent is still working, and clears them on the next question", async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const step = {
+      seq: 1,
+      step: 1,
+      kind: "tool",
+      tool: "search_code",
+      arguments: 'query="cart"',
+      result_tokens: 640,
+      evidence: 3,
+      error: null,
+      allowed: true,
+      cached: false,
+      truncated: false,
+      flags: [],
+      model: "claude-haiku-5-5",
+      tokens_in: 3000,
+      tokens_out: 60,
+      cost_usd: 0.0003,
+      span_id: null,
+    };
+    const api = new ApiClient({
+      baseUrl: "http://x/api/v1",
+      fetch: async () => {
+        const encoder = new TextEncoder();
+        const send = (event: string, data: unknown) =>
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+        const body = new ReadableStream<Uint8Array>({
+          async start(controller) {
+            controller.enqueue(send("status", { step: "exploring" }));
+            controller.enqueue(send("step", step));
+            await gate;
+            controller.enqueue(send("answer", HOSTILE));
+            controller.close();
+          },
+        });
+        return new Response(body, { status: 200 });
+      },
+    });
+    const user = userEvent.setup();
+    renderWithApi(<AskPanel snapshotId={1} />, { api });
+    await user.click(screen.getByRole("radio", { name: "Agent" }));
+    await user.type(screen.getByLabelText("Question"), "q");
+    await user.click(screen.getByRole("button", { name: "Ask" }));
+    const steps = await screen.findByRole("region", { name: "Agent steps" });
+    expect(steps).toHaveAttribute("aria-busy", "true");
+    expect(within(steps).getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByRole("status")).toHaveTextContent("Exploring the code");
+    expect(screen.queryByRole("region", { name: "Answer" })).toBeNull();
+    expect(screen.getByRole("radio", { name: "Quick" })).toBeDisabled();
+    release();
+    await screen.findByRole("region", { name: "Answer" });
+    expect(screen.getByRole("region", { name: "Agent steps" })).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+  });
+});
+
 describe("citations", () => {
   it("are labeled by file and lines, and highlight their symbol", () => {
     expect(citationLabel(CITATION)).toBe("cart.py:17–19");
