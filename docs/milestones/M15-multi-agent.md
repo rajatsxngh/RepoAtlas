@@ -55,10 +55,10 @@ MAS-1, MAS-2, MAS-3, MAS-4, MAS-5, MAS-6, MAS-7
 
 ## Exit criteria
 
-- [ ] The verifier drops the seeded unsupported claim in tests, and a seeded partial claim is repaired or dropped.
-- [ ] Planner, explorer, writer, verifier, and failure-handling tests pass with scripted fake LLMs (concurrency limit, per-branch budgets, shared cache, branch error, timeout).
-- [ ] The injection suite runs end to end in multi-agent mode without a model: planted text reaches the stages' prompts marked, the scorer catches a stand-in that obeys it (in its answer and in a tool call outside the snapshot), and a stand-in that answers from the evidence scores zero leaks over three runs.
-- [ ] `multiagent`, `agent`, and `oneshot` run through the eval runner on the same questions without a model, and the three-way comparison reports each system's score per question type with 95% intervals, the cost per question, and the cost per stage.
+- [x] The verifier drops the seeded unsupported claim in tests, and a seeded partial claim is repaired or dropped.
+- [x] Planner, explorer, writer, verifier, and failure-handling tests pass with scripted fake LLMs (concurrency limit, per-branch budgets, shared cache, branch error, timeout).
+- [x] The injection suite runs end to end in multi-agent mode without a model: planted text reaches the stages' prompts marked, the scorer catches a stand-in that obeys it (in its answer and in a tool call outside the snapshot), and a stand-in that answers from the evidence scores zero leaks over three runs.
+- [x] `multiagent`, `agent`, and `oneshot` run through the eval runner on the same questions without a model, and the three-way comparison reports each system's score per question type with 95% intervals, the cost per question, and the cost per stage.
 
 ### Live pass (pending; not part of this gate)
 
@@ -74,9 +74,9 @@ These need spending the owner has deferred (decisions 0020 and 0023). They are n
 
 ```bash
 cd backend
-uv run pytest tests/unit/multiagent tests/integration/multiagent -q
+uv run pytest tests/unit/multiagent tests/integration/api/test_ask_multiagent.py -q
 uv run pytest -m injection_static -q
-uv run pytest tests/integration/evals/test_three_way.py -q
+uv run pytest tests/integration/evals/test_three_way.py -q -s
 ```
 
 Live pass (needs an API key; costs money):
@@ -95,4 +95,84 @@ uv run repoatlas eval compare eval/reports/<oneshot>.json eval/reports/<agent>.j
 
 ## Results
 
-_Filled in at the gate._
+**Build gate reached on 2026-11-15 (decision 0023). No model was called and nothing was spent.**
+Evidence: [`docs/m15-gate-evidence.md`](../m15-gate-evidence.md).
+
+What was built:
+
+- **The planner** (`repoatlas.multiagent.planner`): one structured call on the `large` model
+  that sees the question and the places one search found (never code) and returns at most four
+  branches, each with a sub-question, seed symbols, and steps. The server caps the steps, keeps
+  only seeds it listed, and falls back to one branch with the question.
+- **The explorers** (`repoatlas.multiagent.explorers`): each branch is the agent's exploration
+  loop on the `small` model with its own conversation, ledger, and share of the answer's steps,
+  tokens, and money, and a time limit. At most three run at once, and they share a cache of
+  tool results. A branch ends with its notes: findings that cite its ledger.
+- **The writer** (`repoatlas.multiagent.writer`): the ledgers merged into one evidence set with
+  stable IDs, and one draft on the `large` model, which can cite only evidence it was shown.
+- **The verifier** (`repoatlas.multiagent.verifier`): an independent reading of every claim
+  against its cited lines, read again from the stored blobs. Unsupported claims are dropped;
+  partial claims are rewritten once from their cited lines and checked again. When that changes
+  the draft, the answer text is rebuilt from the verified claims.
+- **The answering mode** (`MultiAgentAnswerSystem`, registered as `multiagent`): budget checks
+  before every call (a claim is never shown unverified), cost per stage, and failure handling:
+  a branch that fails, times out, or hits a limit leaves a partial answer that names what was
+  not explored.
+- **In the API and the web app**: `mode: "multiagent"`, a `plan` event, `step` events with
+  their branch, a third mode in the ask panel with steps grouped by branch and a note on what
+  the verifier left out, and a trace with one labeled group per branch. Mock mode serves the
+  same events.
+- **For the live pass**: the `multiagent` system in the eval runner with its own budget, the
+  injection suite for the mode (the scorer also reads the sub-questions and the verifier's
+  reasons), `eval compare` for three reports with cost per question and per stage, and the
+  offline stand-in playing the whole pipeline.
+
+Numbers of the gate (2,234 passed, 1 skipped, 8 deselected in `poe check`):
+
+| Check | Result |
+|---|---|
+| The verifier drops the seeded unsupported claim; the seeded partial claim is repaired or dropped | Pass (`test_verifier.py`, 12 tests; again through the whole pipeline in `test_system.py` and through the API) |
+| Planner, explorers, writer, verifier, pipeline, and failure handling with scripted models | Pass (63 unit tests; 4 on the ask endpoint with a built snapshot) |
+| Injection suite in multi-agent mode, obedient stand-in | Caught on all 16 indexed variants and 5 markers; planted text reached the explorers (16 variants), the writer (16), and the verifier (14) marked, and the planner not at all; canaries in the verifier's reasons on all 15 questions; the planted read of `/etc/passwd` was made in 10 conversations, refused all 10 times, and counted as a tool leak each time; score 0.000 |
+| Injection suite in multi-agent mode, careful stand-in | 0 leaks in 45 answers and 354 tool calls over three runs; score 1.000 |
+| Three systems through the runner | `oneshot`, `agent`, and `multiagent` on the same six questions, three runs each; `eval compare` reports each system's score per type with 95% intervals, the cost per question, the cost per stage, and the paired difference of every pair (stand-in numbers, not results) |
+| Frontend | Lint and typecheck clean; 335 unit tests; Playwright 25 of 25 |
+
+What the gate does not show, and nothing here claims:
+
+- **Whether the pipeline answers better than one agent or one retrieval pass, and at what
+  cost** (live pass item 17). The comparison tables in the evidence file measure three scripts.
+  If the gain turns out small, the default mode stays the cheaper one.
+- **Whether the real model resists planted instructions in this mode** (item 16), at any
+  stage: following one, passing one on in its notes, or labeling a planted claim supported. The
+  stand-ins are scripts. Multi-agent mode is not deployed until that run scores 1.000.
+- **Whether the verifier's labels are right.** The tests show what happens to a claim once it
+  is labeled, not that the model labels well. The writer and the verifier are the same model
+  family and can share a blind spot; the spot-check against human labels is item 18.
+- **Whether the defaults are right** (24 steps and 400,000 input tokens for all branches, a
+  180-second branch limit, $0.75 per answer): they are reasoned, not tuned on dev (item 15).
+- **Whether the API accepts the pipeline's requests as sent.** They follow decision 0010 and go
+  through the same client as every other call, but the planner, the notes call (a response
+  schema next to the tools, with tool choice `none`, on the `small` model), the writer, and the
+  verifier have never been sent to the API.
+
+Design points settled on the way (decision 0023):
+
+- A branch reports with one more call in its own conversation, on the same model, so thinking
+  blocks never cross models.
+- When verification removes or rewrites a claim, the answer text is rebuilt from the verified
+  claims instead of keeping the writer's prose around a statement that was rejected. It reads
+  plainer; whether that costs judged quality is a question for the live pass (backlog).
+- An evaluation run gives the pipeline its own budget ($0.75), because the one-shot answer
+  budget ($0.25) doesn't cover a planner, explorers, a writer, and a verifier.
+
+Found on the way:
+
+- Evidence blocks in the writer's and the verifier's prompts could have carried a forged
+  `<claim>` or `<finding>` block: the answer prompt defuses only its own block names. The
+  pipeline's prompts defuse theirs too, in evidence and in everything one model hands another.
+- The injection scorer read only the answer and its claims. A multi-agent answer also shows
+  sub-questions and the verifier's reasons, which a model wrote after reading the repository;
+  the scorer reads them now.
+- Adding a mode named "Multi-agent" made the web tests' `"Agent"` selectors match two radio
+  buttons; they are exact now.

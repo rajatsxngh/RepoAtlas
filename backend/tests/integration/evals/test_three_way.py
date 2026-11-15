@@ -301,8 +301,8 @@ def test_the_three_way_comparison_reports_scores_intervals_costs_and_stages(
     assert callers.endswith("| 1.000 [1.000, 1.000] |")
     stage_rows = lines[lines.index("## Cost per stage: multiagent") :]
     for stage in ("planner", "explorers", "writer", "verifier"):
-        row = next(line for line in stage_rows if line.startswith(f"| {stage} |"))
-        assert re.fullmatch(rf"\| {stage} \| \$\d\.\d{{4}} \| \d+% \|", row)
+        shown = next(line for line in stage_rows if line.startswith(f"| {stage} |"))
+        assert re.fullmatch(rf"\| {stage} \| \$\d\.\d{{4}} \| \d+% \|", shown)
     assert f"| **all** | ${multi.cost:.4f} | 100% |" in lines
     assert "Difference [95% CI]" in text and "| Cost: agent | Cost: multiagent |" in text
     assert out.read_text(encoding="utf-8") == text

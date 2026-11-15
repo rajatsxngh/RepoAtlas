@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any, cast
 
 import anyio
@@ -43,7 +43,7 @@ def turns(call: FakeCall) -> int:
     return sum(1 for message in call.messages if message["role"] == "assistant")
 
 
-def by_branch(scripts: dict[str, list[Script]]) -> Callable[[FakeCall], Script]:
+def by_branch(scripts: Mapping[str, Sequence[Any]]) -> Callable[[FakeCall], Script]:
     """A model that plays each branch from its own script: the item at the index of the
     branch's turn (the notes call comes after the exploration turns)."""
 
@@ -53,7 +53,8 @@ def by_branch(scripts: dict[str, list[Script]]) -> Callable[[FakeCall], Script]:
         script = scripts[branch]
         index = turns(call)
         assert index < len(script), f"branch {branch} has no scripted result for turn {index + 1}"
-        return script[index]
+        item: Script = script[index]
+        return item
 
     return pick
 
@@ -121,18 +122,18 @@ def verdicts(**labels: str) -> dict[str, Any]:
 
 
 def pipeline(
-    planned: Script,
-    branches: dict[str, list[Script]],
-    draft: Script | None = None,
-    checks: list[Script] | None = None,
-    repair: Script | None = None,
+    planned: Any,
+    branches: Mapping[str, Sequence[Any]],
+    draft: Any = None,
+    checks: Sequence[Any] | None = None,
+    repair: Any = None,
 ) -> Callable[[FakeCall], Script]:
     """A model that plays every stage: the planner's reply, each branch's script, the
     writer's draft, the verifier's replies in order, and the repair."""
     explore = by_branch(branches)
-    remaining = list(checks or [])
+    remaining: list[Any] = list(checks or [])
 
-    def pick(call: FakeCall) -> Script:
+    def pick(call: FakeCall) -> Any:
         if call.schema is PlanDraft:
             return planned
         if branch_of(call) is not None:
