@@ -12,7 +12,8 @@ under ``docs/`` and ``launch/``):
 - a ``#fragment`` on a Markdown target (or on the file itself) names one of its headings, by
   GitHub's slug rules;
 - with ``--external``, every ``http://`` or ``https://`` link answers. A site that refuses
-  automated clients (401, 403, 429) is reported as unverified, not as broken.
+  automated clients (401, 403, 429) is reported as unverified, not as broken; addresses on the
+  reader's own machine (``localhost``) are not requested.
 
 Links inside code spans and fenced code blocks are not links and are skipped. Exits with 1
 when a link is broken. Uses only the standard library, so CI needs nothing installed.
@@ -34,6 +35,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_GLOBS = ("*.md", "docs/**/*.md", "launch/**/*.md")
 USER_AGENT = "link-check (python-urllib)"
 UNVERIFIABLE = frozenset({401, 403, 429})
+LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})  # a reader's own machine
 
 _FENCE = re.compile(r"^\s{0,3}(```+|~~~+)")
 _CODE_SPAN = re.compile(r"(`+)(?:(?!\1).)+?\1")
@@ -185,7 +187,7 @@ def check_files(
         for link in find_links(source, source.read_text(encoding="utf-8")):
             scheme = urlsplit(link.target).scheme.lower()
             if scheme in {"http", "https"}:
-                if not external:
+                if not external or urlsplit(link.target).hostname in LOCAL_HOSTS:
                     continue
                 checked += 1
                 url = link.target.split("#", 1)[0]

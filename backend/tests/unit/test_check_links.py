@@ -115,7 +115,8 @@ def test_web_links_are_requested_only_when_asked(tmp_path: Path) -> None:
         "README.md",
         "[ok](https://example.invalid/ok#part) [ok again](https://example.invalid/ok)\n"
         "[gone](https://example.invalid/gone) <https://example.invalid/down>\n"
-        "[shy](https://example.invalid/shy)\n",
+        "[shy](https://example.invalid/shy)\n"
+        "<http://localhost:8080> [local](http://127.0.0.1:3000/s/1) [v6](http://[::1]:8000/)\n",
     )
     asked: list[str] = []
     answers = {
