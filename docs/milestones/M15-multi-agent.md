@@ -51,7 +51,7 @@ MAS-1, MAS-2, MAS-3, MAS-4, MAS-5, MAS-6, MAS-7
 - [x] **T5 — Failure handling.** Branch errors and timeouts produce partial answers with explicit gaps.
 - [x] **T6 — API and UI mode.** Branch-aware events; `TracePanel` grouping; Playwright test with mock mode.
 - [x] **T7 — Injection gate (build gate).** The injection suite in multi-agent mode end to end through the runner with scripted stand-ins for all four roles: the obedient one is caught (planted text at every stage and a tool call outside the snapshot), the careful one scores zero leaks over three runs. The live run is a live-pass item (decision 0023).
-- [ ] **T8 — Evaluation (tooling).** `multiagent`, `agent`, and `oneshot` through the runner on the same questions with stand-ins; `repoatlas eval compare` on the three reports, with 95% intervals, cost per question, and cost per stage. The test-split report is a live-pass item (decision 0023).
+- [x] **T8 — Evaluation (tooling).** `multiagent`, `agent`, and `oneshot` through the runner on the same questions with stand-ins; `repoatlas eval compare` on the three reports, with 95% intervals, cost per question, and cost per stage. The test-split report is a live-pass item (decision 0023).
 
 ## Exit criteria
 

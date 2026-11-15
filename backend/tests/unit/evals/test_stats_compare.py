@@ -7,7 +7,15 @@ import pytest
 from typer.testing import CliRunner
 
 from repoatlas.cli import app
-from repoatlas.evals.compare import compare_reports, compare_scores, render_comparison
+from repoatlas.evals.compare import (
+    compare_many,
+    compare_reports,
+    compare_scores,
+    render_comparison,
+    render_many,
+    stage_costs,
+    unique_names,
+)
 from repoatlas.evals.report import build_report, write_report
 from repoatlas.evals.runner import run_eval
 from repoatlas.evals.stats import bootstrap_ci, paired_bootstrap, question_means
@@ -98,3 +106,51 @@ async def test_compare_reports_and_the_cli(tmp_path: Path) -> None:
     assert (tmp_path / "c.md").is_file()
     refused = CliRunner().invoke(app, ["eval", "compare", str(pa), str(pb), "--split", "test"])
     assert refused.exit_code == 2
+
+
+@pytest.mark.anyio
+async def test_more_than_two_reports_get_a_summary_and_every_pair(tmp_path: Path) -> None:
+    good = {
+        LOOKUP: answer([("c1", "f", [ref("src/m.py", 10, 20, F)])]),
+        CALLERS: answer([("c1", "g", [ref("src/m.py", 22, 30)])]),
+        UNANS: answer([], refused=True, kind="evidence"),
+    }
+    bad = {**good, LOOKUP: answer([("c1", "f", [ref("src/m.py", 40, 50)])])}
+    reports = [
+        build_report(await run_eval(make_run(tmp_path / name, ScriptedSystem(script))), META)
+        for name, script in (("a", bad), ("b", good), ("c", good))
+    ]
+    # Give the last one stages: two runs, one of which never reached the verifier.
+    staged = reports[2].model_copy(deep=True)
+    runs = [run for item in staged.items for run in item.runs]
+    runs[0].stage_costs = {"planner": 0.004, "verifier": 0.006}
+    runs[1].stage_costs = {"planner": 0.002}
+    assert stage_costs(staged) == pytest.approx(
+        {"planner": 0.006 / len(runs), "verifier": 0.006 / len(runs)}
+    )
+    assert stage_costs(reports[0]) == {}
+
+    comparison = compare_many([reports[0], reports[1], staged])
+    # The three reports are of the same system name: each gets its position.
+    assert [system.name for system in comparison.systems] == [
+        "scripted#1",
+        "scripted#2",
+        "scripted#3",
+    ]
+    assert unique_names(reports[:1]) == ["scripted"]
+    assert [(pair.a, pair.b) for pair in comparison.pairs] == [
+        ("scripted#1", "scripted#2"),
+        ("scripted#1", "scripted#3"),
+        ("scripted#2", "scripted#3"),
+    ]
+    first = comparison.pairs[0]
+    lookup = next(row for row in first.by_type if row.type == "lookup")
+    assert lookup.difference is not None and lookup.difference.difference == 1.0
+    assert comparison.systems[2].stage_costs and not comparison.systems[0].stage_costs
+    text = render_many(comparison)
+    assert text.splitlines()[0].startswith("# scripted#1 vs scripted#2 vs scripted#3 (")
+    assert "## Cost per stage: scripted#3" in text and "## Cost per stage: scripted#1" not in text
+    assert "| planner | $" in text and "| **all** |" in text
+    assert text.count("### ") == 3 and text.endswith("|\n")
+    with pytest.raises(ValueError, match="at least two reports"):
+        compare_many(reports[:1])

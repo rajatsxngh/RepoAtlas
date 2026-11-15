@@ -133,23 +133,39 @@ def schema_command(
 
 @eval_app.command("compare")
 def compare_command(
-    report_a: Annotated[Path, typer.Argument(help="Baseline report (JSON).")],
-    report_b: Annotated[Path, typer.Argument(help="Report compared with it (JSON).")],
+    reports: Annotated[
+        list[Path],
+        typer.Argument(help="Two or more reports (JSON): the baseline first, then the others."),
+    ],
     split: Annotated[
         str | None, typer.Option("--split", help="Refuse reports of another split.")
     ] = None,
     out: Annotated[Path | None, typer.Option("--out", help="Also write markdown here.")] = None,
 ) -> None:
-    """Per-type differences (B - A) with 95% paired bootstrap intervals."""
+    """Per-type differences (B - A) with 95% paired bootstrap intervals, and cost per question.
+    With more than two reports: every system's scores and costs (and cost per stage, where a
+    system has stages), then every pair's differences."""
     from repoatlas.canonical import write_text_lf
-    from repoatlas.evals.compare import compare_reports, render_comparison
+    from repoatlas.evals.compare import (
+        compare_many,
+        compare_reports,
+        render_comparison,
+        render_many,
+    )
     from repoatlas.evals.report import read_report
 
-    a, b = read_report(report_a), read_report(report_b)
-    if split is not None and (a.split != split or b.split != split):
-        typer.echo(f"Both reports must be on the {split} split.", err=True)
+    if len(reports) < 2:
+        typer.echo("Give at least two reports to compare.", err=True)
         raise typer.Exit(2)
-    text = render_comparison(compare_reports(a, b))
+    loaded = [read_report(path) for path in reports]
+    if split is not None and any(report.split != split for report in loaded):
+        which = "Both" if len(loaded) == 2 else "All"
+        typer.echo(f"{which} reports must be on the {split} split.", err=True)
+        raise typer.Exit(2)
+    if len(loaded) == 2:
+        text = render_comparison(compare_reports(loaded[0], loaded[1]))
+    else:
+        text = render_many(compare_many(loaded))
     typer.echo(text, nl=False)
     if out is not None:
         write_text_lf(out, text)

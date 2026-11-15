@@ -196,6 +196,7 @@ def answer_output(result: AnswerResult, index: SymbolIndex, latency_s: float) ->
             *(verdict.reason for verdict in result.verification if verdict.reason),
         ],
         cost_usd=result.cost_usd,
+        stage_costs=dict(result.stage_costs),
         latency_s=round(latency_s, 3),
         input_tokens=result.usage.total_input_tokens,
         output_tokens=result.usage.output_tokens,

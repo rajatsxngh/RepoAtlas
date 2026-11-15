@@ -413,6 +413,13 @@
           "title": "Run",
           "type": "integer"
         },
+        "stage_costs": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Stage Costs",
+          "type": "object"
+        },
         "support": {
           "additionalProperties": {
             "type": "integer"

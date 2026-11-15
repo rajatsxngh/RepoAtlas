@@ -92,6 +92,8 @@ class ItemRun(BaseModel):
     metrics: dict[str, float | None]
     cost_usd: float
     eval_cost_usd: float
+    # The system's cost by stage, for systems with stages (empty otherwise).
+    stage_costs: dict[str, float] = Field(default_factory=dict)
     latency_s: float
     answer_keys: list[str]
     cited: list[str]  # compact evidence references
@@ -201,6 +203,7 @@ def _item_run(record: RunRecord) -> ItemRun:
         metrics=record.score.metrics,
         cost_usd=output.cost_usd,
         eval_cost_usd=output.eval_cost_usd,
+        stage_costs=dict(output.stage_costs),
         latency_s=output.latency_s,
         answer_keys=output.answer_keys
         if output.impact is None

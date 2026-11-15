@@ -8,6 +8,11 @@ difference whose interval excludes 0 is marked significant.
 Next to each difference it shows what each system cost: dollars per question per run, per type
 and overall, from the reports' own records (the system's spend, without the claim checker and
 the judge). Costs are reported, not tested: a system may be better and dearer.
+
+``repoatlas eval compare A B C …`` (MAS-7) compares more than two systems: a summary with every
+system's score per question type and its 95% interval, each system's cost per question, the
+cost per stage of systems that report stages (a multi-agent answer's planner, explorers,
+writer, and verifier), and then the paired comparison of every pair, later minus earlier.
 """
 
 from __future__ import annotations
@@ -17,7 +22,7 @@ from collections import defaultdict
 from pydantic import BaseModel
 
 from repoatlas.evals.report import TYPE_ORDER, Report
-from repoatlas.evals.stats import PairedDifference, paired_bootstrap
+from repoatlas.evals.stats import Interval, PairedDifference, paired_bootstrap
 
 
 class TypeDifference(BaseModel):
@@ -156,3 +161,164 @@ def render_comparison(comparison: Comparison) -> str:
     if comparison.warnings:
         lines += ["", *[f"- Warning: {w}" for w in comparison.warnings]]
     return "\n".join(lines) + "\n"
+
+
+# ---------------------------------------------------------------------------
+# More than two systems
+# ---------------------------------------------------------------------------
+
+
+class SystemSummary(BaseModel):
+    """One system's own numbers, from its report."""
+
+    name: str
+    overall: Interval | None
+    by_type: dict[str, Interval | None]
+    cost: float | None  # dollars per question per run, all types
+    cost_by_type: dict[str, float]
+    stage_costs: dict[str, float]  # dollars per question per run, by stage (may be empty)
+    complete: bool
+
+
+class MultiComparison(BaseModel):
+    split: str
+    suite: str
+    systems: list[SystemSummary]
+    types: list[str]
+    pairs: list[Comparison]  # every pair, later minus earlier, in the order given
+    warnings: list[str]
+
+
+def stage_costs(report: Report) -> dict[str, float]:
+    """Each stage's mean cost per question per run, over every run of the report, for a system
+    that reports stages. A run that never reached a stage counts as zero for it, so the stages
+    add up to the system's cost per question."""
+    runs = [run for item in report.items for run in item.runs]
+    if not runs or not any(run.stage_costs for run in runs):
+        return {}
+    totals: dict[str, float] = defaultdict(float)
+    for run in runs:
+        for stage, cost in run.stage_costs.items():
+            totals[stage] += cost
+    return {stage: total / len(runs) for stage, total in totals.items()}
+
+
+def unique_names(reports: list[Report]) -> list[str]:
+    """The systems' names; a name used twice gets its position added."""
+    names = [report.system for report in reports]
+    return [
+        name if names.count(name) == 1 else f"{name}#{index}"
+        for index, name in enumerate(names, start=1)
+    ]
+
+
+def compare_many(reports: list[Report]) -> MultiComparison:
+    """Every system's summary and every pair's paired comparison. Needs at least two."""
+    if len(reports) < 2:
+        raise ValueError("A comparison needs at least two reports.")
+    names = unique_names(reports)
+    systems = []
+    for report, name in zip(reports, names, strict=True):
+        costs = cost_by_type(report)
+        systems.append(
+            SystemSummary(
+                name=name,
+                overall=report.overall,
+                by_type={entry.type: entry.primary for entry in report.by_type},
+                cost=costs.get("*"),
+                cost_by_type={kind: cost for kind, cost in costs.items() if kind != "*"},
+                stage_costs=stage_costs(report),
+                complete=report.complete,
+            )
+        )
+    pairs = [
+        compare_reports(reports[i], reports[j], a_name=names[i], b_name=names[j])
+        for i in range(len(reports))
+        for j in range(i + 1, len(reports))
+    ]
+    types = sorted(
+        {kind for system in systems for kind in system.by_type},
+        key=lambda t: (TYPE_ORDER.index(t) if t in TYPE_ORDER else 99, t),
+    )
+    warnings = list(dict.fromkeys(warning for pair in pairs for warning in pair.warnings))
+    return MultiComparison(
+        split=reports[-1].split,
+        suite=reports[-1].suite,
+        systems=systems,
+        types=types,
+        pairs=pairs,
+        warnings=warnings,
+    )
+
+
+def _score(interval: Interval | None) -> str:
+    if interval is None:
+        return "-"
+    return f"{interval.mean:.3f} [{interval.low:.3f}, {interval.high:.3f}]"
+
+
+STAGE_ORDER = ("planner", "explorers", "writer", "verifier")
+
+
+def render_many(comparison: MultiComparison) -> str:
+    systems = comparison.systems
+    names = [system.name for system in systems]
+    header = " | ".join(names)
+    rule = "|".join("---" for _ in range(len(names) + 1))
+    lines = [
+        f"# {' vs '.join(names)} ({comparison.suite} {comparison.split})",
+        "",
+        "## Scores",
+        "",
+        "Each system's mean over its questions (each question averaged over its runs), with "
+        "its own 95% bootstrap interval. Intervals of different systems are not a test of "
+        "their difference; the paired comparisons below are.",
+        "",
+        f"| Type | {header} |",
+        f"|{rule}|",
+    ]
+    for kind in comparison.types:
+        cells = " | ".join(_score(system.by_type.get(kind)) for system in systems)
+        lines.append(f"| {kind} | {cells} |")
+    lines.append(f"| **all** | {' | '.join(_score(system.overall) for system in systems)} |")
+    lines += [
+        "",
+        "## Cost per question",
+        "",
+        "The system's own spend per question per run (without the claim checker and the judge).",
+        "",
+        f"| Type | {header} |",
+        f"|{rule}|",
+    ]
+    for kind in comparison.types:
+        cells = " | ".join(_cost(system.cost_by_type.get(kind)) for system in systems)
+        lines.append(f"| {kind} | {cells} |")
+    lines.append(f"| **all** | {' | '.join(_cost(system.cost) for system in systems)} |")
+    staged = [system for system in systems if system.stage_costs]
+    for system in staged:
+        stages = sorted(
+            system.stage_costs,
+            key=lambda stage: (STAGE_ORDER.index(stage) if stage in STAGE_ORDER else 99, stage),
+        )
+        total = sum(system.stage_costs.values())
+        lines += [
+            "",
+            f"## Cost per stage: {system.name}",
+            "",
+            "Per question per run; a run that stopped before a stage counts as zero for it.",
+            "",
+            "| Stage | Cost | Share |",
+            "|---|---|---|",
+        ]
+        for stage in stages:
+            cost = system.stage_costs[stage]
+            share = f"{100 * cost / total:.0f}%" if total else "-"
+            lines.append(f"| {stage} | {_cost(cost)} | {share} |")
+        lines.append(f"| **all** | {_cost(total)} | 100% |")
+    lines += ["", "## Paired comparisons", ""]
+    for pair in comparison.pairs:
+        body = render_comparison(pair.model_copy(update={"warnings": []})).splitlines()
+        lines += [f"### {body[0].removeprefix('# ')}", *body[1:], ""]
+    if comparison.warnings:
+        lines += [*[f"- Warning: {w}" for w in comparison.warnings], ""]
+    return "\n".join(lines).rstrip("\n") + "\n"

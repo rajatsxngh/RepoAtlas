@@ -98,6 +98,9 @@ class SystemOutput(BaseModel):
     support: list[SupportLabel] | None = None
     judge: JudgeScore | None = None
     cost_usd: float = 0.0  # the system's own spend
+    # That spend by stage, for systems with stages (a multi-agent answer's planner, explorers,
+    # writer, and verifier); empty otherwise.
+    stage_costs: dict[str, float] = Field(default_factory=dict)
     eval_cost_usd: float = 0.0  # checker and judge spend
     latency_s: float = 0.0
     input_tokens: int = 0
