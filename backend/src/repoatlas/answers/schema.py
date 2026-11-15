@@ -105,6 +105,25 @@ class ToolUse(BaseModel):
     flags: list[str] = Field(default_factory=list)  # kinds the detector marked in the result
 
 
+SupportLabel = Literal["supported", "partial", "unsupported"]
+
+
+class ClaimVerdict(BaseModel):
+    """What the verifier of a multi-agent answer decided about one claim of the draft (decision
+    0023). ``label`` is its first reading of the claim against the cited lines. A ``partial``
+    claim may have been rewritten (``repaired``) and read again (``relabel``). ``kept`` says
+    whether the claim, as written or as rewritten, is in the answer."""
+
+    model_config = ConfigDict(frozen=True)
+
+    claim_id: str
+    label: SupportLabel
+    reason: str = ""
+    repaired: bool = False
+    relabel: SupportLabel | None = None
+    kept: bool = False
+
+
 class AnswerResult(BaseModel):
     answer_markdown: str
     claims: list[Claim]
