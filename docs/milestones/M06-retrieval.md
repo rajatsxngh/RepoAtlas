@@ -14,6 +14,7 @@ Find the right code for a question by combining semantic search, keyword search,
 
 ## Provides
 
+- **Added later by decision 0024** (backward compatible): the `chunk` stage copies the chunks of files whose path and blob are the same in the build's previous snapshot (`repoatlas.retrieval.reuse`: `plan_chunk_reuse`, `save_chunks_reusing`), inserting copied and newly cut chunks in path order so chunk IDs rise as in a full build; `chunk_snapshot(…, skip_paths=())`; the stage's stats are counted from the rows (`chunk_stats`) and gain `reused`, `rebuilt`, and `files_reused`.
 - **Migrations:** `chunks` (`id`, `snapshot_id`, `node_id`, `blob_oid`, `path`, `start_line`, `end_line`, `chunk_hash`, `header`, `text`, `tsv`), `embeddings` (`chunk_hash`, `model`, `dim`, `vector` — untyped pgvector; PK (`chunk_hash`, `model`)), and snapshot columns `embedding_model`, `embedding_dim`.
 - **`repoatlas.retrieval.evidence.EvidenceRef`** — `(blob_oid, path, start_line, end_line, symbol_key | None)` with `to_compact()` (`path#L10-L24@abc1234`) and `from_compact()`. This is the one format for pointing at code.
 - **`repoatlas.retrieval.chunker.chunk_snapshot(snapshot_id) -> list[Chunk]`** and a registered stage `chunk`.

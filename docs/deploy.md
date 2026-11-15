@@ -50,6 +50,7 @@ deployed.
 | `REPOATLAS_LOG_FORMAT` | `json` | `json` | Set by the images. |
 | `REPOATLAS_DATA_DIR` | `/data` | `/data` | Set by the images. |
 | `REPOATLAS_MODEL_CACHE_DIR`, `REPOATLAS_EMBEDDING_MODEL`, `HF_HUB_OFFLINE` | set by the image | set by the image | The model is inside the image; don't change these. |
+| `REPOATLAS_INCREMENTAL_BUILDS`, `REPOATLAS_PARSE_CACHE`, `REPOATLAS_INCREMENTAL_LINK`, `REPOATLAS_LLM_CACHE_CONVERSATION` | optional | optional | Reuse between builds and prompt caching; the defaults are right for a deployment. See [performance.md](performance.md). |
 | Limits | see below | see below | `infra/production.env.example` |
 
 Limits for a deployment others can reach are in

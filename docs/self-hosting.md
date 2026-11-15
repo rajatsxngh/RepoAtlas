@@ -137,6 +137,9 @@ Keep the URL unlisted and share the token only with people who should have acces
 Everything the stack reads is in `infra/selfhost.env.example`, with comments.
 [deploy.md](deploy.md) lists every environment variable of each service.
 
+Building a repository again after it changed reuses what did not change, and a map says so
+when its repository has moved on; [performance.md](performance.md) explains both.
+
 ## Troubleshooting
 
 - **`set REPOATLAS_ACCESS_TOKEN in infra/selfhost.env`**: the file is missing a required

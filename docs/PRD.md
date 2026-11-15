@@ -532,7 +532,7 @@ Lines are 1-based and inclusive. The compact string form is `src/app/routes.py#L
 | `GET /qa/{run_id}` | — | Stored answer with citations and metrics |
 | `POST /snapshots/{id}/impact` | `{ symbol_key }` or `{ diff }` | `ImpactReport` |
 | `GET /traces/{trace_id}` | — | Trace with spans |
-| `GET /snapshots/{id}/freshness` | — | `{ snapshot_commit, remote_head, stale }` |
+| `GET /snapshots/{id}/freshness` | — | `{ snapshot_commit, remote_head, stale, commits_behind, default_branch, checked_at }` |
 | `GET /health`, `GET /ready` | — | Liveness and readiness |
 
 Symbol keys in paths are URL-encoded. Errors use `{"error": {"code", "message", "details"}}`.

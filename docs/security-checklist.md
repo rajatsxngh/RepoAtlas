@@ -91,13 +91,16 @@ snapshot's files. Blob reads take full OIDs only.
 Only `https://github.com/<owner>/<repo>` is accepted: no other host, IP literal, user
 information, port, scheme, look-alike host, query, or fragment. A bad URL is refused before any
 network call. The GitHub API client refuses a redirect to another host, and git fetches allow
-only https and file origins and follow no redirects.
+only https and file origins and follow no redirects. The freshness check (`git ls-remote`) asks
+only the repository a snapshot was built from, under the same git rules, and refuses a branch
+name that could be read as an option or a pattern before git runs.
 
 - `backend/tests/unit/security/test_ssrf.py::test_a_hostile_url_is_refused_before_any_network_call`
 - `backend/tests/unit/security/test_ssrf.py::test_a_valid_url_reaches_only_the_github_api`
 - `backend/tests/unit/security/test_ssrf.py::test_the_github_client_never_follows_a_redirect_to_another_host`
 - `backend/tests/unit/security/test_ssrf.py::test_a_redirect_within_the_github_api_is_followed`
 - `backend/tests/unit/security/test_ssrf.py::test_git_fetches_allow_https_and_file_only_and_follow_no_redirects`
+- `backend/tests/unit/ingest/test_freshness.py::test_remote_head_refuses_branch_names_that_are_not_plain`
 - `backend/tests/unit/security/test_ssrf.py::test_fetches_refuse_any_other_origin_before_git_runs`
 - `backend/tests/unit/ingest/test_repo_url.py::test_invalid_urls`
 

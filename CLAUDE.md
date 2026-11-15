@@ -28,6 +28,9 @@ Work only on the current milestone. Don't start the next one until every exit cr
 | What the injection detector flags in files | `cd backend && uv run repoatlas guardrails scan <files>` |
 | Re-record LLM cassettes (live, costs money; Postgres and `REPOATLAS_ANTHROPIC_API_KEY`) | `cd backend && uv run poe record-cassettes` |
 | Answer smoke run on the pinned zod snapshot (live, stops before passing the cap) | `cd backend && uv run repoatlas ask-smoke --snapshot <id> --max-cost 2.00` |
+| Cost and latency per question of evaluation reports; with `--after`, the change per mode and the tolerance verdict (no model) | `cd backend && uv run repoatlas eval cost-report --before <reports or folder> [--after <reports or folder>] [--out cost.md]` |
+| Check incremental linking on real commits (network: git fetches from GitHub; no model, no database) | `cd backend && uv run python scripts/incremental_check.py` |
+| Live prompt-cache check (costs about a cent; **calls the API**; `docs/live-pass.md` item 21) | `cd backend && uv run pytest -m live tests/live/test_prompt_cache_live.py` |
 | Serve a snapshot's tools to a coding agent over MCP (no model; `--transport http` needs `REPOATLAS_MCP_TOKEN`; see `docs/mcp.md`) | `cd backend && uv run repoatlas mcp --snapshot <id>` |
 | Run the API (dev, reloads on change) | `cd backend && uv run uvicorn repoatlas.api.app:create_app --factory --reload` |
 | Run a worker (stop: Ctrl+C, or create `.repoatlas/worker.stop`) | `cd backend && uv run repoatlas worker` |
