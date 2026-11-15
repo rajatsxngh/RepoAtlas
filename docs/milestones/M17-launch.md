@@ -94,6 +94,7 @@ Live pass (needs an API key, hosting, and the owner): see [`docs/live-pass.md`](
 ## Results
 
 **Build gate reached on 2026-11-16 (decision 0025). No model was called, nothing was deployed, nothing was published, and nothing was spent.** RepoAtlas is built and ready to launch; it is not launched. Evidence: [`docs/m17-gate-evidence.md`](../m17-gate-evidence.md). What remains is the owner's: [`docs/live-pass.md`](../live-pass.md), which now opens with a recommended order.
+CI run 43765645211 passed all five jobs on `b637fdd` (Linux full checks, Windows unit tests, API types, frontend with end-to-end tests, docs lint with the link check).
 
 What was built:
 
@@ -115,7 +116,7 @@ Numbers of the gate:
 | Links | Pass: 207 relative links in 68 files. With `--external` on 2026-11-16: every web link answered except `https://deepwiki.com`, which refuses automated clients (HTTP 429) and is reported as unverified |
 | `uv run poe check` | Pass: 2,591 passed, 1 skipped, 9 deselected (the live tests); ruff, mypy (506 files), docs lint, link check |
 | Frontend | Lint and typecheck clean; 351 unit tests |
-| Playwright | 31 of 32 in the full run. The one failure, `e2e/mock/multiagent.spec.ts:6` (code this milestone did not touch), stalled for 29 minutes in a run that otherwise took 4; run again three times it passed every time (9 of 9 for its file). The three new gallery specs pass |
+| Playwright | 31 of 32 in the full run. The one failure, `e2e/mock/multiagent.spec.ts:6` (code this milestone did not touch), stalled for 29 minutes in a run that otherwise took 4; run again three times it passed every time (9 of 9 for its file). The three new gallery specs pass. In CI the frontend job, which runs the whole suite, passed |
 
 What was learned, including what did not go to plan:
 
