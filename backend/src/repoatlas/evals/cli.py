@@ -171,6 +171,52 @@ def compare_command(
         write_text_lf(out, text)
 
 
+@eval_app.command("cost-report")
+def cost_report_command(
+    before: Annotated[
+        list[Path],
+        typer.Option("--before", help="A report (JSON) or a folder of reports; repeatable."),
+    ],
+    after: Annotated[
+        list[Path] | None,
+        typer.Option("--after", help="The reports after the change; repeatable."),
+    ] = None,
+    out: Annotated[
+        Path | None, typer.Option("--out", help="Also write markdown here (and JSON beside it).")
+    ] = None,
+    note: Annotated[
+        list[str] | None, typer.Option("--note", help="A line to add under the tables.")
+    ] = None,
+) -> None:
+    """Cost and latency per question for each report; with --after, the change per system and
+    whether accuracy stayed inside the tolerance (lower bound of the 95% interval above -0.02
+    for every question type). Calls no model. Exits 4 if a change is rejected."""
+    from repoatlas.canonical import pretty_json, write_text_lf
+    from repoatlas.evals.costreport import build_cost_report, load_reports, render_cost_report
+
+    try:
+        before_reports, skipped = load_reports(before)
+        after_reports, skipped_after = load_reports(after or [])
+        if not before_reports:
+            raise ValueError("No evaluation report was found for --before.")
+        if after and not after_reports:
+            raise ValueError("No evaluation report was found for --after.")
+        report = build_cost_report(
+            before_reports, after_reports, notes=[*skipped, *skipped_after, *(note or [])]
+        )
+    except (OSError, ValueError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(2) from exc
+    text = render_cost_report(report)
+    typer.echo(text, nl=False)
+    if out is not None:
+        write_text_lf(out, text)
+        write_text_lf(out.with_suffix(".json"), pretty_json(report))
+        typer.echo(f"Written: {out}")
+    if any(change.verdict == "rejected" for change in report.changes):
+        raise typer.Exit(4)
+
+
 labels_app = typer.Typer(help="Human labels for the checker and the judge.", no_args_is_help=True)
 eval_app.add_typer(labels_app, name="labels")
 

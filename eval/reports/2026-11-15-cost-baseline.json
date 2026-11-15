@@ -1,0 +1,723 @@
+{
+  "baseline": [
+    {
+      "complete": true,
+      "cost": 0.02202072740740741,
+      "cost_by_type": {
+        "callers": 0.020384533333333333,
+        "flow": 0.0267051,
+        "impact": 0.028428706666666668,
+        "lookup": 0.019144566666666665,
+        "multihop": 0.017727213333333332,
+        "unanswerable": 0.019673633333333333
+      },
+      "created_at": "2026-11-12T20:14:42+00:00",
+      "latency": {
+        "mean": 4.948059259259259,
+        "p50": 4.338,
+        "p90": 8.0076,
+        "runs": 270
+      },
+      "latency_by_type": {
+        "callers": 4.528333333333333,
+        "flow": 6.946311111111111,
+        "impact": 7.660911111111111,
+        "lookup": 3.03425,
+        "multihop": 4.243511111111111,
+        "unanswerable": 2.2625333333333333
+      },
+      "models": {
+        "large": "claude-sonnet-5-5",
+        "small": "claude-haiku-5-5"
+      },
+      "questions": 90,
+      "runs": 3,
+      "score": {
+        "high": 0.6480767754029794,
+        "low": 0.49192919391405143,
+        "mean": 0.569808133641866,
+        "n": 90
+      },
+      "score_by_type": {
+        "callers": {
+          "high": 0.7654565295815295,
+          "low": 0.5007449494949495,
+          "mean": 0.6350577200577201,
+          "n": 20
+        },
+        "flow": {
+          "high": 0.4554761904761905,
+          "low": 0.26801587301587304,
+          "mean": 0.36103174603174604,
+          "n": 15
+        },
+        "impact": {
+          "high": 0.5167257949853772,
+          "low": 0.22796184370582553,
+          "mean": 0.3660710240734181,
+          "n": 15
+        },
+        "lookup": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 20
+        },
+        "multihop": {
+          "high": 0.3424152236652236,
+          "low": 0.04624819624819625,
+          "mean": 0.17833573833573835,
+          "n": 15
+        },
+        "unanswerable": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 5
+        }
+      },
+      "source": "2026-11-12-hybrid_graphrag-test.json",
+      "split": "test",
+      "stage_costs": {},
+      "suite": "benchmark",
+      "system": "hybrid_graphrag",
+      "tokens": {
+        "cache_read": 0,
+        "cache_write": 0,
+        "input": 0,
+        "output": 0
+      },
+      "total_cost_usd": 7.834617
+    },
+    {
+      "complete": true,
+      "cost": 0.016247112962962964,
+      "cost_by_type": {
+        "callers": 0.015022053333333334,
+        "flow": 0.0253839,
+        "impact": 0.018758795555555555,
+        "lookup": 0.012779733333333331,
+        "multihop": 0.01260101111111111,
+        "unanswerable": 0.011009766666666667
+      },
+      "created_at": "2026-11-12T20:04:40+00:00",
+      "latency": {
+        "mean": 4.67872962962963,
+        "p50": 4.1515,
+        "p90": 7.6061,
+        "runs": 270
+      },
+      "latency_by_type": {
+        "callers": 4.354783333333333,
+        "flow": 6.830911111111112,
+        "impact": 6.449755555555555,
+        "lookup": 2.8144,
+        "multihop": 4.513199999999999,
+        "unanswerable": 2.1588
+      },
+      "models": {
+        "large": "claude-sonnet-5-5",
+        "small": "claude-haiku-5-5"
+      },
+      "questions": 90,
+      "runs": 3,
+      "score": {
+        "high": 0.6081483896503947,
+        "low": 0.4388577554988764,
+        "mean": 0.5223799572089394,
+        "n": 90
+      },
+      "score_by_type": {
+        "callers": {
+          "high": 0.6781635070582438,
+          "low": 0.39748259537733227,
+          "mean": 0.5408100865995602,
+          "n": 20
+        },
+        "flow": {
+          "high": 0.510001984126984,
+          "low": 0.20968055555555556,
+          "mean": 0.3568253968253968,
+          "n": 15
+        },
+        "impact": {
+          "high": 0.3537803747749902,
+          "low": 0.10319662214411683,
+          "mean": 0.22034655493448288,
+          "n": 15
+        },
+        "lookup": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 20
+        },
+        "multihop": {
+          "high": 0.3426943426943427,
+          "low": 0.03386243386243386,
+          "mean": 0.16936100936100934,
+          "n": 15
+        },
+        "unanswerable": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 5
+        }
+      },
+      "source": "2026-11-12-vector_only-test.json",
+      "split": "test",
+      "stage_costs": {},
+      "suite": "benchmark",
+      "system": "vector_only",
+      "tokens": {
+        "cache_read": 0,
+        "cache_write": 0,
+        "input": 0,
+        "output": 0
+      },
+      "total_cost_usd": 6.171612
+    },
+    {
+      "complete": true,
+      "cost": 0.019708717037037037,
+      "cost_by_type": {
+        "callers": 0.016916833333333332,
+        "flow": 0.03133185555555555,
+        "impact": 0.01920044,
+        "lookup": 0.0171638,
+        "multihop": 0.015264751111111112,
+        "unanswerable": 0.021043233333333335
+      },
+      "created_at": "2026-11-12T20:23:23+00:00",
+      "latency": {
+        "mean": 4.270340740740741,
+        "p50": 3.457,
+        "p90": 7.266699999999998,
+        "runs": 270
+      },
+      "latency_by_type": {
+        "callers": 3.45865,
+        "flow": 7.0190222222222225,
+        "impact": 5.873888888888889,
+        "lookup": 2.6792833333333332,
+        "multihop": 3.7742,
+        "unanswerable": 2.3130666666666664
+      },
+      "models": {
+        "large": "claude-sonnet-5-5",
+        "small": "claude-haiku-5-5"
+      },
+      "questions": 90,
+      "runs": 3,
+      "score": {
+        "high": 0.5278658349197196,
+        "low": 0.3564277514973549,
+        "mean": 0.4411321100063608,
+        "n": 90
+      },
+      "score_by_type": {
+        "callers": {
+          "high": 0.3499122807017544,
+          "low": 0.09833333333333334,
+          "mean": 0.2199122807017544,
+          "n": 20
+        },
+        "flow": {
+          "high": 0.4141825396825396,
+          "low": 0.2182010582010582,
+          "mean": 0.3162962962962963,
+          "n": 15
+        },
+        "impact": {
+          "high": 0.3492085981062771,
+          "low": 0.0777615532877601,
+          "mean": 0.1993402748664817,
+          "n": 15
+        },
+        "lookup": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 20
+        },
+        "multihop": {
+          "high": 0.31812353695687023,
+          "low": 0.051255411255411255,
+          "mean": 0.17127304793971462,
+          "n": 15
+        },
+        "unanswerable": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 5
+        }
+      },
+      "source": "2026-11-12-bm25_only-test.json",
+      "split": "test",
+      "stage_costs": {},
+      "suite": "benchmark",
+      "system": "bm25_only",
+      "tokens": {
+        "cache_read": 0,
+        "cache_write": 0,
+        "input": 0,
+        "output": 0
+      },
+      "total_cost_usd": 6.75865
+    },
+    {
+      "complete": true,
+      "cost": 0.003635184444444444,
+      "cost_by_type": {
+        "callers": 0.00327778,
+        "flow": 0.006795966666666667,
+        "impact": 0.004423166666666666,
+        "lookup": 0.002399133333333333,
+        "multihop": 0.0023708111111111108,
+        "unanswerable": 0.0019558333333333333
+      },
+      "created_at": "2026-11-12T19:54:54+00:00",
+      "latency": {
+        "mean": 3.1985333333333337,
+        "p50": 2.7515,
+        "p90": 5.303399999999999,
+        "runs": 270
+      },
+      "latency_by_type": {
+        "callers": 2.9718999999999998,
+        "flow": 5.008711111111111,
+        "impact": 3.7073777777777774,
+        "lookup": 2.3246333333333333,
+        "multihop": 2.7302222222222223,
+        "unanswerable": 2.0485333333333333
+      },
+      "models": {
+        "large": "claude-sonnet-5-5",
+        "small": "claude-haiku-5-5"
+      },
+      "questions": 90,
+      "runs": 3,
+      "score": {
+        "high": 0.29642404901282815,
+        "low": 0.14951594460347833,
+        "mean": 0.22008222858357945,
+        "n": 90
+      },
+      "score_by_type": {
+        "callers": {
+          "high": 0.2861984126984126,
+          "low": 0.05222222222222221,
+          "mean": 0.1584126984126984,
+          "n": 20
+        },
+        "flow": {
+          "high": 0.27116402116402116,
+          "low": 0.083859126984127,
+          "mean": 0.16997354497354497,
+          "n": 15
+        },
+        "impact": {
+          "high": 0.10971690173311247,
+          "low": 0.005519370868914941,
+          "mean": 0.050414006422111794,
+          "n": 15
+        },
+        "lookup": {
+          "high": 0.6166666666666667,
+          "low": 0.21666666666666665,
+          "mean": 0.4166666666666667,
+          "n": 20
+        },
+        "multihop": {
+          "high": 0.0,
+          "low": 0.0,
+          "mean": 0.0,
+          "n": 15
+        },
+        "unanswerable": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 5
+        }
+      },
+      "source": "2026-11-12-closed_book-test.json",
+      "split": "test",
+      "stage_costs": {},
+      "suite": "benchmark",
+      "system": "closed_book",
+      "tokens": {
+        "cache_read": 0,
+        "cache_write": 0,
+        "input": 0,
+        "output": 0
+      },
+      "total_cost_usd": 1.124773
+    },
+    {
+      "complete": true,
+      "cost": 0.0234780125,
+      "cost_by_type": {
+        "callers": 0.02283594,
+        "flow": 0.028295340000000002,
+        "impact": 0.02847454,
+        "lookup": 0.0230095,
+        "multihop": 0.0228819,
+        "unanswerable": 0.01648144
+      },
+      "created_at": "2026-11-12T09:32:19+00:00",
+      "latency": {
+        "mean": 5.990775,
+        "p50": 4.853,
+        "p90": 13.196900000000001,
+        "runs": 40
+      },
+      "latency_by_type": {
+        "callers": 6.2978000000000005,
+        "flow": 9.327200000000001,
+        "impact": 8.9922,
+        "lookup": 3.3649,
+        "multihop": 7.9079999999999995,
+        "unanswerable": 2.3734
+      },
+      "models": {
+        "large": "claude-sonnet-5-5",
+        "small": "claude-haiku-5-5"
+      },
+      "questions": 40,
+      "runs": 1,
+      "score": {
+        "high": 0.7648439290635114,
+        "low": 0.5186908807919984,
+        "mean": 0.6433017124486047,
+        "n": 40
+      },
+      "score_by_type": {
+        "callers": {
+          "high": 0.8638095238095238,
+          "low": 0.5016666666666667,
+          "mean": 0.6988095238095238,
+          "n": 10
+        },
+        "flow": {
+          "high": 0.795,
+          "low": 0.32999999999999996,
+          "mean": 0.5349999999999999,
+          "n": 5
+        },
+        "impact": {
+          "high": 0.31304347826086953,
+          "low": 0.0007511737089201878,
+          "mean": 0.11379465196978975,
+          "n": 5
+        },
+        "lookup": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 10
+        },
+        "multihop": {
+          "high": 0.3,
+          "low": 0.0,
+          "mean": 0.1,
+          "n": 5
+        },
+        "unanswerable": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 5
+        }
+      },
+      "source": "2026-11-12-hybrid_graphrag-dev-2.json",
+      "split": "dev",
+      "stage_costs": {},
+      "suite": "benchmark",
+      "system": "hybrid_graphrag",
+      "tokens": {
+        "cache_read": 0,
+        "cache_write": 0,
+        "input": 0,
+        "output": 0
+      },
+      "total_cost_usd": 1.21082
+    },
+    {
+      "complete": true,
+      "cost": 0.016991014999999998,
+      "cost_by_type": {
+        "callers": 0.01562593,
+        "flow": 0.0214531,
+        "impact": 0.026504359999999998,
+        "lookup": 0.0137859,
+        "multihop": 0.0175731,
+        "unanswerable": 0.0115739
+      },
+      "created_at": "2026-11-12T09:33:19+00:00",
+      "latency": {
+        "mean": 5.99835,
+        "p50": 4.235,
+        "p90": 13.769400000000001,
+        "runs": 40
+      },
+      "latency_by_type": {
+        "callers": 6.843000000000001,
+        "flow": 9.008,
+        "impact": 10.7312,
+        "lookup": 2.8465,
+        "multihop": 6.3608,
+        "unanswerable": 2.5078
+      },
+      "models": {
+        "large": "claude-sonnet-5-5",
+        "small": "claude-haiku-5-5"
+      },
+      "questions": 40,
+      "runs": 1,
+      "score": {
+        "high": 0.7516403418401774,
+        "low": 0.49497803101503757,
+        "mean": 0.6288279593213804,
+        "n": 40
+      },
+      "score_by_type": {
+        "callers": {
+          "high": 0.8571428571428571,
+          "low": 0.3333333333333333,
+          "mean": 0.6038095238095238,
+          "n": 10
+        },
+        "flow": {
+          "high": 0.8,
+          "low": 0.22000000000000003,
+          "mean": 0.52,
+          "n": 5
+        },
+        "impact": {
+          "high": 0.4064285714285714,
+          "low": 0.08529496818970501,
+          "mean": 0.24586176980913824,
+          "n": 5
+        },
+        "lookup": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 10
+        },
+        "multihop": {
+          "high": 0.17142857142857143,
+          "low": 0.0,
+          "mean": 0.05714285714285715,
+          "n": 5
+        },
+        "unanswerable": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 5
+        }
+      },
+      "source": "2026-11-12-vector_only-dev-2.json",
+      "split": "dev",
+      "stage_costs": {},
+      "suite": "benchmark",
+      "system": "vector_only",
+      "tokens": {
+        "cache_read": 0,
+        "cache_write": 0,
+        "input": 0,
+        "output": 0
+      },
+      "total_cost_usd": 0.840135
+    },
+    {
+      "complete": true,
+      "cost": 0.01902365,
+      "cost_by_type": {
+        "callers": 0.014646699999999999,
+        "flow": 0.0278531,
+        "impact": 0.0198843,
+        "lookup": 0.020402499999999997,
+        "multihop": 0.0168135,
+        "unanswerable": 0.0175399
+      },
+      "created_at": "2026-11-12T09:34:02+00:00",
+      "latency": {
+        "mean": 4.40365,
+        "p50": 3.38,
+        "p90": 8.088700000000001,
+        "runs": 40
+      },
+      "latency_by_type": {
+        "callers": 4.1989,
+        "flow": 6.8852,
+        "impact": 7.5374,
+        "lookup": 2.6345,
+        "multihop": 4.729,
+        "unanswerable": 2.4108
+      },
+      "models": {
+        "large": "claude-sonnet-5-5",
+        "small": "claude-haiku-5-5"
+      },
+      "questions": 40,
+      "runs": 1,
+      "score": {
+        "high": 0.64777845790378,
+        "low": 0.38457978951890026,
+        "mean": 0.5181915807560137,
+        "n": 40
+      },
+      "score_by_type": {
+        "callers": {
+          "high": 0.52,
+          "low": 0.11333333333333333,
+          "mean": 0.31333333333333335,
+          "n": 10
+        },
+        "flow": {
+          "high": 0.76,
+          "low": 0.22166666666666668,
+          "mean": 0.4683333333333334,
+          "n": 5
+        },
+        "impact": {
+          "high": 0.3121993127147766,
+          "low": 0.0288659793814433,
+          "mean": 0.17053264604810997,
+          "n": 5
+        },
+        "lookup": {
+          "high": 1.0,
+          "low": 0.7,
+          "mean": 0.9,
+          "n": 10
+        },
+        "multihop": {
+          "high": 0.24000000000000005,
+          "low": 0.0,
+          "mean": 0.08,
+          "n": 5
+        },
+        "unanswerable": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 5
+        }
+      },
+      "source": "2026-11-12-bm25_only-dev-2.json",
+      "split": "dev",
+      "stage_costs": {},
+      "suite": "benchmark",
+      "system": "bm25_only",
+      "tokens": {
+        "cache_read": 0,
+        "cache_write": 0,
+        "input": 0,
+        "output": 0
+      },
+      "total_cost_usd": 0.760946
+    },
+    {
+      "complete": true,
+      "cost": 0.00368601,
+      "cost_by_type": {
+        "callers": 0.0036018599999999997,
+        "flow": 0.0076574600000000005,
+        "impact": 0.0049397,
+        "lookup": 0.0024803,
+        "multihop": 0.0025601,
+        "unanswerable": 0.0021665
+      },
+      "created_at": "2026-11-12T09:34:41+00:00",
+      "latency": {
+        "mean": 3.5466749999999996,
+        "p50": 2.9284999999999997,
+        "p90": 5.459600000000003,
+        "runs": 40
+      },
+      "latency_by_type": {
+        "callers": 3.4741,
+        "flow": 5.4967999999999995,
+        "impact": 5.3566,
+        "lookup": 2.4234999999999998,
+        "multihop": 3.0518,
+        "unanswerable": 2.673
+      },
+      "models": {
+        "large": "claude-sonnet-5-5",
+        "small": "claude-haiku-5-5"
+      },
+      "questions": 40,
+      "runs": 1,
+      "score": {
+        "high": 0.47125000000000006,
+        "low": 0.20249999999999999,
+        "mean": 0.33291666666666664,
+        "n": 40
+      },
+      "score_by_type": {
+        "callers": {
+          "high": 0.2833333333333333,
+          "low": 0.0,
+          "mean": 0.11666666666666665,
+          "n": 10
+        },
+        "flow": {
+          "high": 0.49000000000000005,
+          "low": 0.05,
+          "mean": 0.27,
+          "n": 5
+        },
+        "impact": {
+          "high": 0.4800000000000001,
+          "low": 0.0,
+          "mean": 0.16,
+          "n": 5
+        },
+        "lookup": {
+          "high": 0.8,
+          "low": 0.2,
+          "mean": 0.5,
+          "n": 10
+        },
+        "multihop": {
+          "high": 0.0,
+          "low": 0.0,
+          "mean": 0.0,
+          "n": 5
+        },
+        "unanswerable": {
+          "high": 1.0,
+          "low": 1.0,
+          "mean": 1.0,
+          "n": 5
+        }
+      },
+      "source": "2026-11-12-closed_book-dev-2.json",
+      "split": "dev",
+      "stage_costs": {},
+      "suite": "benchmark",
+      "system": "closed_book",
+      "tokens": {
+        "cache_read": 0,
+        "cache_write": 0,
+        "input": 0,
+        "output": 0
+      },
+      "total_cost_usd": 0.14744
+    }
+  ],
+  "changes": [],
+  "notes": [
+    "Every number here was measured live on 2026-11-12 (the M10 runs), with the answer prompt of that day: before the M13 hardening, and before the cache breakpoints of decision 0024. hybrid_graphrag is the retrieval configuration the product's one-shot answers use.",
+    "This is not the M16 baseline of the answering modes. Agent and multi-agent answers have never been run against a model, and one-shot answers have not been measured on the current prompt: those runs are live-pass item 20 (docs/live-pass.md) and are pending."
+  ],
+  "tolerance": 0.02,
+  "unpaired": []
+}

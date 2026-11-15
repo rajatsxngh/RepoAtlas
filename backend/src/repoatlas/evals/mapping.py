@@ -199,6 +199,8 @@ def answer_output(result: AnswerResult, index: SymbolIndex, latency_s: float) ->
         stage_costs=dict(result.stage_costs),
         latency_s=round(latency_s, 3),
         input_tokens=result.usage.total_input_tokens,
+        cache_read_tokens=result.usage.cache_read_tokens,
+        cache_write_tokens=result.usage.cache_write_tokens,
         output_tokens=result.usage.output_tokens,
     )
     return remap(output, index)

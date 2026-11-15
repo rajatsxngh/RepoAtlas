@@ -61,7 +61,7 @@ PRF-1, PRF-2, PRF-3, PRF-4, PRF-5, PRF-6
 
 ## Tasks
 
-- [ ] **T1 — Baseline measurement (tooling and what exists).** `repoatlas eval cost-report --before …` prints cost and latency per question for each report; a baseline is written from the reports measured so far, labelled with what they measured. The per-mode baseline on dev and test is a live-pass item (decision 0024).
+- [x] **T1 — Baseline measurement (tooling and what exists).** `repoatlas eval cost-report --before …` prints cost and latency per question for each report; a baseline is written from the reports measured so far, labelled with what they measured. The per-mode baseline on dev and test is a live-pass item (decision 0024).
 - [x] **T2 — Change detection.** Inventory diff with the five change classes; tests.
 - [x] **T3 — Incremental parse and re-resolve.** Parse cache by content; per-file records; call resolution reused per file under the invalidation rules of decision 0024; a test per rule, each showing the graph is wrong without the rule.
 - [x] **T4 — Reuse and equality checks.** Builds find their previous snapshot; `build_incremental`; chunk reuse; embedding reuse counted; scripted and generated change sets with digest equality against full rebuilds, through the store.

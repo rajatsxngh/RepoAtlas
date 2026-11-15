@@ -95,6 +95,11 @@ class ItemRun(BaseModel):
     # The system's cost by stage, for systems with stages (empty otherwise).
     stage_costs: dict[str, float] = Field(default_factory=dict)
     latency_s: float
+    # Token counts of the system's own calls (0 in reports written before they were kept).
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
     answer_keys: list[str]
     cited: list[str]  # compact evidence references
     support: dict[str, int]
@@ -205,6 +210,10 @@ def _item_run(record: RunRecord) -> ItemRun:
         eval_cost_usd=output.eval_cost_usd,
         stage_costs=dict(output.stage_costs),
         latency_s=output.latency_s,
+        input_tokens=output.input_tokens,
+        output_tokens=output.output_tokens,
+        cache_read_tokens=output.cache_read_tokens,
+        cache_write_tokens=output.cache_write_tokens,
         answer_keys=output.answer_keys
         if output.impact is None
         else [item.symbol_key for item in output.impact],

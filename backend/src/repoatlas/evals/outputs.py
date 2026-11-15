@@ -103,8 +103,10 @@ class SystemOutput(BaseModel):
     stage_costs: dict[str, float] = Field(default_factory=dict)
     eval_cost_usd: float = 0.0  # checker and judge spend
     latency_s: float = 0.0
-    input_tokens: int = 0
+    input_tokens: int = 0  # every input token: uncached, cache reads, cache writes
     output_tokens: int = 0
+    cache_read_tokens: int = 0  # of the input tokens, those read from the prompt cache
+    cache_write_tokens: int = 0  # and those written to it
     error: str | None = None
     notes: list[str] = Field(default_factory=list)  # for example, a checker that failed
 

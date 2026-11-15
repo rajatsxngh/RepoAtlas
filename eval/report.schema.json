@@ -328,6 +328,16 @@
           "title": "Answer Keys",
           "type": "array"
         },
+        "cache_read_tokens": {
+          "default": 0,
+          "title": "Cache Read Tokens",
+          "type": "integer"
+        },
+        "cache_write_tokens": {
+          "default": 0,
+          "title": "Cache Write Tokens",
+          "type": "integer"
+        },
         "cached": {
           "title": "Cached",
           "type": "boolean"
@@ -357,6 +367,11 @@
         "eval_cost_usd": {
           "title": "Eval Cost Usd",
           "type": "number"
+        },
+        "input_tokens": {
+          "default": 0,
+          "title": "Input Tokens",
+          "type": "integer"
         },
         "judge": {
           "anyOf": [
@@ -397,6 +412,11 @@
         "outcome": {
           "title": "Outcome",
           "type": "string"
+        },
+        "output_tokens": {
+          "default": 0,
+          "title": "Output Tokens",
+          "type": "integer"
         },
         "primary": {
           "anyOf": [
