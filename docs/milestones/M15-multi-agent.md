@@ -1,6 +1,6 @@
 # M15 — Multi-agent pipeline
 
-**Type of work:** AI agents · **Size:** M (8 tasks) · **Status:** In progress
+**Type of work:** AI agents · **Size:** M (8 tasks) · **Status:** Done
 
 ## Goal
 
@@ -97,6 +97,8 @@ uv run repoatlas eval compare eval/reports/<oneshot>.json eval/reports/<agent>.j
 
 **Build gate reached on 2026-11-15 (decision 0023). No model was called and nothing was spent.**
 Evidence: [`docs/m15-gate-evidence.md`](../m15-gate-evidence.md).
+CI run 43677960297 passed all five jobs on `fff0e99` (Linux full checks, Windows unit tests, API
+types, frontend with end-to-end tests, docs lint).
 
 What was built:
 
