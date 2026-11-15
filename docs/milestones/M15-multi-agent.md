@@ -44,7 +44,7 @@ MAS-1, MAS-2, MAS-3, MAS-4, MAS-5, MAS-6, MAS-7
 
 ## Tasks
 
-- [ ] **T1 — Planner.** Structured plan schema; tests with `FakeLLM` (single-branch and multi-branch questions).
+- [x] **T1 — Planner.** Structured plan schema; tests with `FakeLLM` (single-branch and multi-branch questions).
 - [ ] **T2 — Explorers.** Concurrent branches, per-branch budgets, shared tool cache; tests for concurrency limits and partial results.
 - [ ] **T3 — Writer.** Ledger merging with stable evidence IDs; draft generation.
 - [ ] **T4 — Verifier.** Support labels, drop and repair; test with a seeded unsupported claim (must be dropped) and a seeded partial claim (repaired or dropped).
