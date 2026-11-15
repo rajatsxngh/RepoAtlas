@@ -67,7 +67,7 @@ The arrows show build order. The exact dependencies of each milestone are in the
 | M13 | [Observability panel & guardrails](M13-observability-guardrails.md) | Reliability and security | L | M04, M05, M07, M10, M11 | Done |
 | M14 | [Agent harness](M14-agent-harness.md) | AI agent | L | M03, M06, M07, M10, M11, M13 | Done |
 | M15 | [Multi-agent pipeline](M15-multi-agent.md) | AI agents | M | M10, M13, M14 | Done |
-| M16 | [Performance & cost](M16-performance-cost.md) | Optimization | M | M02, M03, M04, M05, M06, M10, M13, M15 | In progress |
+| M16 | [Performance & cost](M16-performance-cost.md) | Optimization | M | M02, M03, M04, M05, M06, M10, M13, M15 | Done |
 | M17 | [Launch](M17-launch.md) | Release and content | M | M00–M16 | Not started |
 
 **Minimum-shippable line: after M12.** M12's gate was reached on a self-hosted stack; the hosted private deployment and live checks are pending in [`docs/live-pass.md`](../live-pass.md) (decision 0020). At that point the product works end to end on a private deployment: graph, map, cited answers, benchmark, and impact analysis validated against real test failures. M13–M17 add guardrail gates, agents, cost work, and the public launch. The launch post comes only after M17.

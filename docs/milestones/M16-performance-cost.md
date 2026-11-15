@@ -1,6 +1,6 @@
 # M16 — Performance & cost
 
-**Type of work:** Optimization · **Size:** M (8 tasks) · **Status:** In progress
+**Type of work:** Optimization · **Size:** M (8 tasks) · **Status:** Done
 
 ## Goal
 
@@ -115,6 +115,8 @@ Incremental builds and the freshness check are built and measured in full. The c
 build gate: its tooling is built and tested, and its numbers are pending in the live pass.
 Evidence: [`docs/m16-gate-evidence.md`](../m16-gate-evidence.md). Notes for users:
 [`docs/performance.md`](../performance.md).
+CI run 43749499442 passed all five jobs on `d0f3301` (Linux full checks, Windows unit tests, API
+types, frontend with end-to-end tests, docs lint).
 
 What was built:
 
