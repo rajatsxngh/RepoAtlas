@@ -247,6 +247,34 @@ class OwnerRow(Base):
     share: Mapped[float] = mapped_column(Double)
 
 
+class ParseCacheRow(Base):
+    """One file's parse result (the JSON text of a ``ParsedFile``), keyed by a digest of what
+    parsing reads: path, blob, language, test flag, and parser versions
+    (``repoatlas.store.parsecache``). Shared by every snapshot, like ``blobs``."""
+
+    __tablename__ = "parse_cache"
+
+    key: Mapped[str] = mapped_column(Text, primary_key=True)
+    path: Mapped[str] = mapped_column(Text)
+    blob_oid: Mapped[str] = mapped_column(Text)
+    parsed: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = _now()
+
+
+class FileRecordRow(Base):
+    """What a build keeps about one parsed file for the next build of the repository
+    (``repoatlas.graph.incremental.FileRecord``): how its imports resolved, as a digest, and
+    its call-site counts."""
+
+    __tablename__ = "file_records"
+    __table_args__ = (PrimaryKeyConstraint("snapshot_id", "path"),)
+
+    snapshot_id: Mapped[int] = _snapshot_fk()
+    path: Mapped[str] = mapped_column(Text)
+    imports_digest: Mapped[str] = mapped_column(Text)
+    calls: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
+
+
 STORE_TABLES: tuple[str, ...] = (
     "repos",
     "snapshots",
@@ -256,4 +284,6 @@ STORE_TABLES: tuple[str, ...] = (
     "edges",
     "unresolved_calls",
     "owners",
+    "parse_cache",
+    "file_records",
 )

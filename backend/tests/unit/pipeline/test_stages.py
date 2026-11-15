@@ -37,7 +37,10 @@ class Stopped(Exception):
 
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
-    return Settings(_env_file=None, data_dir=tmp_path / "data", database_url=NOWHERE_DB)
+    # No database here: the parse cache is off, so the stages before `store` never connect.
+    return Settings(
+        _env_file=None, data_dir=tmp_path / "data", database_url=NOWHERE_DB, parse_cache=False
+    )
 
 
 def context(settings: Settings, **fields: Any) -> BuildContext:

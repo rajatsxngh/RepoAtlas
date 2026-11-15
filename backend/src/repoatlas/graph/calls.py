@@ -254,38 +254,54 @@ def add_call_edges(
     unresolved: list[UnresolvedCall] = []
     counts: Counter[str] = Counter()
     for parsed in files:
-        for call in parsed.calls:
-            caller = caller_of(parsed, call)
-            result = resolver.resolve(parsed.path, call)
-            if result.outcome == "resolved" and result.tier is not None:
-                counts[result.tier.value] += 1
-                confidence = tier_confidence(result.tier, result.candidates)
-                meta: dict[str, JsonValue] = {"tier": result.tier.value}
-                if result.tier in (Tier.T5, Tier.T6):
-                    meta["candidates"] = result.candidates
-                for target in result.targets:
-                    edges.add(
-                        caller,
-                        target,
-                        EdgeKind.CALLS,
-                        Provenance.NAME_MATCH,
-                        confidence,
-                        site=call.range,
-                        meta=meta,
-                        counted=True,
-                    )
-            elif result.outcome == "unresolved" and result.reason is not None:
-                counts[f"unresolved:{result.reason}"] += 1
-                unresolved.append(
-                    UnresolvedCall(
-                        caller_key=caller,
-                        callee_text=call.callee,
-                        receiver_text=call.receiver,
-                        site=call.range,
-                        candidates=list(result.unresolved_candidates),
-                        reason=result.reason,
-                    )
+        file_unresolved, file_counts = add_file_call_edges(parsed, resolver, edges, caller_of)
+        unresolved.extend(file_unresolved)
+        counts.update(file_counts)
+    return unresolved, counts
+
+
+def add_file_call_edges(
+    parsed: ParsedFile,
+    resolver: CallResolver,
+    edges: EdgeSet,
+    caller_of: CallerOf,
+) -> tuple[list[UnresolvedCall], Counter[str]]:
+    """``add_call_edges`` for one file. Every edge it adds starts at a node of that file, so a
+    file's result never mixes with another's."""
+    unresolved: list[UnresolvedCall] = []
+    counts: Counter[str] = Counter()
+    for call in parsed.calls:
+        caller = caller_of(parsed, call)
+        result = resolver.resolve(parsed.path, call)
+        if result.outcome == "resolved" and result.tier is not None:
+            counts[result.tier.value] += 1
+            confidence = tier_confidence(result.tier, result.candidates)
+            meta: dict[str, JsonValue] = {"tier": result.tier.value}
+            if result.tier in (Tier.T5, Tier.T6):
+                meta["candidates"] = result.candidates
+            for target in result.targets:
+                edges.add(
+                    caller,
+                    target,
+                    EdgeKind.CALLS,
+                    Provenance.NAME_MATCH,
+                    confidence,
+                    site=call.range,
+                    meta=meta,
+                    counted=True,
                 )
-            else:
-                counts[result.outcome] += 1
+        elif result.outcome == "unresolved" and result.reason is not None:
+            counts[f"unresolved:{result.reason}"] += 1
+            unresolved.append(
+                UnresolvedCall(
+                    caller_key=caller,
+                    callee_text=call.callee,
+                    receiver_text=call.receiver,
+                    site=call.range,
+                    candidates=list(result.unresolved_candidates),
+                    reason=result.reason,
+                )
+            )
+        else:
+            counts[result.outcome] += 1
     return unresolved, counts

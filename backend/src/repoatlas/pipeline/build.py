@@ -29,11 +29,13 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, JsonValue
 from sqlalchemy import Engine
+from sqlalchemy.exc import SQLAlchemyError
 
 from repoatlas.canonical import digest, pretty_json, write_text_lf
 from repoatlas.config import Settings
 from repoatlas.db.engine import create_db_engine
-from repoatlas.graph.build import GraphSettings, build_graph, component_versions
+from repoatlas.graph.build import GraphSettings, component_versions, link_graph
+from repoatlas.graph.incremental import FileRecord
 from repoatlas.graph.model import CodeGraph
 from repoatlas.graph.owners import CommitLog, read_commit_log
 from repoatlas.graph.project import ProjectFiles
@@ -50,7 +52,7 @@ from repoatlas.parsing.ts_runtime import grammar_versions
 from repoatlas.pipeline import fingerprint
 from repoatlas.pipeline.context import BuildContext
 from repoatlas.pipeline.graph import read_project_files
-from repoatlas.pipeline.parse import parse_files
+from repoatlas.pipeline.parse import CacheUse, parse_files
 from repoatlas.pipeline.stages import (
     Stage,
     fingerprint_parts,
@@ -58,6 +60,7 @@ from repoatlas.pipeline.stages import (
     registered_stages,
     run_stages,
 )
+from repoatlas.store import parsecache
 from repoatlas.store.loader import begin_snapshot, mark_failed, mark_ready, save_snapshot
 from repoatlas.store.models import SnapshotId
 
@@ -144,6 +147,52 @@ class ParseCheckpoint(BaseModel):
 
     files: list[ParsedFile]
     project: ProjectFiles
+
+
+class GraphCheckpoint(BaseModel):
+    """A linked graph with its per-file records and what linking reused."""
+
+    model_config = ConfigDict(frozen=True)
+
+    graph: CodeGraph
+    records: dict[str, FileRecord]
+    link: dict[str, JsonValue] = {}
+
+
+class IncrementalMismatch(RuntimeError):
+    """An incremental build's graph differs from a full link of the same commit
+    (``incremental_verify``). The invalidation rules have a hole; the build fails rather than
+    store a wrong graph."""
+
+
+class StoreParseCache:
+    """The store's ``parse_cache`` table as a ``ParseCache``. A cache must never fail a build:
+    when the database can't be reached, files are simply parsed (and nothing is saved, so a
+    build waits for an unreachable database once, not twice)."""
+
+    def __init__(self, engine: Engine, components: Mapping[str, JsonValue]) -> None:
+        self._engine = engine
+        self._components = dict(components)
+        self._broken = False
+
+    def key(self, entry: FileEntry) -> str:
+        return parsecache.parse_key(entry, self._components)
+
+    def load(self, keys: Sequence[str]) -> Mapping[str, ParsedFile]:
+        try:
+            return parsecache.load_parsed(keys, engine=self._engine)
+        except SQLAlchemyError as error:
+            log.warning("the parse cache could not be read", error=type(error).__name__)
+            self._broken = True
+            return {}
+
+    def save(self, items: Mapping[str, ParsedFile]) -> None:
+        if self._broken or not items:
+            return
+        try:
+            parsecache.save_parsed(items, engine=self._engine)
+        except SQLAlchemyError as error:
+            log.warning("the parse cache could not be written", error=type(error).__name__)
 
 
 # --- resolve ------------------------------------------------------------------------------
@@ -320,29 +369,42 @@ def parse(ctx: BuildContext) -> None:
         ctx.resumed.append("parse")
         return
     tree = ctx.need(ctx.tree, "source tree")
+    use = CacheUse()
+    cache = StoreParseCache(ctx.engine, _parse_components()) if ctx.settings.parse_cache else None
     ctx.parsed = parse_files(
         tree,
         ctx.need(ctx.inventory, "inventory"),
         progress=lambda done, total: ctx.progress(done / total),
+        cache=cache,
+        use=use,
     )
+    ctx.stats["parse_cache"] = use.as_json()
     ctx.project = read_project_files(tree, max_file_bytes=ctx.settings.max_file_bytes)
     _save(ctx, "parse", ParseCheckpoint(files=ctx.parsed, project=ctx.project))
 
 
 def graph(ctx: BuildContext) -> None:
-    saved = _load(ctx, "graph", CodeGraph)
+    """Link the graph, keeping each file's record for the next build."""
+    saved = _load(ctx, "graph", GraphCheckpoint)
     if saved is not None:
-        ctx.graph = saved
+        ctx.graph, ctx.records = saved.graph, saved.records
+        ctx.stats["link"] = saved.link
         ctx.resumed.append("graph")
         return
-    ctx.graph = build_graph(
+    result = link_graph(
         ctx.need(ctx.inventory, "inventory"),
         ctx.need(ctx.parsed, "parse results"),
         ctx.history,
         GraphSettings.from_settings(ctx.settings),
         project=ctx.project,
     )
-    _save(ctx, "graph", ctx.graph)
+    ctx.graph, ctx.records = result.graph, result.records
+    ctx.stats["link"] = result.stats()
+    _save(
+        ctx,
+        "graph",
+        GraphCheckpoint(graph=result.graph, records=result.records, link=result.stats()),
+    )
 
 
 def store(ctx: BuildContext) -> None:
@@ -371,6 +433,7 @@ def store(ctx: BuildContext) -> None:
         engine=ctx.engine,
         extra_stats=extra,
         ready=False,
+        records=ctx.records,
     )
     if saved != ctx.snapshot_id:
         raise RuntimeError(f"Saved snapshot {saved}, but the build created {ctx.snapshot_id}.")

@@ -69,6 +69,18 @@ class EdgeSet:
         if better or same_and_earlier:
             current.confidence, current.site, current.meta = confidence, site, dict(meta or {})
 
+    def restore(self, edge: Edge, *, counted: bool = False) -> None:
+        """Put back an edge exactly as an earlier ``edges()`` gave it (``counted``: its
+        ``meta.count`` is the number of times it was added). The edge must not be present."""
+        edge_id = (edge.src, edge.dst, edge.kind, edge.provenance)
+        if edge_id in self._items:
+            raise ValueError(f"The edge {edge.src} -> {edge.dst} ({edge.kind}) is already there.")
+        meta = dict(edge.meta)
+        count = meta.pop("count", 1) if counted else 1
+        if not isinstance(count, int):
+            raise ValueError("A counted edge needs an integer meta.count.")
+        self._items[edge_id] = _Pending(edge.confidence, edge.site, meta, count, counted)
+
     def edges(self, kind: EdgeKind | None = None) -> list[Edge]:
         """The collected edges (only those of ``kind``, when given)."""
         result: list[Edge] = []

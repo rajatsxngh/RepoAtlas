@@ -130,7 +130,7 @@ def test_a_build_job_builds_the_snapshot_and_reports_progress(
 def test_a_build_resumes_from_checkpoints_after_its_worker_crashes(
     origin: Origin, settings: Settings, pg_engine: Engine, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    real_graph = graph_build.build_graph
+    real_graph = graph_build.link_graph
     calls = 0
 
     def crash_once(*args: Any, **kwargs: Any) -> Any:
@@ -140,7 +140,7 @@ def test_a_build_resumes_from_checkpoints_after_its_worker_crashes(
             raise Crash
         return real_graph(*args, **kwargs)
 
-    monkeypatch.setattr(build_module, "build_graph", crash_once)
+    monkeypatch.setattr(build_module, "link_graph", crash_once)
     snapshot_id, job, _ = request(settings, pg_engine)
     doomed = worker(settings, pg_engine, "doomed", lease_s=1.0)
     crashed = threading.Event()
@@ -224,7 +224,7 @@ def test_retries_keep_the_snapshot_building_and_a_final_failure_marks_it_failed(
     def broken(*_args: Any, **_kwargs: Any) -> Any:
         raise RuntimeError("graph exploded")
 
-    monkeypatch.setattr(build_module, "build_graph", broken)
+    monkeypatch.setattr(build_module, "link_graph", broken)
     snapshot_id, job, payload = request(
         settings.model_copy(update={"job_max_attempts": 2}), pg_engine
     )

@@ -37,7 +37,7 @@ def main(origin_url: str, marker: Path) -> None:
     for name, replacement in (
         ("fetch_source", source),
         ("fetch_history", history),
-        ("build_graph", hang),
+        ("link_graph", hang),
     ):
         setattr(build_module, name, replacement)
     Worker(get_settings(), worker_id="victim").run()

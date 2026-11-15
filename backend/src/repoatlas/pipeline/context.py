@@ -11,6 +11,7 @@ from pydantic import JsonValue
 from sqlalchemy import Engine
 
 from repoatlas.config import Settings
+from repoatlas.graph.incremental import FileRecord
 from repoatlas.graph.model import CodeGraph
 from repoatlas.graph.owners import CommitLog
 from repoatlas.graph.project import ProjectFiles
@@ -18,6 +19,7 @@ from repoatlas.ingest.github import RepoMeta
 from repoatlas.ingest.inventory import Inventory
 from repoatlas.ingest.source import SourceTree
 from repoatlas.parsing.models import ParsedFile
+from repoatlas.pipeline.changes import ChangeSet
 from repoatlas.store.models import SnapshotId
 
 
@@ -48,6 +50,11 @@ class BuildContext:
     parsed: list[ParsedFile] | None = None
     project: ProjectFiles | None = None
     graph: CodeGraph | None = None
+    records: dict[str, FileRecord] | None = None  # the linker's per-file records
+    # The ready snapshot of the same repository and fingerprint this build reuses, and
+    # how the new commit differs from it (decision 0024).
+    previous_snapshot_id: SnapshotId | None = None
+    changes: ChangeSet | None = None
     timings: dict[str, float] = field(default_factory=dict)
     stats: dict[str, JsonValue] = field(default_factory=dict)  # merged into the snapshot's stats
     resources: ExitStack = field(default_factory=ExitStack)

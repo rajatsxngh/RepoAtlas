@@ -29,6 +29,7 @@ from sqlalchemy import Connection, Engine, text
 
 from repoatlas.canonical import canonical_json
 from repoatlas.db.engine import get_engine
+from repoatlas.graph.incremental import FileRecord
 from repoatlas.graph.model import CodeGraph, GraphStats, NodeKind, Owner
 from repoatlas.ingest.github import RepoMeta
 from repoatlas.ingest.inventory import Inventory
@@ -41,6 +42,7 @@ from repoatlas.store.models import DEFAULT_HOST, SnapshotId, SnapshotStatus
 
 MAX_ERROR_CHARS = 2_000
 SNAPSHOT_TABLES = (
+    "file_records",
     "chunks",
     "owners",
     "unresolved_calls",
@@ -69,6 +71,7 @@ def save_snapshot(
     engine: Engine | None = None,
     extra_stats: Mapping[str, JsonValue] | None = None,
     ready: bool = True,
+    records: Mapping[str, FileRecord] | None = None,
 ) -> SnapshotId:
     """Store one snapshot and return its ID (see the module docstring for the steps).
 
@@ -78,6 +81,8 @@ def save_snapshot(
     the store computes itself (``graph``, ``graph_digest``, ``inventory``, ``blobs``, ``rows``,
     ``store_seconds``) always win. With ``ready=False`` the snapshot stays ``building`` (saving
     again replaces what was saved, including rows later stages added) until ``mark_ready``.
+    ``records`` are the graph linker's per-file records (``graph.build.link_graph``); a snapshot
+    saved with them can be reused by the next build of the repository (decision 0024).
     """
     engine = engine or get_engine()
     ref = begin_snapshot(repo_meta, sha, fingerprint, engine=engine)
@@ -97,7 +102,7 @@ def save_snapshot(
                 connection.execute(
                     text(f"DELETE FROM {table} WHERE snapshot_id = :id"), {"id": ref.id}
                 )
-            counts = _write(connection, ref.id, inventory, blobs, graph)
+            counts = _write(connection, ref.id, inventory, blobs, graph, records or {})
             stats: dict[str, JsonValue] = {
                 **(extra_stats or {}),  # never overrides what the store computes below
                 "graph": graph.stats.model_dump(mode="json"),
@@ -376,6 +381,7 @@ def _write(
     inventory: Inventory,
     blobs: Mapping[str, bytes],
     graph: CodeGraph,
+    records: Mapping[str, FileRecord],
 ) -> dict[str, JsonValue]:
     """Write every row of one snapshot inside the caller's transaction; return row counts."""
     raw = cast(psycopg.Connection[Any], connection.connection.driver_connection)
@@ -460,6 +466,15 @@ def _write(
                 )
                 for path, owners in graph.owners.items()
                 for owner in owners
+            ),
+        )
+        _copy(
+            cursor,
+            "file_records",
+            ("snapshot_id", "path", "imports_digest", "calls"),
+            (
+                (snapshot_id, path, record.imports_digest, canonical_json(record.calls))
+                for path, record in sorted(records.items())
             ),
         )
     return {

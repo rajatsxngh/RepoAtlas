@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, JsonValue
 
 from repoatlas.canonical import digest
 from repoatlas.config import Settings
 from repoatlas.ingest.fetch import Workspace, fetch_source
 from repoatlas.ingest.github import GitHubClient, check_repo_size, parse_repo_url
-from repoatlas.ingest.inventory import Inventory, build_inventory
+from repoatlas.ingest.inventory import FileEntry, Inventory, build_inventory
 from repoatlas.ingest.source import DirectorySourceTree, SourceTree, TreeEntry
 from repoatlas.parsing import parse_file
 from repoatlas.parsing.models import ParsedFile
@@ -42,21 +44,63 @@ class ParseOutput(BaseModel):
     digest: str
 
 
+class ParseCache(Protocol):
+    """Parse results kept between builds, by key (``repoatlas.store.parsecache``)."""
+
+    def key(self, entry: FileEntry) -> str: ...
+
+    def load(self, keys: Sequence[str]) -> Mapping[str, ParsedFile]: ...
+
+    def save(self, items: Mapping[str, ParsedFile]) -> None: ...
+
+
+@dataclass
+class CacheUse:
+    """How many files a parse took from the cache (``hits``) and parsed (``misses``)."""
+
+    hits: int = 0
+    misses: int = 0
+
+    def as_json(self) -> dict[str, JsonValue]:
+        return {"hits": self.hits, "misses": self.misses}
+
+
 def parse_files(
     tree: SourceTree,
     inventory: Inventory,
     *,
     progress: Callable[[int, int], None] | None = None,
+    cache: ParseCache | None = None,
+    use: CacheUse | None = None,
 ) -> list[ParsedFile]:
     """Parse every indexed file of ``inventory`` (read from ``tree``) in path order;
-    ``progress(done, total)`` is called after each file."""
+    ``progress(done, total)`` is called after each file.
+
+    With a ``cache``, a file whose parse result is cached is not read or parsed again, and new
+    results are saved to it; ``use`` receives the counts. A cached result is used only if it
+    names the same path and blob."""
     entries = inventory.indexed
+    keys = {entry.path: cache.key(entry) for entry in entries} if cache is not None else {}
+    cached = cache.load(list(keys.values())) if cache is not None else {}
     parsed: list[ParsedFile] = []
+    fresh: dict[str, ParsedFile] = {}
     for done, entry in enumerate(entries, start=1):
-        data = tree.read(TreeEntry(entry.path, entry.mode, entry.blob_oid, entry.size))
-        parsed.append(parse_file(entry, data))
+        hit = cached.get(keys[entry.path]) if cache is not None else None
+        if hit is not None and (hit.path, hit.blob_oid) == (entry.path, entry.blob_oid):
+            parsed.append(hit)
+        else:
+            data = tree.read(TreeEntry(entry.path, entry.mode, entry.blob_oid, entry.size))
+            result = parse_file(entry, data)
+            parsed.append(result)
+            if cache is not None:
+                fresh[keys[entry.path]] = result
         if progress is not None:
             progress(done, len(entries))
+    if cache is not None:
+        cache.save(fresh)
+    if use is not None:
+        use.misses = len(fresh) if cache is not None else len(entries)
+        use.hits = len(entries) - use.misses
     return parsed
 
 
