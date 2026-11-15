@@ -13,9 +13,16 @@ The compatibility spike's findings live here as code, so every call follows them
   properties required, and keyword constraints the API does not accept (``minLength``,
   ``maxItems``, ``minimum``, …) removed. Pydantic enforces them after parsing instead.
 - **Effort** goes in ``output_config.effort``.
-- **Prompt caching** puts one ``cache_control`` breakpoint on the last system block (the
-  static part). At most 4 breakpoints per request; prefixes under the model's minimum
-  (512 tokens on these models) silently don't cache.
+- **Prompt caching** (decision 0024) uses up to three ``cache_control`` breakpoints, never
+  more than the API's four. The static prefix gets two: the last tool definition and the last
+  system block (tools render before the system prompt, so the second covers both; the first
+  lets requests that share tools but not the system prompt share that much). A request that
+  continues a tool conversation gets a third on the last block of its last message, so each
+  exploration step reads the steps before it from the cache; the marker is set on the request's
+  copy only, and moves with every request. It is not set on a request whose tail is never sent
+  again (a one-shot answer's evidence, a repair turn, a final call): writing a cache entry
+  costs 1.25 times the input price and would never be read. Prefixes under the model's
+  minimum (512 tokens on these models) silently don't cache.
 - **Refusals** arrive as ``stop_reason == "refusal"`` with ``stop_details``.
 - **Conversations are append-only:** callers add turns; nothing here edits earlier ones.
 """
@@ -34,6 +41,9 @@ Effort = Literal["low", "medium", "high", "xhigh", "max"]
 SAMPLING_PARAMS = frozenset({"temperature", "top_p", "top_k"})
 ALLOWED_TOOL_CHOICES = frozenset({"auto", "none"})
 MAX_CACHE_BREAKPOINTS = 4
+CACHE_CONTROL = {"type": "ephemeral"}  # the default 5-minute lifetime
+# Message blocks that can carry a breakpoint (thinking blocks can't).
+CACHEABLE_BLOCKS = frozenset({"text", "tool_result", "image", "document"})
 MIN_CACHEABLE_TOKENS = 512
 REFUSAL = "refusal"
 THINKING_TYPES = frozenset({"thinking", "redacted_thinking"})
@@ -128,12 +138,15 @@ def build_request(
     tool_choice: str | None = None,
     effort: Effort | None = None,
     cache_static: bool = True,
+    cache_conversation: bool = False,
 ) -> dict[str, Any]:
     """The Messages API request body for one call.
 
     Leading ``system`` messages become the top-level ``system`` blocks; with
-    ``cache_static`` the last of them carries the cache breakpoint. The rest of ``messages``
-    is sent as given (deep-copied, never edited).
+    ``cache_static`` the last of them and the last tool definition carry cache breakpoints.
+    The rest of ``messages`` is sent as given (deep-copied, never edited). With
+    ``cache_conversation`` the copy's last message, when it is the user's, carries one more
+    breakpoint on its last block: for calls whose conversation the next call extends.
     """
     if max_tokens < 1:
         raise ValueError("max_tokens must be positive.")
@@ -153,10 +166,12 @@ def build_request(
     if conversation[0].get("role") != "user":
         raise ValueError("The first message after the system prompt must be from the user.")
 
+    if cache_conversation:
+        _mark_last_block(conversation)
     request: dict[str, Any] = {"model": model, "max_tokens": max_tokens, "messages": conversation}
     if system_blocks:
         if cache_static:
-            system_blocks[-1] = {**system_blocks[-1], "cache_control": {"type": "ephemeral"}}
+            system_blocks[-1] = {**system_blocks[-1], "cache_control": dict(CACHE_CONTROL)}
         request["system"] = system_blocks
     output_config: dict[str, Any] = {}
     if effort is not None:
@@ -167,11 +182,34 @@ def build_request(
         request["output_config"] = output_config
     if tools:
         request["tools"] = copy.deepcopy(tools)
+        if cache_static:
+            request["tools"][-1] = {**request["tools"][-1], "cache_control": dict(CACHE_CONTROL)}
         if tool_choice is not None:
             request["tool_choice"] = {"type": tool_choice}
     if count_cache_breakpoints(request) > MAX_CACHE_BREAKPOINTS:
         raise ValueError(f"A request may have at most {MAX_CACHE_BREAKPOINTS} cache breakpoints.")
     return request
+
+
+def _mark_last_block(conversation: list[Message]) -> None:
+    """Put a cache breakpoint on the last block of the last message of ``conversation`` (the
+    request's own copy), when that message is the user's and the block can carry one.
+
+    Text content given as a string becomes one text block, in every message, so a message has
+    the same form in the request that marks it and in the later ones that only resend it: the
+    cache matches a prefix, and nothing here relies on the API treating the two forms alike."""
+    for message in conversation:
+        text = message.get("content")
+        if isinstance(text, str) and text:
+            message["content"] = [{"type": "text", "text": text}]
+    last = conversation[-1]
+    if last.get("role") != "user":
+        return
+    content = last.get("content")
+    if isinstance(content, list) and content:
+        block = content[-1]
+        if isinstance(block, dict) and block.get("type") in CACHEABLE_BLOCKS:
+            content[-1] = {**block, "cache_control": dict(CACHE_CONTROL)}
 
 
 def _text_blocks(content: Any) -> list[dict[str, Any]]:

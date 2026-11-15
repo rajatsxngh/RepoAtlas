@@ -217,6 +217,44 @@ def cost_report_command(
         raise typer.Exit(4)
 
 
+@eval_app.command("cache-estimate")
+def cache_estimate_command(
+    step_tokens: Annotated[
+        int, typer.Option("--step-tokens", min=1, help="Tokens one exploring step adds.")
+    ] = 1_500,
+    role: Annotated[str, typer.Option("--role", help="small or large.")] = "small",
+) -> None:
+    """An estimate (arithmetic, no model) of what caching the agent's growing conversation
+    saves on its exploring calls, from the price table and the size of the agent's own system
+    prompt and tools. The measurement is a live-pass item."""
+    import json
+
+    from repoatlas.agent.prompting import FINAL_ANSWER_TOOL, system_prompt
+    from repoatlas.agent.tools import tool_definitions
+    from repoatlas.config import get_settings
+    from repoatlas.evals.costreport import (
+        estimate_conversation_caching,
+        render_caching_estimate,
+    )
+    from repoatlas.retrieval.chunker import estimate_tokens
+
+    settings = get_settings()
+    if role not in ("small", "large"):
+        typer.echo("--role is small or large.", err=True)
+        raise typer.Exit(2)
+    model = settings.llm_small_model if role == "small" else settings.llm_large_model
+    price = settings.llm_prices[model]
+    tools = json.dumps([*tool_definitions(), FINAL_ANSWER_TOOL])
+    static = estimate_tokens(system_prompt(settings.agent_max_steps)) + estimate_tokens(tools)
+    estimates = [
+        estimate_conversation_caching(
+            price, steps=steps, static_tokens=static, step_tokens=step_tokens
+        )
+        for steps in (2, 4, 6, 8, settings.agent_max_steps)
+    ]
+    typer.echo(render_caching_estimate(model, estimates), nl=False)
+
+
 labels_app = typer.Typer(help="Human labels for the checker and the judge.", no_args_is_help=True)
 eval_app.add_typer(labels_app, name="labels")
 

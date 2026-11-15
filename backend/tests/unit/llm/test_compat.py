@@ -76,7 +76,8 @@ def test_forced_tool_choice_is_refused_before_sending(choice: str) -> None:
 def test_auto_tool_choice_is_sent() -> None:
     request = build_request("m", USER, max_tokens=10, tools=[WEATHER_TOOL], tool_choice="auto")
     assert request["tool_choice"] == {"type": "auto"}
-    assert request["tools"] == [WEATHER_TOOL]
+    # The last tool definition carries a cache breakpoint (test_cache_breakpoints.py).
+    assert request["tools"] == [{**WEATHER_TOOL, "cache_control": {"type": "ephemeral"}}]
 
 
 # --- thinking -------------------------------------------------------------------------------

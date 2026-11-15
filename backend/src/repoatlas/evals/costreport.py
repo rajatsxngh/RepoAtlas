@@ -34,6 +34,7 @@ from pydantic import BaseModel, ValidationError
 from repoatlas.evals.compare import compare_reports, cost_by_type, stage_costs
 from repoatlas.evals.report import TYPE_ORDER, Report, read_report
 from repoatlas.evals.stats import Interval, PairedDifference
+from repoatlas.llm.pricing import ModelPrice
 
 TOLERANCE = 0.02  # two points on the primary metric, which runs from 0 to 1
 ALL = "*"
@@ -564,3 +565,89 @@ def render_cost_report(report: CostReport) -> str:
     return (
         render_changes(report) if report.changes or not report.baseline else render_baseline(report)
     )
+
+
+# --- an estimate, not a measurement -----------------------------------------------------------
+
+
+class CachingEstimate(BaseModel):
+    """Input cost of one tool conversation's exploring calls, with the static prefix cached
+    (as before decision 0024) and with the conversation cached too. Output tokens are the
+    same either way and are left out."""
+
+    steps: int
+    static_tokens: int
+    question_tokens: int
+    step_tokens: int
+    prefix_only_usd: float
+    with_conversation_usd: float
+
+    @property
+    def saving(self) -> float:
+        """The share of the exploring calls' input cost that conversation caching saves."""
+        if self.prefix_only_usd == 0:
+            return 0.0
+        return 1 - self.with_conversation_usd / self.prefix_only_usd
+
+
+def estimate_conversation_caching(
+    price: ModelPrice,
+    *,
+    steps: int,
+    static_tokens: int,
+    step_tokens: int,
+    question_tokens: int = 50,
+) -> CachingEstimate:
+    """What ``steps`` exploring calls cost in input tokens at ``price``, by arithmetic.
+
+    Call ``k`` sends the static prefix (tools and system prompt), the question, and the
+    ``k - 1`` earlier steps of ``step_tokens`` each (the model's turn and its tool results).
+    With only the prefix cached, call 1 writes the prefix and every later call reads it; the
+    conversation is paid in full each time. With the conversation cached too, call 1 writes
+    prefix and question, and each later call reads everything the call before it sent and
+    writes only its newest step. Every call is assumed to start within the cache's five
+    minutes of the one before, and every prefix to be over the model's minimum.
+    """
+    if steps < 1:
+        raise ValueError("An estimate needs at least one step.")
+    million = 1_000_000
+    prefix_only = with_conversation = 0.0
+    for call in range(1, steps + 1):
+        conversation = question_tokens + (call - 1) * step_tokens
+        if call == 1:
+            prefix_only += static_tokens * price.cache_write + conversation * price.input
+            with_conversation += (static_tokens + conversation) * price.cache_write
+        else:
+            prefix_only += static_tokens * price.cache_read + conversation * price.input
+            earlier = static_tokens + conversation - step_tokens
+            with_conversation += earlier * price.cache_read + step_tokens * price.cache_write
+    return CachingEstimate(
+        steps=steps,
+        static_tokens=static_tokens,
+        question_tokens=question_tokens,
+        step_tokens=step_tokens,
+        prefix_only_usd=prefix_only / million,
+        with_conversation_usd=with_conversation / million,
+    )
+
+
+def render_caching_estimate(model: str, estimates: list[CachingEstimate]) -> str:
+    first = estimates[0]
+    lines = [
+        f"# Estimate: caching an exploring conversation on {model}",
+        "",
+        "**An estimate by arithmetic from the price table, not a measurement.** Input cost of "
+        f"the exploring calls of one answer, for a static prefix of about {first.static_tokens:,} "
+        f"tokens (tools and system prompt) and about {first.step_tokens:,} tokens added per "
+        "step. Output tokens and the final call on the other model are the same either way and "
+        "are left out. The measured numbers are live-pass items 20 and 21.",
+        "",
+        "| Exploring calls | Prefix cached only | Conversation cached too | Saved |",
+        "|---|---|---|---|",
+    ]
+    for estimate in estimates:
+        lines.append(
+            f"| {estimate.steps} | ${estimate.prefix_only_usd:.5f} | "
+            f"${estimate.with_conversation_usd:.5f} | {100 * estimate.saving:.0f}% |"
+        )
+    return "\n".join(lines) + "\n"

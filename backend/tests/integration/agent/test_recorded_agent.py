@@ -42,6 +42,28 @@ def blocks(message: dict[str, Any], kind: str) -> list[dict[str, Any]]:
     return [block for block in message["content"] if block.get("type") == kind]
 
 
+EPHEMERAL = {"type": "ephemeral"}
+
+
+def unmarked(value: Any) -> Any:
+    """``value`` without cache breakpoints."""
+    if isinstance(value, dict):
+        return {key: unmarked(item) for key, item in value.items() if key != "cache_control"}
+    if isinstance(value, list):
+        return [unmarked(item) for item in value]
+    return value
+
+
+def message_breakpoints(request: dict[str, Any]) -> list[tuple[int, int]]:
+    """(message index, block index from the end) of every breakpoint in the messages."""
+    return [
+        (m, b - len(message["content"]))
+        for m, message in enumerate(request["messages"])
+        for b, block in enumerate(message["content"])
+        if "cache_control" in block
+    ]
+
+
 async def test_the_recorded_agent_conversation_replays_and_validates(
     pg_engine: Engine, clean_store: None
 ) -> None:
@@ -87,12 +109,23 @@ def test_the_requests_route_models_and_follow_the_request_rules() -> None:
         # The same tools on every call, in a fixed order; never a forced tool choice.
         assert [tool["name"] for tool in request["tools"]] == [*TOOL_NAMES, "final_answer"]
         assert not {"temperature", "top_p", "top_k", "thinking"} & set(request)
-        # One system block, the static prompt, carrying the only cache breakpoint.
+        # The static prefix carries two cache breakpoints (decision 0024): the last tool
+        # definition, and the one system block, the static prompt.
         (system,) = request["system"]
         assert system["text"] == system_prompt(12)
-        assert system["cache_control"] == {"type": "ephemeral"}
-        assert count_cache_breakpoints(request) == 1
+        assert system["cache_control"] == EPHEMERAL
+        assert [tool["name"] for tool in request["tools"] if "cache_control" in tool] == [
+            "final_answer"
+        ]
     explore, final = requests[:3], requests[3]
+    # Each exploration call also marks the last block of its last message, so the next call
+    # reads the conversation so far from the cache. The final call goes to another model and
+    # is the last of its conversation: nothing would read what it wrote.
+    for request in explore:
+        assert message_breakpoints(request) == [(len(request["messages"]) - 1, -1)]
+        assert count_cache_breakpoints(request) == 3
+    assert message_breakpoints(final) == []
+    assert count_cache_breakpoints(final) == 2
     assert all(request["tool_choice"] == {"type": "auto"} for request in explore)
     assert all(request["output_config"] == {"effort": "low"} for request in explore)
     assert all(request["max_tokens"] == 2_048 for request in explore)
@@ -113,9 +146,14 @@ def test_the_conversation_is_append_only_and_turns_go_back_unchanged() -> None:
     responses = [interaction.response for interaction in cassette.interactions]
     first = requests[0]["messages"]
     assert len(first) == 1 and first[0]["role"] == "user"
-    assert first[0]["content"] == [{"type": "text", "text": f"<question>\n{QUESTION}\n</question>"}]
+    assert unmarked(first[0]["content"]) == [
+        {"type": "text", "text": f"<question>\n{QUESTION}\n</question>"}
+    ]
     for earlier, later in itertools.pairwise(requests):
-        assert later["messages"][: len(earlier["messages"])] == earlier["messages"]
+        # Apart from the cache breakpoint, which moves to each request's last message, a
+        # request starts with exactly the messages of the one before it.
+        sent_before = unmarked(earlier["messages"])
+        assert unmarked(later["messages"])[: len(sent_before)] == sent_before
         assert len(later["messages"]) == len(earlier["messages"]) + 2  # the turn, its results
     for index, response in enumerate(responses[:3]):
         assert response is not None
@@ -124,6 +162,7 @@ def test_the_conversation_is_append_only_and_turns_go_back_unchanged() -> None:
         assert turn == {"role": "assistant", "content": response["content"]}
         results = requests[index + 1]["messages"][2 * index + 2]
         assert results["role"] == "user"
+        assert results == requests[index + 1]["messages"][2 * index + 2]
         ids = [block["tool_use_id"] for block in blocks(results, "tool_result")]
         assert ids == [block["id"] for block in blocks(turn, "tool_use")]
     thinking = requests[1]["messages"][1]["content"][0]

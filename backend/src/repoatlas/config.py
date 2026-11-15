@@ -94,6 +94,8 @@ class Settings(BaseSettings):
     llm_retry_base_s: float = 1.0  # backoff doubles from here
     llm_retry_max_s: float = 30.0
     llm_prices: dict[str, ModelPrice] = Field(default_factory=lambda: dict(DEFAULT_PRICES))
+    # A cache breakpoint on the growing conversation of tool-using calls (decision 0024).
+    llm_cache_conversation: bool = True
     # "offline" answers without calling a model (stack checks only; decision 0020).
     llm_transport: Literal["anthropic", "offline"] = "anthropic"
     # Dollars all LLM calls may cost per UTC day (repoatlas.limits.SpendGuard); unset: no cap.

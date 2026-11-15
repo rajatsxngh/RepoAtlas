@@ -9,6 +9,9 @@
           {
             "content": [
               {
+                "cache_control": {
+                  "type": "ephemeral"
+                },
                 "text": "<question>\nHow does Cart.total compute the cart's total, and what calls it?\n</question>",
                 "type": "text"
               }
@@ -203,6 +206,9 @@
             "name": "get_impact"
           },
           {
+            "cache_control": {
+              "type": "ephemeral"
+            },
             "description": "End the exploration. Call this as soon as the evidence you have gathered answers the question, or when you have established that the repository does not contain the answer. It takes no arguments. Don't write the answer when you call it: you will be asked for the answer next.",
             "input_schema": {
               "additionalProperties": false,
@@ -279,6 +285,9 @@
           {
             "content": [
               {
+                "cache_control": {
+                  "type": "ephemeral"
+                },
                 "content": "Matches for 'Cart.total', best first: 8.\n- py:src/shop/cart.py:Cart.total:method (method Cart.total, src/shop/cart.py lines 17-19); exact match\n- py:src/shop/cart.py:Cart:class (class Cart, src/shop/cart.py lines 8-25); fuzzy match\n- py:tests/conftest.py:cart:function (function cart, tests/conftest.py lines 6-8); fuzzy match\n- file:src/shop/cart.py (file src/shop/cart.py, src/shop/cart.py); fuzzy match\n- py:src/shop/app.py:get_cart:function (function get_cart, src/shop/app.py lines 9-12); fuzzy match\n- py:src/shop/cart.py:Cart.add:method (method Cart.add, src/shop/cart.py lines 14-15); fuzzy match\n- file:tests/test_cart.py (file tests/test_cart.py, tests/test_cart.py); fuzzy match\n- py:src/shop/cart.py:Cart.__init__:method (method Cart.__init__, src/shop/cart.py lines 11-12); fuzzy match\n\nEvidence from this result (cite these ids):\n<evidence id=\"E1\" path=\"src/shop/cart.py\" lines=\"17-19\"/>\n<evidence id=\"E2\" path=\"src/shop/cart.py\" lines=\"8-25\"/>\n<evidence id=\"E3\" path=\"tests/conftest.py\" lines=\"6-8\"/>\n<evidence id=\"E4\" path=\"src/shop/app.py\" lines=\"9-12\"/>\n<evidence id=\"E5\" path=\"src/shop/cart.py\" lines=\"14-15\"/>\n<evidence id=\"E6\" path=\"src/shop/cart.py\" lines=\"11-12\"/>",
                 "tool_use_id": "toolu_docs_01",
                 "type": "tool_result"
@@ -474,6 +483,9 @@
             "name": "get_impact"
           },
           {
+            "cache_control": {
+              "type": "ephemeral"
+            },
             "description": "End the exploration. Call this as soon as the evidence you have gathered answers the question, or when you have established that the repository does not contain the answer. It takes no arguments. Don't write the answer when you call it: you will be asked for the answer next.",
             "input_schema": {
               "additionalProperties": false,
@@ -601,6 +613,9 @@
                 "type": "tool_result"
               },
               {
+                "cache_control": {
+                  "type": "ephemeral"
+                },
                 "content": "Nothing that call py:src/shop/cart.py:Cart.total:method in the graph.",
                 "tool_use_id": "toolu_docs_03",
                 "type": "tool_result"
@@ -796,6 +811,9 @@
             "name": "get_impact"
           },
           {
+            "cache_control": {
+              "type": "ephemeral"
+            },
             "description": "End the exploration. Call this as soon as the evidence you have gathered answers the question, or when you have established that the repository does not contain the answer. It takes no arguments. Don't write the answer when you call it: you will be asked for the answer next.",
             "input_schema": {
               "additionalProperties": false,
@@ -1197,6 +1215,9 @@
             "name": "get_impact"
           },
           {
+            "cache_control": {
+              "type": "ephemeral"
+            },
             "description": "End the exploration. Call this as soon as the evidence you have gathered answers the question, or when you have established that the repository does not contain the answer. It takes no arguments. Don't write the answer when you call it: you will be asked for the answer next.",
             "input_schema": {
               "additionalProperties": false,

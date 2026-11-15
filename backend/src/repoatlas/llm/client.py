@@ -12,6 +12,10 @@ validation gets one repair attempt: the model's reply and a user turn naming the
 appended (earlier turns are never edited), and the second reply is validated again. A refusal
 is returned as ``refused`` without parsing.
 
+Requests carry prompt-cache breakpoints as ``repoatlas.llm.compat`` describes; the one on the
+growing conversation is set only for calls that may use tools, and ``cache_conversation=False``
+(``REPOATLAS_LLM_CACHE_CONVERSATION``) turns it off.
+
 A client may carry a spending guard (``repoatlas.limits.SpendGuard``): it is asked before every
 request, repair calls included, and stops the call by raising (``SpendCapReached``).
 """
@@ -92,8 +96,10 @@ class LLMClient:
         retry_max_s: float = 30.0,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
         guard: SpendCheck | None = None,
+        cache_conversation: bool = True,
     ) -> None:
         self.transport = transport
+        self.cache_conversation = cache_conversation
         self.guard = guard
         self.models = dict(models)
         self.efforts = dict(efforts or {})
@@ -138,6 +144,7 @@ class LLMClient:
             retry_base_s=settings.llm_retry_base_s,
             retry_max_s=settings.llm_retry_max_s,
             guard=guard,
+            cache_conversation=settings.llm_cache_conversation,
         )
 
     def model_for(self, role: Role) -> str:
@@ -158,13 +165,21 @@ class LLMClient:
         tool_choice: str | None = None,
     ) -> LLMResult:
         model = self.model_for(role)
+        choice = tool_choice if tool_choice is not None else ("auto" if tools else None)
         options: dict[str, Any] = {
             "max_tokens": max_tokens,
             "schema": schema,
             "tools": tools,
-            "tool_choice": tool_choice if tool_choice is not None else ("auto" if tools else None),
+            "tool_choice": choice,
             "effort": self.efforts.get(role),
             "cache_static": cache_static,
+            # A call that may use tools is a step of a tool conversation: the next call
+            # resends this one's messages and can read them from the cache. A call that
+            # can't (a one-shot answer, a final or notes call) ends its conversation on this
+            # model, so nothing would read what it wrote.
+            "cache_conversation": (
+                self.cache_conversation and cache_static and bool(tools) and choice == "auto"
+            ),
         }
         result = await self.send(model, build_request(model, messages, **options), role=role)
         if schema is None or result.refused:

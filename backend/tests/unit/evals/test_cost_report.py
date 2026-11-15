@@ -343,3 +343,48 @@ async def test_reports_keep_the_tokens_of_each_run(tmp_path: Path) -> None:
     run = report.items[0].runs[0]
     assert (run.input_tokens, run.cache_read_tokens, run.output_tokens) == (1_000, 800, 50)
     assert mode_cost(report).tokens.cache_read_share == pytest.approx(0.8)
+
+
+# --- the caching estimate (arithmetic, labelled as such) --------------------------------------
+
+
+def test_the_caching_estimate_is_the_price_table_applied_step_by_step() -> None:
+    from repoatlas.evals.costreport import estimate_conversation_caching
+    from repoatlas.llm.pricing import ModelPrice
+
+    price = ModelPrice(input=1.0, output=5.0, cache_read=0.1, cache_write=1.25)
+    one = estimate_conversation_caching(
+        price, steps=1, static_tokens=1_000, step_tokens=500, question_tokens=100
+    )
+    # One call: the prefix is written either way; marking the question too costs its premium.
+    assert one.prefix_only_usd == pytest.approx((1_000 * 1.25 + 100 * 1.0) / 1e6)
+    assert one.with_conversation_usd == pytest.approx(1_100 * 1.25 / 1e6)
+    assert one.saving < 0
+
+    three = estimate_conversation_caching(
+        price, steps=3, static_tokens=1_000, step_tokens=500, question_tokens=100
+    )
+    prefix_only = (1_000 * 1.25 + 100) + (1_000 * 0.1 + 600) + (1_000 * 0.1 + 1_100)
+    cached = 1_100 * 1.25 + (1_100 * 0.1 + 500 * 1.25) + (1_600 * 0.1 + 500 * 1.25)
+    assert three.prefix_only_usd == pytest.approx(prefix_only / 1e6)
+    assert three.with_conversation_usd == pytest.approx(cached / 1e6)
+    assert three.saving == pytest.approx(1 - cached / prefix_only)
+    # The longer the exploration, the more of it is read instead of paid again.
+    longer = estimate_conversation_caching(
+        price, steps=12, static_tokens=1_000, step_tokens=500, question_tokens=100
+    )
+    assert longer.saving > three.saving > one.saving
+    with pytest.raises(ValueError, match="at least one step"):
+        estimate_conversation_caching(price, steps=0, static_tokens=1, step_tokens=1)
+
+
+def test_the_estimate_command_says_it_is_an_estimate() -> None:
+    result = CliRunner().invoke(app, ["eval", "cache-estimate", "--step-tokens", "1500"])
+    assert result.exit_code == 0, result.output
+    assert "**An estimate by arithmetic from the price table, not a measurement.**" in result.output
+    assert (
+        "| Exploring calls | Prefix cached only | Conversation cached too | Saved |"
+        in result.output
+    )
+    assert result.output.count("\n| ") >= 6
+    assert CliRunner().invoke(app, ["eval", "cache-estimate", "--role", "huge"]).exit_code == 2
