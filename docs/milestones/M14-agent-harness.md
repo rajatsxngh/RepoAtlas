@@ -80,7 +80,7 @@ AGT-1, AGT-2, AGT-3, AGT-4, AGT-5, AGT-6, AGT-7, AGT-8
 - [x] **T5 — API agent mode.** `step` events over server-sent events; trace linkage.
 - [x] **T6 — UI.** Mode toggle; live steps in `TracePanel`; Playwright test with mock mode.
 - [x] **T7 — MCP server.** stdio and HTTP transports, bearer token and rate limits; in-memory client test.
-- [ ] **T8 — Manual MCP check.** Connect from Claude Code and run three questions with tools that call no model; notes in Results.
+- [x] **T8 — Manual MCP check.** Connect from Claude Code and run three questions with tools that call no model; notes in Results.
 - [ ] **T9 — Injection gate (build gate).** The injection suite in agent mode end to end through the runner with scripted stand-ins: the obedient one is caught (planted text and a tool call outside the snapshot), the careful one scores zero leaks over three runs. The live run is a live-pass item (decision 0022).
 - [ ] **T10 — Evaluation (tooling).** `agent` and `oneshot` through the runner on the same questions with stand-ins, compared per question type with 95% intervals and cost per question; the agent conversation's request shapes replayed from a cassette. The test-split report is a live-pass item (decision 0022).
 
@@ -125,4 +125,45 @@ uv run repoatlas eval run --system agent --split test --runs 3 --max-cost 25.00
 
 ## Results
 
-_Filled in at the gate._
+_The rest is filled in at the gate._
+
+### Manual MCP check (T8, 2026-11-15)
+
+Done from the Claude Code session that built this milestone, against the real stdio server
+(`repoatlas mcp --snapshot 20`, the benchmark snapshot of `psf/requests` at `6e83187b8feb` in
+the local database, with the real embedding model). The session chose each call from the
+previous result, the way an agent would, and sent it through the MCP SDK's stdio client
+(`scripts/mcp_check.py`). The server called no model, and nothing was spent.
+
+**How it differs from the plan.** The plan was to connect Claude Code's own MCP client. That
+needs the server registered in the owner's Claude Code configuration, which is the owner's step,
+and a headless `claude -p --mcp-config <file>` run could not authenticate on this machine (its
+login had expired; it made no call). So the protocol, the transport, and the tools were checked
+with the SDK's client instead, and the check through Claude Code's client is left as an owner
+step that costs nothing:
+
+```bash
+claude mcp add repoatlas -- uv run --directory backend repoatlas mcp --snapshot 20
+```
+
+Then ask Claude Code the three questions below and compare.
+
+| Question | Calls | What came back |
+|---|---|---|
+| Where is `Session.send` defined, and what does it call? | `find_definition`, `find_callees`, `read_file` | `src/requests/sessions.py` lines 752-829; 12 callees, among them `Session.get_adapter`, `HTTPAdapter.send`, `SessionRedirectMixin.resolve_redirects`, `dispatch_hook`, `extract_cookies_to_jar`; lines 752-775 read back with line numbers |
+| Who calls `get_adapter`? | `find_definition`, `find_callers` | `Session.send` and six tests in `tests/test_requests.py` (the `test_session_get_adapter_prefix_*` tests and `_patch_adapter_gzipped_redirect`), each with its call site as evidence |
+| What could break if `merge_setting` changes? | `find_definition`, `get_impact` | 19 affected symbols (8 listed): `Session.prepare_request` (0.46), `Session.merge_environment_settings` (0.38), `merge_hooks`, the files importing `sessions.py`, and `tests/test_requests.py` |
+
+Also checked in the same session:
+
+- `search_code` ("how are redirects followed and limited", k = 3) returned `TooManyRedirects`
+  and the two redirect-limit tests in 4.7 s, most of it loading the embedding model; every
+  graph call took under 0.4 s.
+- `get_owners` for `src/requests/sessions.py` returned four authors with shares.
+- `read_file` with the path `../../.env` was refused as an error result ("is not a file of this
+  snapshot: the path has an empty, '.', or '..' segment"); nothing outside the snapshot can be
+  read.
+- Every result ended with its evidence list, with compact evidence references as IDs
+  (`src/requests/sessions.py#L76-L105@feaf340`); no result of this repository was flagged.
+- One thing to know when using it: `find_definition` with a dotted name returns the exact match
+  first, followed by fuzzy matches up to its limit of ten.
